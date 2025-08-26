@@ -49,21 +49,21 @@
                     </div>
                     <div class="col-md-6">
                         <h5>Upload Galeri</h5>
-                                                 <div class="dropzone" id="galleryDropzone">
-                             <div class="dz-message">
-                                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                 <h5>Drag & Drop gambar galeri di sini</h5>
-                                 <p class="text-muted">atau klik untuk memilih file</p>
-                                 <p class="text-muted small">Format: JPG, PNG, GIF (Max: 2MB per file)</p>
-                             </div>
-                         </div>
+                        <div class="dropzone" id="galleryDropzone">
+                            <div class="dz-message">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h5>Drag & Drop gambar galeri di sini</h5>
+                                <p class="text-muted">atau klik untuk memilih file</p>
+                                <p class="text-muted small">Format: JPG, PNG, GIF (Max: 2MB per file)</p>
+                            </div>
+                        </div>
                          
                          <!-- Upload button -->
                          <div class="mt-2">
                              <button type="button" class="btn btn-success rounded-0" onclick="uploadFiles()">
                                  <i class="fas fa-upload"></i> Unggah
                              </button>
-                         </div>
+                        </div>
                     </div>
                 </div>
 
@@ -81,7 +81,7 @@
                                                      class="img-fluid" 
                                                      alt="Gallery Image"
                                                      style="height: 200px; object-fit: cover; width: 100%;">
-                                            </div>
+                                                    </div>
                                             <div class="card-body p-2">
                                                 <textarea class="form-control form-control-sm description-input" 
                                                           data-id="<?= $gallery->id ?>" 
@@ -228,8 +228,8 @@
 
 <script>
 // Disable auto-discovery BEFORE DOM is ready
-Dropzone.autoDiscover = false;
-
+    Dropzone.autoDiscover = false;
+    
 $(document).ready(function() {
     var uploadUrl = "<?= base_url('admin/event-gallery/upload') ?>";
     var eventId = "<?= $event->id ?>";
@@ -255,17 +255,17 @@ $(document).ready(function() {
             }
 
             try {
-                var galleryDropzone = new Dropzone("#galleryDropzone", {
+    var galleryDropzone = new Dropzone("#galleryDropzone", {
                     url: uploadUrl,
-                    paramName: "gallery",
-                    maxFilesize: 2, // 2MB
-                    acceptedFiles: "image/*",
-                    addRemoveLinks: true,
-                    dictDefaultMessage: "Drag & Drop gambar galeri di sini",
-                    dictFileTooBig: "File terlalu besar ({{filesize}}MB). Maksimal: {{maxFilesize}}MB.",
-                    dictInvalidFileType: "Tidak dapat upload file jenis ini.",
-                    dictRemoveFile: "Hapus",
-                    dictCancelUpload: "Batal",
+        paramName: "gallery",
+        maxFilesize: 2, // 2MB
+        acceptedFiles: "image/*",
+        addRemoveLinks: true,
+        dictDefaultMessage: "Drag & Drop gambar galeri di sini",
+        dictFileTooBig: "File terlalu besar ({{filesize}}MB). Maksimal: {{maxFilesize}}MB.",
+        dictInvalidFileType: "Tidak dapat upload file jenis ini.",
+        dictRemoveFile: "Hapus",
+        dictCancelUpload: "Batal",
                     dictResponseError: "Upload gagal",
                     dictMaxFilesExceeded: "Tidak dapat upload lebih banyak file",
                     dictUploadCanceled: "Upload dibatalkan",
@@ -286,16 +286,16 @@ $(document).ready(function() {
                         }
                         alert(displayMessage);
                     },
-                    init: function() {
-                        this.on("sending", function(file, xhr, formData) {
+        init: function() {
+            this.on("sending", function(file, xhr, formData) {
                             // Add event_id only (CSRF is disabled for this endpoint)
                             formData.append("event_id", eventId);
-                        });
-
-                        this.on("success", function(file, response) {
-                            if (response.success) {
-                                location.reload();
-                            } else {
+            });
+            
+            this.on("success", function(file, response) {
+                if (response.success) {
+                    location.reload();
+                } else {
                                 var errorMsg = "Upload gagal";
                                 if (response.error && typeof response.error === 'string') {
                                     errorMsg = response.error;
@@ -455,14 +455,14 @@ $(document).ready(function() {
     $('.description-input').on('blur', function() {
         var id = $(this).data('id');
         var description = $(this).val();
-
+        
         $.ajax({
             url: '<?= base_url('admin/event-gallery/update-description') ?>',
             type: 'POST',
-                         data: {
-                 id: id,
+            data: {
+                id: id,
                  description: description
-             },
+            },
             success: function(response) {
                 if (response.success) {
                     var textarea = $('[data-id="' + id + '"]');

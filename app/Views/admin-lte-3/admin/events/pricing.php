@@ -238,7 +238,7 @@
 
         // Update UI
         $('#formTitle').text('Edit Harga Event');
-        $('#submitBtn').html('<i class="fas fa-save"></i> Update');
+        $('#submitBtn').html('<i class="fas fa-save"></i> Simpan');
         $('#cancelBtn').show();
 
         // Scroll to form

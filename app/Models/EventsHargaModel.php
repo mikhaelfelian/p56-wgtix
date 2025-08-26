@@ -114,9 +114,12 @@ class EventsHargaModel extends Model
         return $this->select('tbl_m_event_harga.*, 
                              tbl_m_event.event as event_name,
                              tbl_m_event.tgl_masuk,
+                             tbl_m_event.tgl_keluar,
                              tbl_m_event.lokasi,
-                             tbl_m_event.jml')
+                             tbl_m_event.jml,
+                             tbl_m_kategori.kategori')
                     ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'left')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
                     ->where('tbl_m_event_harga.status', '1')
                     ->where('tbl_m_event.status', 1)
                     ->orderBy('tbl_m_event.tgl_masuk', 'ASC')
@@ -156,6 +159,11 @@ class EventsHargaModel extends Model
         $activePricing = $this->where('status', '1')->countAllResults();
         $inactivePricing = $this->where('status', '0')->countAllResults();
 
+        // Get total events count
+        $totalEvents = $this->db->table('tbl_m_event')
+                                ->where('status', 1)
+                                ->countAllResults();
+
         // Get price range statistics
         $priceStats = $this->select('MIN(harga) as min_price, MAX(harga) as max_price, AVG(harga) as avg_price')
                            ->where('status', '1')
@@ -165,6 +173,8 @@ class EventsHargaModel extends Model
             'total_pricing'    => $totalPricing,
             'active_pricing'   => $activePricing,
             'inactive_pricing' => $inactivePricing,
+            'total_events'     => $totalEvents,
+            'average_price'    => $priceStats ? round($priceStats->avg_price, 2) : 0,
             'price_range'      => [
                 'min_price' => $priceStats ? $priceStats->min_price : 0,
                 'max_price' => $priceStats ? $priceStats->max_price : 0,
@@ -195,6 +205,37 @@ class EventsHargaModel extends Model
     public function getPricesByEvent($eventId)
     {
         return $this->getEventPricing($eventId);
+    }
+
+    /**
+     * Get pricing with search functionality
+     * 
+     * @param string $keyword
+     * @return array
+     */
+    public function getPricingWithSearch($keyword = '')
+    {
+        $builder = $this->select('tbl_m_event_harga.*, 
+                                 tbl_m_event.event as event_name,
+                                 tbl_m_event.tgl_masuk,
+                                 tbl_m_event.tgl_keluar,
+                                 tbl_m_event.lokasi,
+                                 tbl_m_event.jml,
+                                 tbl_m_kategori.kategori')
+                        ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'left')
+                        ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+                        ->where('tbl_m_event_harga.status', '1')
+                        ->where('tbl_m_event.status', 1);
+        
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                        ->like('tbl_m_event.event', $keyword)
+                        ->orLike('tbl_m_kategori.kategori', $keyword)
+                    ->groupEnd();
+        }
+        
+        return $builder->orderBy('tbl_m_event.tgl_masuk', 'ASC')
+                      ->findAll();
     }
 
     /**

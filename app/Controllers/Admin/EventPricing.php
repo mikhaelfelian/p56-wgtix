@@ -32,15 +32,43 @@ class EventPricing extends BaseController
      */
     public function index()
     {
-        $pricing = $this->eventsHargaModel->getAllActivePricingWithEvents();
+        $keyword = $this->request->getGet('keyword') ?? '';
+        $currentPage = $this->request->getGet('page') ?? 1;
+        $perPage = 10; // Set per page limit
+
+        $builder = $this->eventsHargaModel->select('tbl_m_event_harga.*, 
+                                                   tbl_m_event.event as event_name,
+                                                   tbl_m_event.tgl_masuk,
+                                                   tbl_m_event.tgl_keluar,
+                                                   tbl_m_event.lokasi,
+                                                   tbl_m_event.jml,
+                                                   tbl_m_kategori.kategori')
+                                          ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'left')
+                                          ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+                                          ->where('tbl_m_event_harga.status', '1')
+                                          ->where('tbl_m_event.status', 1);
+
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                       ->like('tbl_m_event.event', $keyword)
+                       ->orLike('tbl_m_kategori.kategori', $keyword)
+                   ->groupEnd();
+        }
+
+        $pricing = $builder->paginate($perPage, 'pricing');
+        $pager = $builder->pager;
 
         $data = [
             'title' => 'Kelola Harga Event',
             'pricing' => $pricing,
+            'pager' => $pager,
+            'keyword' => $keyword,
+            'currentPage' => $currentPage,
+            'perPage' => $perPage,
             'statistics' => $this->eventsHargaModel->getPricingStatistics()
         ];
 
-        return $this->view($this->theme->getThemePath() . '/admin/event_pricing/index', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/events/index_pricing', $data);
     }
 
     /**

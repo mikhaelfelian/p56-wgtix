@@ -32,28 +32,38 @@ class EventGallery extends BaseController
      */
     public function index()
     {
-        $page = $this->request->getGet('page') ?? 1;
         $keyword = $this->request->getGet('keyword') ?? '';
+        $currentPage = (int) ($this->request->getGet('page_galleries') ?? 1);
         $perPage = 10;
-        
-        $galleries = $this->eventGaleriModel->getGalleriesWithPagination($page, $perPage, $keyword);
-        $total = $this->eventGaleriModel->getTotalGalleries($keyword);
-        
-        $pager = service('pager');
-        $pager->setPath('admin/event-gallery');
-        $pager->makeLinks($total, $perPage, $page, 'adminlte_pagination');
-        
+
+
+
+        // Build the query once
+        $builder = $this->eventGaleriModel
+            ->select('tbl_m_event_galeri.id, tbl_m_event_galeri.id_event, tbl_m_event_galeri.file, tbl_m_event_galeri.deskripsi, tbl_m_event_galeri.status, tbl_m_event.event as event_name')
+            ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_galeri.id_event', 'left')
+            ->where('tbl_m_event_galeri.status !=', -1);
+
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                ->like('tbl_m_event.event', $keyword)
+                ->orLike('tbl_m_event_galeri.deskripsi', $keyword)
+                ->groupEnd();
+        }
+
+        $galleries = $builder->paginate($perPage, 'galleries');
+        $pager = $this->eventGaleriModel->pager;
+
         $data = [
-            'title' => 'Kelola Galeri Event',
-            'galleries' => $galleries,
-            'pager' => $pager,
-            'currentPage' => $page,
-            'perPage' => $perPage,
-            'keyword' => $keyword,
-            'total' => $total
+            'title'       => 'Kelola Galeri Event',
+            'galleries'   => $galleries,
+            'pager'       => $pager,
+            'keyword'     => $keyword,
+            'currentPage' => $currentPage,
+            'perPage'     => $perPage,
         ];
 
-        return $this->view($this->theme->getThemePath() . '/admin/event-gallery/index', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/events/index_galeri', $data);
     }
 
     /**
@@ -75,7 +85,7 @@ class EventGallery extends BaseController
             'galleries' => $galleries
         ];
 
-        return $this->view($this->theme->getThemePath() . '/admin/event-gallery/manage', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/events/manage_galeri', $data);
     }
 
     /**
