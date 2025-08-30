@@ -1,0 +1,129 @@
+/*Prefix Styles*/
+.m0{margin: 0;}
+.p0{padding: 0;}
+
+body{
+    p{
+        line-height: 24px;
+    }
+	
+	* {		
+		font-family: $font;
+	}
+    
+    /*Section Fix*/
+    section, header, footer{
+        &.row{            
+            margin: 0;
+            position: relative;
+        }
+    }
+}
+
+/*Ancore*/
+a,.btn,button{
+    outline: none;
+    @include transition;
+    &:before,&:after{
+        @include transition;
+    }
+    &:focus,&:hover{
+        outline: none;
+        text-decoration: none;
+        @include transition;
+    }
+}
+
+/*Buttons*/
+.btn{
+	padding: 0 36px;
+	border: 1px solid;
+	border-radius: 0;
+	text-transform: capitalize;
+	font-weight: 500;
+	font-size: 16px;
+	text-shadow: none;
+  	box-shadow: 0.087px 0.996px 5px 0px rgba(0, 0, 0, 0.22);
+	@include transition;
+	&:hover,&:focus{
+		box-shadow: 0.087px 0.996px 5px 0px rgba(0, 0, 0, 0.80);
+	}
+}
+.btn-primary{	
+	padding: 0 36px;
+	line-height: 48px;
+	&.btn-sm{
+		padding: 0 32px;
+		line-height: 44px;
+	}
+}
+
+.btn-default{	
+	padding: 0 36px;
+	line-height: 48px;
+	box-shadow: none;
+	&:hover,&:focus{
+		box-shadow: 0.087px 0.996px 5px 0px rgba(0, 0, 0, 0.80);
+	}
+}
+
+.btn-bg{	
+	padding: 0 45px;
+	line-height: 65px;
+	font-size: 24px;
+}
+
+.btn-sm{	
+	padding: 0 25px;
+	line-height: 34px;
+	font-size: 15px;
+	font-weight: 400;
+}
+
+.btn-round{	
+	border-radius: 50px;
+}
+
+.btn-outline{
+	padding: 0 36px;
+	line-height: 44px;
+	border: 1px solid;
+	background: none;
+}
+
+/*Section Title*/
+.sectionTitle{
+	margin-bottom: 30px;
+	text-align: center;
+	margin-left: 0;
+	margin-right: 0;
+	&:after{
+		content: '';
+		display: block;
+		width: 47px;
+		height: 2px;
+		margin: 25px auto 0;
+	}
+	.this-title{
+		margin: 0 0 5px;
+		text-transform: capitalize;
+		font-weight: 300;
+		font-size: 36px;
+		@media (max-width: 767px){
+			font-size: 30px;
+		}
+	}
+	p{
+		margin-bottom: 0;
+		font-size: 16px;
+		font-weight: 300;
+	}
+	&.text-left{
+		margin-left: 0;
+		margin-right: 0;
+		text-align: left;
+		&:after{
+			margin-left: 0;
+		}
+	}
+}

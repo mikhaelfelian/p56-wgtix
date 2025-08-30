@@ -114,13 +114,24 @@ class Events extends BaseController
         $lokasi       = $this->request->getPost('lokasi') ?: null;
         $jml          = $this->request->getPost('jml') ?: null;
         $keterangan   = $this->request->getPost('keterangan') ?: null;
-        $status       = $this->request->getPost('status');
         
+        // Sanitize keterangan field (HTML content from TinyMCE)
+        if ($keterangan) {
+            $keterangan = $this->sanitizeHtml($keterangan);
+        }
+        
+        $status       = $this->request->getPost('status');
+        $id           = $this->request->getPost('id'); // Add id if exists
+        $latitude     = $this->request->getPost('lat') ?: null;
+        $longitude    = $this->request->getPost('long') ?: null;
+
         // Handle primary photo upload
         $foto = null;
         if ($this->request->getFile('foto') && $this->request->getFile('foto')->isValid()) {
             $fotoFile = $this->request->getFile('foto');
             $foto = $fotoFile->getRandomName();
+        }else{
+            $foto = $this->request->getPost('foto_lama');
         }
 
         $data = [
@@ -136,30 +147,36 @@ class Events extends BaseController
             'lokasi'          => $lokasi,
             'jml'             => $jml,
             'keterangan'      => $keterangan,
+            'latitude'        => $latitude,
+            'longitude'       => $longitude,
             'status'          => $status,
-            'status_hps'      => 0
         ];
 
+        if ($id) {
+            $data['id'] = $id;
+        }
+
         try {
-            if ($this->eventsModel->insert($data)) {
-                $eventId = $this->eventsModel->insertID();
-                
+            if ($this->eventsModel->save($data)) {
+                // Get the event ID (insertID for new, or $id for update)
+                $eventId = $id ?: $this->eventsModel->insertID();
+
                 // Upload primary photo if exists
                 if ($foto && $this->request->getFile('foto') && $this->request->getFile('foto')->isValid()) {
                     $fotoFile = $this->request->getFile('foto');
                     $uploadPath = FCPATH . 'file/events/' . $eventId . '/';
-                    
+
                     // Create directory if not exists
                     if (!is_dir($uploadPath)) {
                         mkdir($uploadPath, 0755, true);
                     }
-                    
+
                     // Move uploaded file
                     $fotoFile->move($uploadPath, $foto);
                 }
-                
-                return redirect()->to('/admin/events')
-                    ->with('success', 'Event berhasil ditambahkan');
+
+                return redirect()->to('/admin/events/edit/' . $eventId)
+                    ->with('success', 'Event berhasil disimpan');
             } else {
                 // Get validation errors if any
                 $errors = $this->eventsModel->errors();
@@ -168,7 +185,7 @@ class Events extends BaseController
                         ->withInput()
                         ->with('errors', $errors);
                 }
-                
+
                 return redirect()->to('/admin/events/create')
                     ->withInput()
                     ->with('error', 'Gagal menambahkan event');
@@ -221,63 +238,7 @@ class Events extends BaseController
             'kategoriOptions' => $this->kategoriModel->getActiveCategories()
         ];
 
-        return $this->view($this->theme->getThemePath() . '/admin/events/edit', $data);
-    }
-
-    /**
-     * Update the specified event
-     */
-    public function update($id = null)
-    {
-        $event = $this->eventsModel->find($id);
-
-        if (!$event) {
-            return redirect()->to('/admin/events')
-                ->with('error', 'Event tidak ditemukan');
-        }
-
-        $rules = [
-            'id_kategori'     => 'required|integer',
-            'event'           => 'required|max_length[100]',
-            'tgl_masuk'       => 'required|valid_date',
-            'tgl_keluar'      => 'required|valid_date',
-            'wkt_masuk'       => 'required',
-            'wkt_keluar'      => 'required',
-            'lokasi'          => 'permit_empty|max_length[200]',
-            'jml'             => 'permit_empty|integer|greater_than_equal_to[0]',
-            'keterangan'      => 'permit_empty',
-            'status'          => 'required|in_list[0,1]'
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->to('/admin/events/edit/' . $id)
-                ->withInput()
-                ->with('errors', $this->validator->getErrors());
-        }
-
-        $data = [
-            'id_kategori'     => $this->request->getPost('id_kategori'),
-            'kode'            => $this->request->getPost('kode') ?: null,
-            'event'           => $this->request->getPost('event'),
-            'tgl_masuk'       => $this->request->getPost('tgl_masuk'),
-            'tgl_keluar'      => $this->request->getPost('tgl_keluar'),
-            'wkt_masuk'       => $this->request->getPost('wkt_masuk'),
-            'wkt_keluar'      => $this->request->getPost('wkt_keluar'),
-            'lokasi'          => $this->request->getPost('lokasi') ?: null,
-            'jml'             => $this->request->getPost('jml') ?: null,
-            'keterangan'      => $this->request->getPost('keterangan') ?: null,
-            'status'          => $this->request->getPost('status'),
-            'status_hps'      => 0
-        ];
-
-        if ($this->eventsModel->update($id, $data)) {
-            return redirect()->to('/admin/events')
-                ->with('success', 'Event berhasil diperbarui');
-        }
-
-        return redirect()->to('/admin/events/edit/' . $id)
-            ->withInput()
-            ->with('error', 'Gagal memperbarui event');
+        return $this->view($this->theme->getThemePath() . '/admin/events/create', $data);
     }
 
     /**
@@ -611,5 +572,116 @@ class Events extends BaseController
 
         return redirect()->to('/admin/events/pricing/' . $price->id_event)
             ->with('error', 'Gagal mengubah status harga');
+    }
+
+    /**
+     * Sanitize HTML content from TinyMCE
+     * Allows safe HTML tags while removing potentially dangerous content
+     */
+    private function sanitizeHtml($html)
+    {
+        if (empty($html)) {
+            return $html;
+        }
+
+        // Define allowed HTML tags and attributes
+        $allowedTags = [
+            'p' => ['class', 'style'],
+            'br' => [],
+            'strong' => ['class', 'style'],
+            'b' => ['class', 'style'],
+            'em' => ['class', 'style'],
+            'i' => ['class', 'style'],
+            'u' => ['class', 'style'],
+            'h1' => ['class', 'style'],
+            'h2' => ['class', 'style'],
+            'h3' => ['class', 'style'],
+            'h4' => ['class', 'style'],
+            'h5' => ['class', 'style'],
+            'h6' => ['class', 'style'],
+            'ul' => ['class', 'style'],
+            'ol' => ['class', 'style'],
+            'li' => ['class', 'style'],
+            'blockquote' => ['class', 'style'],
+            'a' => ['href', 'target', 'class', 'style', 'title'],
+            'img' => ['src', 'alt', 'class', 'style', 'width', 'height', 'title'],
+            'table' => ['class', 'style', 'width', 'border', 'cellpadding', 'cellspacing'],
+            'thead' => ['class', 'style'],
+            'tbody' => ['class', 'style'],
+            'tr' => ['class', 'style'],
+            'td' => ['class', 'style', 'colspan', 'rowspan', 'width', 'height'],
+            'th' => ['class', 'style', 'colspan', 'rowspan', 'width', 'height'],
+            'div' => ['class', 'style'],
+            'span' => ['class', 'style'],
+            'hr' => ['class', 'style'],
+            'code' => ['class', 'style'],
+            'pre' => ['class', 'style']
+        ];
+
+        // Use HTML Purifier or create a simple sanitizer
+        $dom = new \DOMDocument();
+        
+        // Suppress warnings for malformed HTML
+        libxml_use_internal_errors(true);
+        
+        // Load HTML with UTF-8 encoding
+        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        
+        // Clear any libxml errors
+        libxml_clear_errors();
+        
+        // Get all elements
+        $elements = $dom->getElementsByTagName('*');
+        
+        // Remove disallowed elements and attributes
+        for ($i = $elements->length - 1; $i >= 0; $i--) {
+            $element = $elements->item($i);
+            $tagName = strtolower($element->tagName);
+            
+            // Remove disallowed tags
+            if (!array_key_exists($tagName, $allowedTags)) {
+                $element->parentNode->removeChild($element);
+                continue;
+            }
+            
+            // Remove disallowed attributes
+            $allowedAttrs = $allowedTags[$tagName];
+            $attributes = $element->attributes;
+            
+            for ($j = $attributes->length - 1; $j >= 0; $j--) {
+                $attr = $attributes->item($j);
+                $attrName = strtolower($attr->name);
+                
+                if (!in_array($attrName, $allowedAttrs)) {
+                    $element->removeAttribute($attr->name);
+                } else {
+                    // Additional security for specific attributes
+                    if ($attrName === 'href' && $tagName === 'a') {
+                        $href = $attr->value;
+                        // Only allow http, https, mailto, and tel protocols
+                        if (!preg_match('/^(https?|mailto|tel):/i', $href)) {
+                            $element->removeAttribute('href');
+                        }
+                    }
+                    
+                    if ($attrName === 'src' && $tagName === 'img') {
+                        $src = $attr->value;
+                        // Only allow http and https protocols for images
+                        if (!preg_match('/^https?:\/\//i', $src)) {
+                            $element->removeAttribute('src');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Get cleaned HTML
+        $cleanHtml = $dom->saveHTML();
+        
+        // Remove XML declaration and extra whitespace
+        $cleanHtml = preg_replace('/<\?xml[^>]*\?>/', '', $cleanHtml);
+        $cleanHtml = trim($cleanHtml);
+        
+        return $cleanHtml;
     }
 }

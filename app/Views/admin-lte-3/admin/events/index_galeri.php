@@ -54,7 +54,6 @@
                             <th>Judul Galeri</th>
                             <th>Gambar</th>
                             <th>Status</th>
-                            <th width="160">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -80,24 +79,11 @@
                                             <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="<?= base_url("admin/event-gallery/edit/$row->id") ?>"
-                                                class="btn btn-warning btn-sm rounded-0" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="<?= base_url("admin/event-gallery/delete/$row->id") ?>"
-                                                class="btn btn-danger btn-sm rounded-0"
-                                                onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')" title="Hapus">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </div>
-                                    </td>
                                 </tr>
                             <?php endforeach ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="6" class="text-center">
+                                <td colspan="5" class="text-center">
                                     <div class="py-4">
                                         <i class="fas fa-images fa-3x text-muted mb-3"></i>
                                         <h5 class="text-muted">Belum ada data galeri event</h5>

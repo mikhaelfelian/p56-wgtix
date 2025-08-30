@@ -1,0 +1,151 @@
+.checkout-content{
+	padding: 95px 0 100px;	
+}
+
+.checkout-heading{
+	font-size: 22px;
+	margin-bottom: 30px;
+	margin-top: 0;
+	text-transform: capitalize;
+	&:after{
+		content: '';
+		display: block;
+		width: 47px;
+		height: 2px;
+		margin: 15px 0 0;
+	}
+	&.child2{
+		margin-top: 28px;
+	}
+}
+
+.btn.place-order{
+	box-shadow: none;
+}
+
+.checkout-form{
+	.form-group{		
+		margin-bottom: 20px;
+		label{
+			line-height: 1;
+			font-weight: 300;
+			margin-bottom: 15px;
+		}
+		.form-control{
+			border-radius: 0;
+			box-shadow: none;
+			line-height: 41px;
+			height: 43px;
+			padding: 0 15px;
+			font-weight: 300;
+			& + .form-control{
+				margin-top: 10px;
+			}
+		}
+	}
+	.checkboxs{
+		margin: 10px 0 28px;
+		input{
+			display: none;
+			& + label{
+				position: relative;
+				padding-left: 24px;
+				line-height: 15px;
+				font-size: 14px;
+				text-transform: capitalize;
+				font-weight: 300;
+				cursor: pointer;
+				margin: 0;
+				&:before,&:after{
+					content: '';
+					display: block;
+					position: absolute;		
+				}
+				&:before{
+					width: 15px;
+					height: 13px;
+					border: 1px solid;
+					left: 0;
+					top: 1px;
+				}
+				&:after{
+					width: 11px;
+					height: 9px;
+					top: 3px;
+					left: 2px;
+					@include transition;
+					opacity: 0;
+				}
+			}
+			&:checked + label{
+				&:after{
+					opacity: 1;
+				}
+			}
+		}
+	}
+	
+	.payments{
+		margin: 0 0 30px;
+		input{
+			display: none;
+			& + label{
+				position: relative;
+				padding-left: 24px;
+				line-height: 14px;
+				font-size: 14px;
+				text-transform: capitalize;
+				font-weight: 300;
+				cursor: pointer;
+				margin: 0;
+				&:before,&:after{
+					content: '';
+					display: block;
+					position: absolute;		
+				}
+				&:before{
+					width: 14px;
+					height: 14px;
+					border: 1px solid;
+					border-radius: 100%;
+					left: 0;
+					top: 0;
+				}
+				&:after{
+					width: 2px;
+					height: 2px;
+					top: 6px;
+					left: 6px;
+					@include transition;
+					opacity: 0;
+					border-radius: 100%;
+				}
+				& + article{
+					font-weight: 500;
+					margin-top: 0;
+					font-size: 0;
+					line-height: 0;
+					padding: 0;
+					border: 0;
+					@include transition;
+				}
+			}
+			&:checked + label{
+				&:after{
+					opacity: 1;
+				}
+				& + article{					
+					padding: 28px 32px;
+					line-height: 24px;
+					border-top: 1px solid;
+					border-bottom: 1px solid;
+					font-size: 14px;
+					margin-top: 20px;
+				}
+			}
+		}
+		.option{
+			margin: 0 0 15px;
+		}
+	}	
+}

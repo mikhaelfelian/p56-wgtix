@@ -1,0 +1,41 @@
+$font: 'Roboto', sans-serif;
+
+$blue: #00b4fa;
+$green: #70d151;
+$red: #ec5646;
+
+$dark: #243c4f;
+$dark1: lighten(desaturate(adjust-hue($dark, 0.4271), 2.6395), 5.0980); // #2e495f
+$dark2: lighten(desaturate(adjust-hue($dark, -0.1958), 15.0384), 27.4510); // #63839c
+$dark3: lighten(desaturate(adjust-hue($dark, 0.4271), 10.6153), 41.5686); // #8ba6bc
+$dark4: lighten(desaturate(adjust-hue($dark, -0.1958), 12.2812), 32.9412); // #7191aa
+$dark5: lighten(desaturate(adjust-hue($dark, -0.3298), 13.1622), 21.9608); // #56758d
+$dark6: lighten(desaturate(adjust-hue($dark, 33.4884), 31.1413), 2.5490); // #3c3c44
+$dark7: lighten(desaturate(adjust-hue($dark, -3.6545), 24.9653), 10.5882); // #4a575f
+
+$blue1: lighten(saturate(adjust-hue($blue, 3.8557), 0.0000), 39.0196); // #c2eaff
+$blue2: lighten(saturate(adjust-hue($blue, 58.7102), 26.1307), 11.9608); // #7852e5
+$blue3: lighten(saturate(adjust-hue($blue, -0.1493), 0.0000), 10.0000); // #2ec5ff
+$blue4: lighten(saturate(adjust-hue($blue, 43.2000), 24.3655), 12.3529); // #5252e7
+$blue5: lighten(saturate(adjust-hue($blue, 50.1231), 25.7143), 9.8039); // #5a48e4
+$blue6: lighten(saturate(adjust-hue($blue, 54.3628), 23.2143), 7.0588); // #5939e5
+
+$green1: darken(desaturate(adjust-hue($green, -0.2633), 17.8503), 21.3725); // #487f36
+$green2: darken(desaturate(adjust-hue($green, -0.1144), 3.6754), 2.5490); // #6aca4b
+$green3: darken(desaturate(adjust-hue($green, -0.3488), 7.5745), 5.2941); // #64c245
+$green4: darken(desaturate(adjust-hue($green, -0.3488), 7.5745), 8.4314); // #5cba3d
+
+
+
+// Mixins
+@mixin transition($property: all, $duration: 300ms, $animate: linear, $delay:0s){
+    transition: $property $duration $animate $delay; 
+}
+
+@mixin hfbc($color1, $color2){
+	@include transition;
+	&:hover,&:focus{
+		background: $color1;
+		color: $color2;
+	}
+}

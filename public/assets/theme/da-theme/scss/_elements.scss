@@ -1,0 +1,160 @@
+.page-cover{
+	height: 289px;
+	background-size: cover;
+	background: no-repeat scroll center center;
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+	.row{
+		flex: 1;
+		align-self: center;
+	}
+	.page-title{
+		font-size: 36px;
+		font-weight: 300;
+		margin: 0;
+		text-transform: capitalize;
+		&:after{
+			content: '';
+			display: block;
+			height: 2px;
+			width: 47px;
+			margin-top: 15px;
+		}
+	}
+}
+
+.page-cover2{
+	height: 454px;
+	z-index: 1;
+	background-size: cover;
+	background: no-repeat scroll center center;
+	display: -webkit-flex;
+	display: -moz-flex;
+	display: -ms-flex;
+	display: -o-flex;
+	display: flex;
+	&:before{
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: block;
+	}
+	.row{
+		position: relative;
+		z-index: 2;
+		flex: 1;
+		align-self: center;
+	}
+	.container{
+		text-align: center;
+		max-width: 880px;
+	}
+	.h1{
+		font-weight: 300;
+		margin-top: 0;
+	}
+	.sub-h4{
+		font-size: 16px;
+		font-weight: 300;
+		letter-spacing: 0.25px;
+		margin-bottom: 25px;
+		margin-top: 0;
+		&:after{
+			content: '';
+			display: block;
+			margin: 25px auto 0;
+			width: 47px;
+			height: 2px;
+		}
+	}
+	p{
+		font-size: 16px;
+		font-weight: 300;
+		line-height: 27px;
+		margin: 0;
+	}
+}
+
+.fun-fact{
+	padding: 52px 15px;
+	@media (max-width: 479px){
+		padding: 30px 15px;
+		width: 100%;
+	}
+}
+
+.fact{
+	display: table;
+	margin: 0 auto;
+	font-weight: 300;
+	.icon{
+		line-height: 58px;
+		margin-right: 26px;
+		float: left;
+	}
+	.counter{
+		float: left;
+		font-size: 48px;
+		line-height: 58px;
+		padding-right: 18px;
+	}
+	.fact-about{
+		padding: 9px 0;
+		float: left;
+		line-height: 20px;		
+	}
+}
+
+/*Shop Tabs*/
+.shop-tabs{
+	margin-bottom: 50px;
+	.nav{
+		border: none;
+		li{
+			a{
+				border: none;
+				background: none;
+				border-radius: 0;
+				line-height: 49px;
+				padding: 0 33px;
+				font-size: 16px;
+				font-weight: 500;
+				margin: 0;
+				text-transform: capitalize;
+				@media (max-width: 479px){
+					padding: 0 25px;
+				}
+				&:hover,&:focus{
+					border: none;
+				}
+			}
+			&.active a{
+			}
+		}
+	}
+	.tab-content{
+		
+	}
+	.tab-pane{
+		padding: 33px;
+		p{
+			line-height: 27px;
+			margin-bottom: 0;
+			font-weight: 300;
+			& + p{
+				margin-top: 30px;
+			}
+		}
+	}
+	.tab-title{
+		margin-top: 0;
+		margin-bottom: 25px;
+		font-weight: 500;
+	}
+}

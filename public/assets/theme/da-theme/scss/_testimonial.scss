@@ -1,0 +1,143 @@
+.testimonials{
+	background: $blue2;
+	padding: 82px 0 74px;	
+	&:before{
+		content: '';
+		display: block;
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: url(../images/testbg.png) no-repeat fixed center center;
+		opacity: 0.05;
+		z-index: 0;
+	}
+	&.style2{
+		&:before{
+			display: none;
+		}
+	}
+	.container{
+		position: relative;
+		z-index: 2;
+	}
+}
+
+.testimonial-slides{
+	max-width: 830px;
+	margin: 40px auto 0;
+	text-align: center;
+	@media (max-width: 767px){
+		padding: 0 15px;
+	}
+	.client-img{
+		text-align: center;
+		border-radius: 100%;
+		width: 88px;
+		height: 88px;
+		margin: 0 auto 35px;
+		box-shadow: 0.087px 0.996px 5px 0px rgba(0, 0, 0, 0.22);
+		img{
+			border-radius: 100%;
+		}
+	}
+	.quotes{
+		margin: 0 0 30px;
+		font-size: 18px;
+		font-style: italic;
+		line-height: 30px;
+		@media (max-width: 479px){
+			font-size: 16px;
+			line-height: 24px;
+		}
+	}
+	.client-id{
+		margin: 0;
+		font-weight: 400;
+		&:before{
+			content: '';
+			display: block;
+			margin: 0 auto 30px;
+			width: 47px;
+			height: 2px;
+		}
+		span{
+			font-weight: 300;
+		}
+	}
+	
+	.owl-dots{
+		display: table;
+		margin: 50px auto 0;
+	}
+	.owl-dot{
+		float: left;
+		width: 13px;
+		height: 13px;
+		border: 1px solid;
+		transform: rotate(45deg);
+		& + .owl-dot{
+			margin-left: 12px;
+		}
+	}
+}
+
+.testimonial2{
+	padding: 95px 0 130px;
+	.quote-sign{
+		padding-top: 23px;
+		padding-bottom: 35px;
+	}
+	.testimonial2-carousel{
+		max-width: 870px;
+		margin: 0 auto;
+		.testimonail-footer{
+			display: table;
+			margin: 0 auto;
+			.media{}
+			.media-left{
+				padding-right: 15px;
+				a{
+					width: 86px;
+					height: 86px;
+					display: block;
+					line-height: 86px;
+				}
+			}
+			.media-body{
+				width: auto;
+				vertical-align: middle;
+				text-align: left;
+			}
+			.this-title{
+				font-size: 20px;
+				font-weight: 700;
+				margin: 0;
+			}
+			.this-pos{
+				margin: 3px 0 0;
+				font-size: 16px;
+				font-weight: 300;
+			}
+		}
+	}
+	.owl-dots{
+		margin-top: 45px;
+	}
+	.owl-dot{
+		width: 12px;
+		height: 12px;
+		transform: none;
+		border-radius: 100%;
+		border: none;
+	}
+	p{
+		text-align: center;
+		font-size: 18px;
+		line-height: 34px;
+		margin-bottom: 35px;
+		font-weight: 300;
+		font-style: italic;
+	}
+}

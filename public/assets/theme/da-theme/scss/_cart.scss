@@ -1,0 +1,191 @@
+.shopping-cart{
+	padding: 100px 0;
+}
+
+.table-responsive{
+	@media (max-width: 767px){
+		border: none;
+	}
+}
+
+.cart-table{
+	border: 1px solid;
+	margin-bottom: 50px;
+	thead{
+		tr{
+			th{
+				text-align: center;
+				padding: 0 29px;
+				line-height: 66px;
+				height: 66px;
+				font-weight: 500;
+				font-size: 16px;
+				border-bottom: 1px solid;
+				&:first-child{
+					text-align: left;
+				}
+			}
+		}
+	}
+	tbody{
+		tr{
+			td{
+				border: none;
+				text-align: center;
+				vertical-align: middle;
+				padding: 15px 30px;
+				font-size: 16px;
+				font-weight: 400;
+				@media (max-width: 1199px){
+				}
+				@media (max-width: 991px){
+					padding: 15px;
+				}
+				@media (max-width: 767px){
+				}
+				&:first-child{
+					padding-right: 80px;
+					@media (max-width: 1199px){
+						padding-right: 30px;
+					}
+					@media (max-width: 991px){
+						padding-right: 15px;
+					}
+					@media (max-width: 767px){
+					}
+				}
+			}
+			&:first-child{
+				td:first-child{
+					padding-top: 30px;
+				}
+			}
+			&:last-child{
+				td:first-child{
+					padding-bottom: 30px;
+				}
+			}
+		}
+	}
+	.alert{
+		text-shadow: none;
+		box-shadow: none;
+		padding: 0;
+		border: none;
+	}
+	.media{
+	}
+	.media-left{
+		padding-right: 30px;
+		@media (max-width: 1199px){
+			padding-right: 15px;
+		}
+		@media (max-width: 991px){
+		}
+		@media (max-width: 767px){
+		}
+		a{
+			width: 125px;
+			height: 111px;
+			display: block;
+			img{
+				width: 100%;
+			}
+		}
+	}
+	.media-body{
+		vertical-align: middle;
+		font-size: 16px;
+		line-height: 24px;
+		font-weight: 500;
+	}
+	input{
+		width: 62px;
+		height: 38px;
+		border-radius: 0;
+		margin: 0 auto;
+		box-shadow: none;
+		font-weight: 500;
+		padding: 0 10px;
+		line-height: 38px;
+	}
+	.close{
+		float: none;
+		font-weight: 500;
+		font-size: 14px;
+		text-transform: capitalize;
+		text-shadow: none;
+		opacity: 1;
+	}
+}
+
+.cart-related-boxs{
+	margin: 0 0 34px;
+	border: 1px solid;
+	.this-title{
+		line-height: 68px;
+		padding: 0 30px;
+		margin: 0;
+		font-weight: 500;
+		border-bottom: 1px solid;
+	}
+	.form-box{
+		padding: 30px 30px 40px;
+		width: 100%;
+	}
+	
+	.bootstrap-select:not([class*=col-]):not([class*=form-control]):not(.input-group-btn){
+		margin-bottom: 15px;
+		width: 100%;
+	}
+	
+	.bootstrap-select{
+		.btn{
+			font-size: 14px;
+			font-weight: 300;
+			padding: 0 15px;
+		}
+	}
+	.btn-mt15{
+		margin-top: 15px;
+	}
+	
+	.dl-horizontal{
+		dt{
+			text-align: left;
+			font-weight: 300;
+			margin-bottom: 10px;
+		}
+		dd{
+			text-align: right;
+			font-weight: 500;
+		}
+	}
+}
+.cupon-get{
+	.form-control{
+		border-radius: 0;
+		box-shadow: none;
+		height: 43px;
+		@media (max-width: 479px){
+			display: block;
+		}
+	}
+	.input-group-addon{
+		padding: 0;
+		border: none;
+		@media (max-width: 479px){
+			display: block;
+			width: 100%;
+			float: left;
+		}
+	}
+	.btn{
+		height: 43px;
+		line-height: 40px;
+		padding: 0 30px;
+		@media (max-width: 479px){
+			width: 100%;
+		}
+	}
+}

@@ -1,0 +1,100 @@
+.contact-form-area{
+	padding: 102px 0 130px;
+	background: url(../images/studies2.png) no-repeat scroll center bottom;
+}
+
+.contact-text{
+	font-size: 16px;
+	font-weight: 300;
+	line-height: 27px;
+	margin: 10px 0 55px;
+}
+
+.contact-form-box{
+	position: relative;
+}
+
+.contact-form{
+	margin: 0;
+	.form-group{		
+		margin-bottom: 40px;
+	}
+	.form-control{
+  		height: 53px;
+		line-height: 51px;
+		border: 1px solid;
+		padding: 0 20px;
+		border-radius: 0;
+		box-shadow: none;
+		font-size: 16px;
+		font-weight: 300;
+		& + .error{
+			font-weight: 300;
+			font-size: 15px;
+		}
+		&:focus{
+			box-shadow: none;
+		}
+	}
+	textarea.form-control{
+		height: 190px;
+		resize: none;
+	}
+}
+
+#success,#error{
+	font-size: 16px;
+	font-weight: 300;
+	line-height: 27px;
+	padding: 15px;
+	display: none;
+}
+
+#mapBox{
+	height: 665px;
+}
+
+.contact-infos{
+	padding: 80px 0;
+}
+.contact-info{
+	padding: 15px;
+	@media (max-width: 767px){
+		max-width: 320px;
+		margin: 0 auto;
+	}
+	.media{}
+	.media-left{
+		i{
+			font-size: 30px;
+			width: 45px;
+		}
+	}
+	.media-body{}
+	.this-title{
+		margin: 0 0 30px;
+		font-weight: 300;
+		font-size: 21px;
+		&:after{
+			content: '';
+			display: block;
+			width: 47px;
+			height: 2px;
+			margin-top: 15px;
+		}
+	}
+	.list-unstyled{
+		li{
+			font-size: 16px;
+			font-weight: 300;
+			& + li{
+				margin-top: 15px;
+			}
+			a{
+				&.email{
+					text-decoration: underline;
+				}
+			}
+		}
+	}
+}

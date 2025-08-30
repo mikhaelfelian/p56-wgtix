@@ -1,0 +1,84 @@
+.portfolio-item{
+	padding: 15px;
+	.inner{
+		margin: 0;
+	}
+	.img-holder{
+		margin: 0;
+		img{
+			max-width: 100%;
+		}
+	}
+	.text-holder{
+		margin: 0;
+		padding: 30px 34px;
+		position: relative;
+	}
+	.this-title{
+		margin: 0 0 5px;
+		text-transform: uppercase;		
+		font-weight: 500;
+		line-height: 20px;
+	}
+	.this-cats{
+		margin: 0;
+		line-height: 1;
+		font-style: italic;
+		font-weight: 400;
+		text-transform: capitalize;
+	}
+	
+	.details-btn{
+		position: absolute;
+		border-radius: 50%;
+		box-shadow: 0.087px 0.996px 5px 0px rgba(0, 0, 0, 0.22);
+		width: 49px;
+		height: 49px;
+		line-height: 49px;
+		text-align: center;
+		right: 20px;
+		top: -24.5px;
+		z-index: 2;
+		cursor: pointer;
+		@include transition;
+		img{
+			width: auto;			
+		}
+		&.open{
+			transform: rotate(45deg);
+		}
+	}
+}
+
+.portfolio-details{
+	padding: 60px 0;
+	display: none;
+	.text-holder{
+		padding-top: 48px;
+	}
+	.this-title{
+		margin: 0;
+		font-weight: 500;
+		line-height: 24px;
+		text-transform: uppercase;
+	}
+	.this-cats{
+		margin: 0 0 30px;
+		line-height: 20px;
+		font-weight: 300;
+		text-transform: capitalize;
+		font-style: italic;
+	}
+	.this-about{
+		p{
+			margin-bottom: 30px;
+			font-weight: 300;
+			font-size: 15px;
+			line-height: 27px;
+		}
+	}
+	.link{
+		font-weight: 400;
+		font-size: 15px;
+	}	
+}

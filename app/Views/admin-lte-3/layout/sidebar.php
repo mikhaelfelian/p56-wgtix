@@ -33,16 +33,6 @@
 
                 <!-- Master Data -->
                 <li class="nav-header">MASTER DATA</li>
-                
-                <!-- Kategori -->
-                <li class="nav-item">
-                    <a href="<?= base_url('admin/kategori') ?>"
-                        class="nav-link <?= isMenuActive('admin/kategori') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-list"></i>
-                        <p>Kategori</p>
-                    </a>
-                </li>
-
                 <!-- Ukuran -->
                 <li class="nav-item">
                     <a href="<?= base_url('admin/ukuran') ?>"
@@ -62,8 +52,10 @@
                 </li>
 
                 <!-- Racepack -->
-                <li class="nav-item has-treeview <?= isMenuActive(['admin/racepack', 'admin/kategori-racepack', 'admin/stock-racepack']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['admin/racepack', 'admin/kategori-racepack', 'admin/stock-racepack']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['admin/racepack', 'admin/kategori-racepack', 'admin/stock-racepack']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['admin/racepack', 'admin/kategori-racepack', 'admin/stock-racepack']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-tshirt"></i>
                         <p>
                             Racepack
@@ -98,10 +90,12 @@
                     </ul>
                 </li>
                 <li class="nav-header">EVENTS</li>
-                
+
                 <!-- Events -->
-                <li class="nav-item has-treeview <?= isMenuActive(['admin/events', 'admin/event-pricing', 'admin/event-gallery']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['admin/events', 'admin/event-pricing', 'admin/event-gallery']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['admin/events', 'admin/event-pricing', 'admin/event-gallery', 'admin/kategori']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['admin/events', 'admin/event-pricing', 'admin/event-gallery', 'admin/kategori']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-calendar-check"></i>
                         <p>
                             Event
@@ -109,6 +103,15 @@
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
+                        <!-- Kategori -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/kategori') ?>"
+                                class="nav-link <?= isMenuActive('admin/kategori') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-list"></i>
+                                <p>Kategori</p>
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a href="<?= base_url('admin/events') ?>"
                                 class="nav-link <?= isMenuActive('admin/events') ? 'active' : '' ?>">
@@ -137,10 +140,12 @@
                 </li>
 
                 <li class="nav-header">PESERTA</li>
-                
+
                 <!-- Peserta -->
-                <li class="nav-item has-treeview <?= isMenuActive(['admin/peserta/daftar', 'admin/peserta/kelompok', 'admin/peserta/pendaftaran']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['admin/peserta/daftar', 'admin/peserta/kelompok', 'admin/peserta/pendaftaran']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['admin/peserta/daftar', 'admin/peserta/kelompok', 'admin/peserta/pendaftaran']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['admin/peserta/daftar', 'admin/peserta/kelompok', 'admin/peserta/pendaftaran']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-user-check"></i>
                         <p>
                             Peserta
@@ -184,8 +189,10 @@
                 </li>
 
                 <!-- Payment -->
-                <li class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-money-bill-wave"></i>
                         <p>
                             Pembayaran

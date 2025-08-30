@@ -44,14 +44,14 @@ class Frontend extends BaseController
         $kelompokOptions = $this->kelompokModel->getDropdownOptions();
 
         $data = [
-            'title' => 'Pendaftaran Peserta',
+            'title' => $this->pengaturan->judul,
             'Pengaturan' => $this->pengaturan,
             'kategoriOptions' => $kategoriOptions,
             'platformOptions' => $platformOptions,
             'kelompokOptions' => $kelompokOptions
         ];
 
-        return view('admin-lte-3/frontend/registration', $data);
+        return view('da-theme/home', $data);
     }
 
     /**
@@ -67,16 +67,16 @@ class Frontend extends BaseController
         }
 
         $rules = [
-            'nama_lengkap' => 'required|max_length[100]',
-            'jenis_kelamin' => 'required|in_list[L,P]',
-            'tempat_lahir' => 'permit_empty|max_length[50]',
-            'tanggal_lahir' => 'permit_empty|valid_date',
-            'alamat' => 'permit_empty',
-            'no_hp' => 'permit_empty|max_length[15]',
-            'email' => 'permit_empty|valid_email|max_length[100]',
-            'id_kelompok' => 'permit_empty|integer',
-            'id_kategori' => 'permit_empty|integer',
-            'id_platform' => 'permit_empty|integer'
+            'nama_lengkap'   => 'required|max_length[100]',
+            'jenis_kelamin'  => 'required|in_list[L,P]',
+            'tempat_lahir'   => 'permit_empty|max_length[50]',
+            'tanggal_lahir'  => 'permit_empty|valid_date',
+            'alamat'         => 'permit_empty',
+            'no_hp'          => 'permit_empty|max_length[15]',
+            'email'          => 'permit_empty|valid_email|max_length[100]',
+            'id_kelompok'    => 'permit_empty|integer',
+            'id_kategori'    => 'permit_empty|integer',
+            'id_platform'    => 'permit_empty|integer',
         ];
 
         if (!$this->validate($rules)) {
