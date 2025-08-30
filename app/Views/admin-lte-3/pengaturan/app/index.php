@@ -66,31 +66,7 @@
                     <small class="text-muted">Kota yang akan muncul di footer dokumen PDF</small>
                 </div>
 
-                <div class="form-group">
-                    <label for="apt_apa">APA (Apoteker Penanggung Jawab)</label>
-                    <?= form_input([
-                        'type' => 'text',
-                        'class' => 'form-control rounded-0',
-                        'id' => 'apt_apa',
-                        'name' => 'apt_apa',
-                        'value' => old('apt_apa', $Pengaturan->apt_apa),
-                        'placeholder' => 'Contoh: APT. UNGSARI RIZKI EKA PURWANTO, M.SC'
-                    ]) ?>
-                    <small class="text-muted">Nama apoteker penanggung jawab (opsional)</small>
-                </div>
 
-                <div class="form-group">
-                    <label for="apt_sipa">SIPA (Surat Izin Praktik Apoteker)</label>
-                    <?= form_input([
-                        'type' => 'text',
-                        'class' => 'form-control rounded-0',
-                        'id' => 'apt_sipa',
-                        'name' => 'apt_sipa',
-                        'value' => old('apt_sipa', $Pengaturan->apt_sipa),
-                        'placeholder' => 'Contoh: 449.1/61/DPM-PTSP/SIPA/II/2022'
-                    ]) ?>
-                    <small class="text-muted">Nomor SIPA (opsional)</small>
-                </div>
 
                 <div class="form-group">
                     <label for="deskripsi">Deskripsi Aplikasi <span class="text-danger">*</span></label>

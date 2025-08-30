@@ -33,7 +33,7 @@ class Pengaturan extends BaseController
             'validation'    => $this->validation
         ];
 
-        return view($this->theme->getThemePath() . '/pengaturan/app/form_pengaturan', $data);
+        return view($this->theme->getThemePath() . '/pengaturan/app/index', $data);
     }
 
     public function update()
@@ -111,8 +111,7 @@ class Pengaturan extends BaseController
             'judul_app' => $this->request->getPost('judul_app'),
             'alamat' => $this->request->getPost('alamat'),
             'kota' => $this->request->getPost('kota'),
-            'apt_apa' => $this->request->getPost('apt_apa'),
-            'apt_sipa' => $this->request->getPost('apt_sipa'),
+            // removed fields related to simrs such as apt_apa and apt_sipa
             'deskripsi' => $this->request->getPost('deskripsi')
         ];
 

@@ -192,7 +192,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function ($routes) {
 
 // Pengaturan routes
 $routes->group('pengaturan', ['namespace' => 'App\Controllers'], function ($routes) {
-    $routes->get('app', 'Pengaturan::app');
+    $routes->get('app', 'Pengaturan::index');
     $routes->get('api-tokens', 'Pengaturan::apiTokens');
 });
 
