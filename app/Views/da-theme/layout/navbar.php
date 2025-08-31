@@ -30,10 +30,10 @@
                     <a href="<?= base_url() ?>">Home</a>
                 </li>
                 <li class="<?= strpos(current_url(), 'event') !== false ? 'active' : '' ?>">
-                    <a href="<?= base_url('event') ?>">Event</a>
+                    <a href="<?= base_url('events') ?>">Event</a>
                 </li>
                 <li class="<?= strpos(current_url(), 'berita') !== false ? 'active' : '' ?>">
-                    <a href="<?= base_url('berita') ?>">Berita</a>
+                    <a href="<?= base_url('news') ?>">Berita</a>
                 </li>
                 <li class="<?= strpos(current_url(), 'about') !== false ? 'active' : '' ?>">
                     <a href="<?= base_url('about') ?>">About</a>

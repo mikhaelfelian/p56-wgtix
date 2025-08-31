@@ -4,16 +4,23 @@ use CodeIgniter\Router\RouteCollection;
 
 /**
  * @var RouteCollection $routes
+ * Default route is Frontend::index
  */
 $routes->get('/', to: 'Frontend::index');
 
-// Frontend routes
-$routes->group('frontend', ['namespace' => 'App\Controllers'], function ($routes) {
-    $routes->get('/', 'Frontend::index');
-    $routes->post('register', 'Frontend::register');
-    $routes->get('payment-success/(:num)', 'Frontend::paymentSuccess/$1');
-    $routes->get('payment-failed/(:num)', 'Frontend::paymentFailed/$1');
+
+/*
+ * Public routes no login required
+ * Events route contains slug format (e.g. /events/12-some-title)
+ * Events route can handle global and detail page
+ */
+$routes->group('events', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('/', 'Frontend::events');
+    $routes->get('(:num)/(:segment)', 'Frontend::category/$1/$2');
+    $routes->get('(:segment)', 'Frontend::detail/$1');
 });
+
+
 
 // Auth routes
 $routes->get('auth/login', 'Auth::login');

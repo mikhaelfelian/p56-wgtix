@@ -15,6 +15,9 @@ use App\Models\PesertaModel;
 use App\Models\KategoriModel;
 use App\Models\PlatformModel;
 use App\Models\KelompokPesertaModel;
+use App\Models\EventsModel;
+use App\Models\EventsHargaModel;
+use App\Models\EventsGaleriModel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
@@ -24,7 +27,9 @@ class Frontend extends BaseController
     protected $kategoriModel;
     protected $platformModel;
     protected $kelompokModel;
-
+    protected $eventsModel;
+    protected $eventsHargaModel;
+    protected $eventsGaleriModel;
     public function __construct()
     {
         parent::__construct();
@@ -32,6 +37,9 @@ class Frontend extends BaseController
         $this->kategoriModel = new KategoriModel();
         $this->platformModel = new PlatformModel();
         $this->kelompokModel = new KelompokPesertaModel();
+        $this->eventsModel = new EventsModel();
+        $this->eventsHargaModel = new EventsHargaModel();
+        $this->eventsGaleriModel = new EventsGaleriModel();
     }
 
     /**
@@ -42,16 +50,150 @@ class Frontend extends BaseController
         $kategoriOptions = $this->kategoriModel->getActiveCategories();
         $platformOptions = $this->platformModel->getByStatus(1);
         $kelompokOptions = $this->kelompokModel->getDropdownOptions();
+        
+        // Get filter parameters
+        $page = $this->request->getGet('page') ?? 1;
+        $keyword = $this->request->getGet('keyword') ?? '';
+        $kategori = $this->request->getGet('kategori') ?? null;
+        $perPage = isset($this->pengaturan->pagination_limit) ? $this->pengaturan->pagination_limit : 8;
+        
+        // Get events with filters
+        $events = $this->eventsModel->getActiveEvents($perPage, $keyword, $page, $kategori);
+        $pager = $this->eventsModel->pager;
 
         $data = [
-            'title' => $this->pengaturan->judul,
-            'Pengaturan' => $this->pengaturan,
+            'title'           => $this->pengaturan->judul,
+            'Pengaturan'      => $this->pengaturan,
             'kategoriOptions' => $kategoriOptions,
             'platformOptions' => $platformOptions,
-            'kelompokOptions' => $kelompokOptions
+            'kelompokOptions' => $kelompokOptions,
+            'events'          => $events,
+            'pager'           => $pager,
+            'keyword'         => $keyword,
+            'selectedKategori' => $kategori
         ];
 
         return view('da-theme/home', $data);
+    }
+
+    /**
+     * Display events page
+     */
+    public function events()
+    {
+        $kategoriOptions = $this->kategoriModel->getActiveCategories();
+        $platformOptions = $this->platformModel->getByStatus(1);
+        $kelompokOptions = $this->kelompokModel->getDropdownOptions();
+        
+        // Get filter parameters
+        $page = $this->request->getGet('page_events') ?? 1;
+        $keyword = $this->request->getGet('keyword') ?? '';
+        $kategori = $this->request->getGet('kategori') ?? null;
+        $minPrice = $this->request->getGet('min_price') ?? null;
+        $maxPrice = $this->request->getGet('max_price') ?? null;
+        $perPage = isset($this->pengaturan->pagination_limit) ? $this->pengaturan->pagination_limit : 8;
+        
+        // Get events with filters using proper pagination
+        $events = $this->eventsModel->getEventsWithFilters($perPage, $keyword, $page, $kategori, null, true, $minPrice, $maxPrice);
+        $pager = $this->eventsModel->pager;
+
+        $data = [
+            'title'           => $this->pengaturan->judul,
+            'Pengaturan'      => $this->pengaturan,
+            'title_header'    => 'Events Listing',
+            'kategoriOptions' => $kategoriOptions,
+            'platformOptions' => $platformOptions,
+            'kelompokOptions' => $kelompokOptions,
+            'categories'      => $kategoriOptions, // For sidebar
+            'events'          => $events,
+            'pager'           => $pager,
+            'keyword'         => $keyword,
+            'selectedKategori' => $kategori
+        ];
+
+        return view('da-theme/event/events', $data);
+    }
+
+    public function detail($id)
+    {
+        $kategoriOptions = $this->kategoriModel->getActiveCategories();
+        $platformOptions = $this->platformModel->getByStatus(1);
+        $kelompokOptions = $this->kelompokModel->getDropdownOptions();
+        
+        // Get filter parameters
+        $page     = $this->request->getGet('page')     ?? 1;
+        $keyword  = $this->request->getGet('keyword')  ?? '';
+        $kategori = $this->request->getGet('kategori') ?? null;
+        $perPage  = isset($this->pengaturan->pagination_limit) ? $this->pengaturan->pagination_limit : 8;
+        
+        // Get events with filters
+        $uri    = $this->uri->getSegment(2);
+        $events = $this->eventsModel->getEventsDetail($id);
+        $pager  = $this->eventsModel->pager;
+
+        $event_price = $this->eventsHargaModel->getEventPricing($id);
+        $eventGallery = $this->eventsGaleriModel->getActiveGalleryByEvent($id);
+
+        $data = [
+            'title'         => $this->pengaturan->judul,
+            'Pengaturan'    => $this->pengaturan,
+            'title_header'  => 'Events Listing',
+            'categories'    => $kategoriOptions,
+            'event'         => $events,
+            'event_price'   => $event_price,
+            'eventGallery'  => $eventGallery,
+            'pager'         => $pager,
+        ];
+
+        return view('da-theme/event/detail', $data);
+    }
+
+    public function category($id_category = null, $slug = null)
+    {
+        $kategoriOptions = $this->kategoriModel->getActiveCategories();
+        $platformOptions = $this->platformModel->getByStatus(1);
+        $kelompokOptions = $this->kelompokModel->getDropdownOptions();
+
+        // Get filter parameters
+        $page = $this->request->getGet('page_events') ?? 1;
+        $keyword = $this->request->getGet('keyword') ?? '';
+        $minPrice = $this->request->getGet('min_price') ?? null;
+        $maxPrice = $this->request->getGet('max_price') ?? null;
+        $perPage = isset($this->pengaturan->pagination_limit) ? $this->pengaturan->pagination_limit : 8;
+
+        // If $id_category is not provided, try to get from URI segment (for backward compatibility)
+        if ($id_category === null) {
+            $id_category = $this->request->uri->getSegment(2);
+        }
+
+        // Get events with filters using new model function signature
+        $events = $this->eventsModel->getEventsByCategory(
+            $id_category,
+            $perPage,
+            $page,
+            $keyword,
+            null, // status
+            true, // activeOnly
+            $minPrice,
+            $maxPrice
+        );
+        $pager = $this->eventsModel->pager;
+
+        $data = [
+            'title'            => $this->pengaturan->judul,
+            'Pengaturan'       => $this->pengaturan,
+            'title_header'     => 'Events Listing',
+            'kategoriOptions'  => $kategoriOptions,
+            'platformOptions'  => $platformOptions,
+            'kelompokOptions'  => $kelompokOptions,
+            'categories'       => $kategoriOptions, // For sidebar
+            'events'           => $events,
+            'pager'            => $pager,
+            'keyword'          => $keyword,
+            'selectedKategori' => $id_category
+        ];
+
+        return view('da-theme/event/categories', $data);
     }
 
     /**

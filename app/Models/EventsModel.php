@@ -140,12 +140,159 @@ class EventsModel extends Model
      * 
      * @return array
      */
-    public function getActiveEvents()
+    public function getActiveEvents($perPage = 10, $keyword = null, $page = 1, $kategori = null, $status = null, $activeOnly = true)
     {
-        return $this->where('status', '1')
-                    ->where('tgl_masuk >=', date('Y-m-d'))
-                    ->orderBy('tgl_masuk', 'ASC')
-                    ->findAll();
+        $builder = $this->select('tbl_m_event.*, tbl_m_kategori.kategori as kategori')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+            ->where('tbl_m_event.status_hps', '0')
+            ->where('tbl_m_event.status', '1')
+            ->orderBy('tbl_m_event.tgl_masuk', 'ASC');
+
+        // Filter for active events only (default behavior)
+        if ($activeOnly) {
+            $builder->where('tbl_m_event.status', '1')
+                   ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
+        }
+
+        // Search functionality
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_m_event.event', $keyword)
+                ->orLike('tbl_m_event.kode', $keyword)
+                ->orLike('tbl_m_event.lokasi', $keyword)
+                ->orLike('tbl_m_event.keterangan', $keyword)
+                ->orLike('tbl_m_kategori.kategori', $keyword)
+                ->groupEnd();
+        }
+
+        // Category filter
+        if ($kategori) {
+            $builder->where('tbl_m_event.id_kategori', $kategori);
+        }
+
+        // Status filter
+        if ($status !== null && $status !== '') {
+            $builder->where('tbl_m_event.status', $status);
+        }
+
+        return $builder->paginate($perPage, 'events', $page);
+    }
+    
+    /**
+     * Get events with search, pagination, and category filter
+     * 
+     * @param int $perPage Items per page
+     * @param string|null $keyword Search keyword
+     * @param int $page Current page
+     * @param int|null $kategori Category ID filter
+     * @param string|null $status Event status filter
+     * @param bool $activeOnly Show only active events
+     * @param int|null $minPrice Minimum price filter (optional)
+     * @param int|null $maxPrice Maximum price filter (optional)
+     * @return array
+     */
+    public function getEventsWithFilters($perPage = 10, $keyword = null, $page = 1, $kategori = null, $status = null, $activeOnly = true, $minPrice = null, $maxPrice = null)
+    {
+        $builder = $this->select('tbl_m_event.*, tbl_m_kategori.kategori as kategori')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+            ->where('tbl_m_event.status_hps', '0')
+            ->orderBy('tbl_m_event.tgl_masuk', 'ASC');
+
+        // Filter for active events only (default behavior)
+        if ($activeOnly) {
+            $builder->where('tbl_m_event.status', '1')
+                    ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
+        }
+
+        // Search functionality
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_m_event.event', $keyword)
+                ->orLike('tbl_m_event.kode', $keyword)
+                ->orLike('tbl_m_event.lokasi', $keyword)
+                ->orLike('tbl_m_event.keterangan', $keyword)
+                ->orLike('tbl_m_kategori.kategori', $keyword)
+                ->groupEnd();
+        }
+
+        // Category filter
+        if ($kategori) {
+            $builder->where('tbl_m_event.id_kategori', $kategori);
+        }
+
+        // Status filter
+        if ($status !== null && $status !== '') {
+            $builder->where('tbl_m_event.status', $status);
+        }
+
+        // Price filters
+        if ($minPrice !== null && $minPrice > 0) {
+            $builder->where('tbl_m_event.harga >=', $minPrice);
+        }
+
+        if ($maxPrice !== null && $maxPrice < 1000000) {
+            $builder->where('tbl_m_event.harga <=', $maxPrice);
+        }
+
+        return $builder->paginate($perPage, 'events', $page);
+    }
+
+    /**
+     * Get events by category with optional pagination and filters
+     * 
+     * @param int $kategori Category ID filter (required)
+     * @param int $perPage Items per page (default 10)
+     * @param int $page Current page (default 1)
+     * @param string|null $keyword Search keyword (optional)
+     * @param string|null $status Event status filter (optional)
+     * @param bool $activeOnly Show only active events (default true)
+     * @param int|null $minPrice Minimum price filter (optional)
+     * @param int|null $maxPrice Maximum price filter (optional)
+     * @return array
+     */
+    public function getEventsByCategory($kategori, $perPage = 10, $page = 1, $keyword = null, $status = null, $activeOnly = true, $minPrice = null, $maxPrice = null)
+    {
+        $builder = $this->select('tbl_m_event.*, tbl_m_kategori.kategori as kategori')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+            ->where('tbl_m_event.status_hps', '0')
+            ->where('tbl_m_event.status', '1')
+            ->orderBy('tbl_m_event.tgl_masuk', 'ASC');
+
+        // Filter for active events only (default behavior)
+        if ($activeOnly) {
+            $builder->where('tbl_m_event.status', '1')
+                    ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
+        }
+
+        // Search functionality
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_m_event.event', $keyword)
+                ->orLike('tbl_m_event.kode', $keyword)
+                ->orLike('tbl_m_event.lokasi', $keyword)
+                ->orLike('tbl_m_event.keterangan', $keyword)
+                ->orLike('tbl_m_kategori.kategori', $keyword)
+                ->groupEnd();
+        }
+
+        // Category filter (required)
+        $builder->where('tbl_m_event.id_kategori', $kategori);
+
+        // Status filter
+        if ($status !== null && $status !== '') {
+            $builder->where('tbl_m_event.status', $status);
+        }
+
+        // Price filters
+        if ($minPrice !== null && $minPrice > 0) {
+            $builder->where('tbl_m_event.harga >=', $minPrice);
+        }
+
+        if ($maxPrice !== null && $maxPrice < 1000000) {
+            $builder->where('tbl_m_event.harga <=', $maxPrice);
+        }
+
+        return $builder->paginate($perPage, 'events', $page);
     }
 
     /**
@@ -159,6 +306,30 @@ class EventsModel extends Model
         return $this->where('id_user', $userId)
                     ->orderBy('created_at', 'DESC')
                     ->findAll();
+    }
+
+    /**
+     * Get event detail by slug format (e.g. /events/12-some-title)
+     * 
+     * @param string $slug
+     * @return object|null
+     */
+    public function getEventsDetail($slug)
+    {
+        $pecah = explode('-', $slug);
+        // Extract ID from slug (format: <id>-<slug_title>)
+        if (!empty($pecah[0])) {
+            $id = (int)$pecah[0];
+        } else {
+            return null;
+        }
+
+        // Query event by ID and status
+        return $this->select('tbl_m_event.*, tbl_m_kategori.kategori as kategori')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+                    ->where('tbl_m_event.id', $id)
+                    ->get()
+                    ->getRow();
     }
 
     /**

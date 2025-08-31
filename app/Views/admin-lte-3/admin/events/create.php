@@ -944,6 +944,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
 <script>
     tinymce.init({
         selector: '#keterangan',
+        output_format: 'html',
         plugins: 'lists link image table wordcount',
         toolbar: 'undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | table',
         menubar: false,

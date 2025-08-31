@@ -22,8 +22,7 @@ echo $this->section('content');
 
                 <div class="tp-caption welcome-Title welcome-Title2 color-fff tp-resizeme"
                     data-x="['left','left','center']" data-hoffset="0" data-y="center"
-                    data-voffset="['-50','-50','-50','-50,'-50','-50']"
-                    data-fontsize="['36','36','32','30','30','24']"
+                    data-voffset="['-50','-50','-50','-50,'-50','-50']" data-fontsize="['36','36','32','30','30','24']"
                     data-lineheight="['45','45','38','36','36','30']" data-width="none" data-height="none"
                     data-whitespace="nowrap" data-transform_idle="o:1;"
                     data-transform_in="x:-50px;opacity:0;s:1000;e:Power2.easeOut;"
@@ -157,8 +156,7 @@ echo $this->section('content');
 
                 <div class="tp-caption welcome-Title welcome-Title2 color-fff tp-resizeme"
                     data-x="['left','left','center']" data-hoffset="0" data-y="center"
-                    data-voffset="['-50','-50','-50','-50,'-50','-50']"
-                    data-fontsize="['36','36','32','30','30','24']"
+                    data-voffset="['-50','-50','-50','-50,'-50','-50']" data-fontsize="['36','36','32','30','30','24']"
                     data-lineheight="['45','45','38','36','36','30']" data-width="none" data-height="none"
                     data-whitespace="nowrap" data-transform_idle="o:1;"
                     data-transform_in="x:-50px;opacity:0;s:1000;e:Power2.easeOut;"
@@ -185,8 +183,7 @@ echo $this->section('content');
 
                 <div class="tp-caption welcome-Title welcome-Title2 color-fff tp-resizeme"
                     data-x="['left','left','center']" data-hoffset="0" data-y="center"
-                    data-voffset="['-50','-50','-50','-50,'-50','-50']"
-                    data-fontsize="['36','36','32','30','30','24']"
+                    data-voffset="['-50','-50','-50','-50,'-50','-50']" data-fontsize="['36','36','32','30','30','24']"
                     data-lineheight="['45','45','38','36','36','30']" data-width="none" data-height="none"
                     data-whitespace="nowrap" data-transform_idle="o:1;"
                     data-transform_in="x:-50px;opacity:0;s:1000;e:Power2.easeOut;"
@@ -216,33 +213,21 @@ echo $this->section('content');
             <div class="icon-holder"><img
                     src="<?= base_url('/public/assets/theme/da-theme/images/icons/service/14.png') ?>" alt=""></div>
             <h3 class="this-title"><a
-                    href="<?= base_url('/public/assets/theme/da-theme/single-service.html') ?>">Helping you to
-                    increase your site traffic</a></h3>
-            <p class="this-summary">Nullam lacinia dolor eu magna aliquet business placerat. Aliquam semper in the
-                area of SEO Development firm is very hard.</p>
-            <a href="<?= base_url('/public/assets/theme/da-theme/single-service2.html') ?>" class="more">read
-                more</a>
+                    href="<?= base_url('/public/assets/theme/da-theme/single-service.html') ?>">Manajemen Tiket Aman dan Efisien</a></h3>
+            <p class="this-summary">Platform manajemen tiket aman dan efisien untuk event, wisata, dan aktivitas lainnya.</p>
         </div>
         <div class="col-sm-4 featured-service-block style3">
             <div class="icon-holder"><img
                     src="<?= base_url('/public/assets/theme/da-theme/images/icons/service/15.png') ?>" alt=""></div>
             <h3 class="this-title"><a
-                    href="<?= base_url('/public/assets/theme/da-theme/single-service5.html') ?>">Fruitfull Results
-                    in provided Timeline guaranteed</a></h3>
-            <p class="this-summary">Nullam lacinia dolor eu magna aliquet business placerat. Aliquam semper in the
-                area of SEO Development firm is very hard.</p>
-            <a href="<?= base_url('/public/assets/theme/da-theme/single-service2.html') ?>" class="more">read
-                more</a>
+                    href="<?= base_url('/public/assets/theme/da-theme/single-service5.html') ?>">Sistem Tiket Fleksibel</a></h3>
+            <p class="this-summary">Nikmati sistem tiket canggih tanpa biaya yang memberatkan. Ideal untuk bisnis skala kecil hingga besar dengan fleksibilitas penuh sesuai kebutuhan Anda.</p>
         </div>
         <div class="col-sm-4 featured-service-block style3">
             <div class="icon-holder"><img
                     src="<?= base_url('/public/assets/theme/da-theme/images/icons/service/16.png') ?>" alt=""></div>
-            <h3 class="this-title"><a href="<?= base_url('/public/assets/theme/da-theme/single-service.html') ?>">On
-                    Page &amp; Off Page SEO in Competitive Price</a></h3>
-            <p class="this-summary">Nullam lacinia dolor eu magna aliquet business placerat. Aliquam semper in the
-                area of SEO Development firm is very hard.</p>
-            <a href="<?= base_url('/public/assets/theme/da-theme/single-service2.html') ?>" class="more">read
-                more</a>
+            <h3 class="this-title"><a href="<?= base_url('/public/assets/theme/da-theme/single-service.html') ?>">Hasil Nyata dan Efisien</a></h3>
+            <p class="this-summary">Dapatkan laporan penjualan dan data pengunjung secara instan. Bantu Anda mengambil keputusan yang tepat untuk mengelola event dan bisnis wisata lebih efektif.</p>
         </div>
     </div>
 </section>
@@ -253,206 +238,62 @@ echo $this->section('content');
         <div class="row">
             <div class="col-md-12 shop-content">
                 <div class="row">
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="sale-new-tag">sale</div>
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
+                    <?php if (isset($events) && is_array($events)): ?>
+                        <?php foreach ($events as $event): ?>
+                            <div class="col-sm-3 product">
+                                <div class="img-holder row">
+                                    <?php
+                                        if (!empty($event->foto)):
+                                            $foto = base_url('/public/file/events/'.$event->id.'/'.$event->foto);
+                                        else:
+                                            $foto = base_url('/public/assets/theme/da-theme/images/Shop/2.jpg');
+                                        endif;
+                                    ?>
+                                    <img src="<?= $foto ?>" width="263" height="299" alt=""
+                                        class="product-img">
+                                    <?php if ($event->status == 1): ?>
+                                        <div class="sale-new-tag">Tersedia</div>
+                                    <?php endif; ?>
+                                    <div class="hover-box">
+                                        <div class="btn-holder">
+                                            <div class="row m0"><a href="<?= base_url('events/'.$event->id.'-'.generateSlug($event->event)) ?>" class="btn btn-outline blue">Detail</a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                                <a href="<?= base_url('events/'.$event->id.'-'.generateSlug($event->event)) ?>">
+                                    <h4 class="pro-title"><?= $event->event ?></h4>
+                                </a>
+                                <p class="pro-about">
+                                    <?= shortDescription($event->keterangan, 40) ?>
+                                </p>
+                                <table class="table table-sm mb-2">
+                                    <tr>
+                                        <th><small>Kategori</small></th>
+                                        <td style="width:5px; text-align:center;"><small>:</small></td>
+                                        <td><small><?= isset($event->kategori) ? esc($event->kategori) : '-' ?></small></td>
+                                    </tr>
+                                    <tr>
+                                        <th><small>Kapasitas</small></th>
+                                        <td style="width:5px; text-align:center;"><small>:</small></td>
+                                        <td><small><?= isset($event->jml) ? format_angka($event->jml) : '-' ?></small></td>
+                                    </tr>
+                                    <tr>
+                                        <th><small>Lokasi</small></th>
+                                        <td style="width:5px; text-align:center;"><small>:</small></td>
+                                        <td><small><?= isset($event->lokasi) ? esc($event->lokasi) : '-' ?></small></td>
+                                    </tr>
+                                </table>
+                                <button class="btn btn-secondary btn-sm mt-2" onclick="window.location.href='<?= base_url('events/'.$event->id.'-'.generateSlug($event->event)) ?>'">Selanjutnya</button>
                             </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Flying Ninja T-Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Black Color Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Flying Ninja T-Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Flying Ninja T-Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Black Color Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Flying Ninja T-Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Flying Ninja T-Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
-                    <div class="col-sm-3 product">
-                        <div class="img-holder row">
-                            <img src="<?= base_url('/public/assets/theme/da-theme/images/Shop/2.jpg') ?>" alt="" class="product-img">
-                            <div class="hover-box">
-                                <div class="btn-holder">
-                                    <div class="row m0"><a href="#" class="btn btn-outline blue">Add to Cart</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <a href="single-product.html">
-                            <h4 class="pro-title">Black Color Shirt</h4>
-                        </a>
-                        <p class="pro-about">Curabitur hendrerit fringilla ed enim act elit accumsan hendrerit leo.
-                        </p>
-                        <div class="row m0 proRating">
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star starred"></i>
-                            <i class="fa fa-star"></i>
-                        </div>
-                        <h3 class="price"><del>Rp. 1.200.000</del>Rp. 975.000</h3>
-                    </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
-                <ul class="pagination">
-                    <li class="active"><a href="#">1</a></li>
-                    <li><a href="#">2</a></li>
-                    <li><a href="#">3</a></li>
-                    <li><a href="#">4</a></li>
-                </ul>
+                <div class="text-center mt-4">
+                    <a href="<?= base_url('events') ?>" class="btn btn-primary btn-lg">
+                        Lihat Semua
+                    </a>
+                </div>
             </div>
         </div>
     </div>

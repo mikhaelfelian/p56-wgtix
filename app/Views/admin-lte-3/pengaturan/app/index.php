@@ -3,7 +3,7 @@
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
-        <?= form_open_multipart('pengaturan/app/update', ['csrf_id' => 'pengaturan_form']) ?>
+        <?= form_open_multipart('pengaturan/update', ['id' => 'pengaturan_form']) ?>
         <div class="card rounded-0">
             <div class="card-header">
                 <h3 class="card-title">Form Pengaturan Aplikasi</h3>
@@ -92,7 +92,7 @@
                         <label class="custom-file-label" for="logo_header">Pilih file...</label>
                     </div>
                     <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 2MB</small>
-                    <?php if ($Pengaturan->logo_header): ?>
+                    <?php if (!empty($Pengaturan->logo_header)): ?>
                         <div class="mt-2">
                             <img src="<?= base_url($Pengaturan->logo_header) ?>" alt="Logo Header" class="img-fluid" style="max-height: 100px">
                         </div>
@@ -111,7 +111,7 @@
                         <label class="custom-file-label" for="favicon">Pilih file...</label>
                     </div>
                     <small class="text-muted">Format: ICO, PNG. Maksimal 1MB</small>
-                    <?php if ($Pengaturan->favicon): ?>
+                    <?php if (!empty($Pengaturan->favicon)): ?>
                         <div class="mt-2">
                             <img src="<?= base_url($Pengaturan->favicon) ?>" alt="Favicon" class="img-fluid" style="max-height: 32px">
                         </div>

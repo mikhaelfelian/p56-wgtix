@@ -66,9 +66,10 @@ abstract class BaseController extends Controller
 
     public function __construct()
     {
-        $this->theDate = new Time();
-        $this->theTime = Time::now('Asia/Jakarta');
-        $this->theme = new \App\Models\PengaturanThemeModel();
+        $this->theDate  = new Time();
+        $this->theTime  = Time::now('Asia/Jakarta');
+        $this->theme    = new \App\Models\PengaturanThemeModel();
+        $this->uri      = service('uri');
     }
 
     /**

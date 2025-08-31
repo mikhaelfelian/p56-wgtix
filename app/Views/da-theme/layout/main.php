@@ -14,7 +14,6 @@ if (!isset($Pengaturan)) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <!-- Required meta tags always come first -->
     <meta charset="utf-8">
@@ -31,6 +30,8 @@ if (!isset($Pengaturan)) {
     <!--Bootstrap-->
     <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/bootstrap.min.css') ?>">
     <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/bootstrap-theme.min.css') ?>">
+    <!--jQuery UI-->
+    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/vendors/jquery-ui/jquery-ui.min.css') ?>">
     <!--Font Awesome-->
     <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/font-awesome.min.css') ?>">
     <!--Owl Carousel-->
@@ -79,6 +80,7 @@ if (!isset($Pengaturan)) {
 
     <!--Theme Scripts-->
     <script src="<?= base_url('/public/assets/theme/da-theme/js/jquery-2.1.4.min.js') ?>"></script>
+    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/jquery-ui/jquery-ui.min.js') ?>"></script>
     <script src="<?= base_url('/public/assets/theme/da-theme/js/bootstrap.min.js') ?>"></script>
 
     <!--Magnific Popup-->

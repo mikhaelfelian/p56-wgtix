@@ -169,7 +169,7 @@
                         </small>
                     </div>
                     <div class="col-md-6">
-                        <?= $pager->getLinks() ?>
+                        <?= $pager->links() ?>
                     </div>
                 </div>
                 <?php endif ?>

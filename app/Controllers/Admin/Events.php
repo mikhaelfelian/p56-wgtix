@@ -40,10 +40,10 @@ class Events extends BaseController
     {
         $page = $this->request->getGet('page') ?? 1;
         $keyword = $this->request->getGet('keyword') ?? '';
-        $perPage = 10; // Items per page
+        $perPage = $this->pengaturan->pagination_limit; // Items per page
         
         // Get events with pagination and search
-        $events = $this->eventsModel->getEventsWithPagination($page, $perPage, $keyword);
+        $events = $this->eventsModel->getEventsWithFilters($perPage, $keyword, $page);
         $total = $this->eventsModel->getTotalEvents($keyword);
         
         // Create pager
@@ -133,6 +133,8 @@ class Events extends BaseController
         }else{
             $foto = $this->request->getPost('foto_lama');
         }
+        $keterangan = (string) ($this->request->getPost('keterangan') ?? '');
+        $keterangan = preg_replace('/<\?xml[^>]*\?>|<!--\s*\?xml[\s\S]*?\?-->/i', '', $keterangan);
 
         $data = [
             'id_user'         => $id_user,

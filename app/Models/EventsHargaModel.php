@@ -95,7 +95,7 @@ class EventsHargaModel extends Model
     public function getPricingWithEvent($eventId)
     {
         return $this->select('tbl_m_event_harga.*, 
-                             tbl_m_event.event as event_name,
+                             tbl_m_event.event,
                              tbl_m_event.tgl_masuk,
                              tbl_m_event.lokasi')
                     ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'left')
@@ -225,7 +225,7 @@ class EventsHargaModel extends Model
                         ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'left')
                         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
                         ->where('tbl_m_event_harga.status', '1')
-                        ->where('tbl_m_event.status', 1);
+                        ->where('tbl_m_event.status', '1');
         
         if (!empty($keyword)) {
             $builder->groupStart()

@@ -12,7 +12,7 @@
 <header class="top-bar row style2">
     <div class="container">
         <div class="welcome-message">
-            <?= !empty($Pengaturan->deskripsi) ? esc($Pengaturan->deskripsi) : 'Selamat datang di ' . esc($Pengaturan->judul_app ?? $Pengaturan->judul) ?>
+            <?= !empty($Pengaturan->judul) ? esc($Pengaturan->judul) : 'Selamat datang di ' . esc($Pengaturan->judul) ?>
         </div>
         <ul class="nav top-nav">
             <?php if (!empty($Pengaturan->url)): ?>

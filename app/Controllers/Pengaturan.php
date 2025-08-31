@@ -116,7 +116,7 @@ class Pengaturan extends BaseController
         ];
 
         // Process logo header upload
-        if ($logo_header->isValid() && !$logo_header->hasMoved()) {
+        if ($logo_header && $logo_header->isValid() && !$logo_header->hasMoved()) {
             $newName = $logo_header->getRandomName();
             $logo_header->move(FCPATH . 'public/assets/img', $newName);
             $data['logo_header'] = 'public/assets/img/' . $newName;
@@ -128,7 +128,7 @@ class Pengaturan extends BaseController
         }
 
         // Process favicon upload
-        if ($favicon->isValid() && !$favicon->hasMoved()) {
+        if ($favicon && $favicon->isValid() && !$favicon->hasMoved()) {
             $newName = $favicon->getRandomName();
             $favicon->move(FCPATH . 'public/assets/img', $newName);
             $data['favicon'] = 'public/assets/img/' . $newName;

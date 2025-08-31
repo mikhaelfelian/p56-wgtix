@@ -37,157 +37,59 @@ class EventPricing extends BaseController
         $perPage = 10; // Set per page limit
 
         $builder = $this->eventsHargaModel->db->table('tbl_m_event_harga')
-                                          ->select('tbl_m_event_harga.id,
-                                                   tbl_m_event_harga.id_event,
-                                                   tbl_m_event_harga.harga,
-                                                   tbl_m_event_harga.status,
-                                                   tbl_m_event_harga.keterangan,
-                                                   tbl_m_event.event,
-                                                   tbl_m_event.tgl_masuk,
-                                                   tbl_m_event.tgl_keluar,
-                                                   tbl_m_event.lokasi,
-                                                   tbl_m_event.jml')
-                                          ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'inner')
-                                          ->where('tbl_m_event_harga.status !=', -1)
-                                          ->where('tbl_m_event.status !=', -1)
-                                          ->where('tbl_m_event.status_hps !=', '1');
+            ->select('tbl_m_event_harga.id,
+                      tbl_m_event_harga.id_event,
+                      tbl_m_event_harga.harga,
+                      tbl_m_event_harga.status,
+                      tbl_m_event_harga.keterangan,
+                      tbl_m_event.event,
+                      tbl_m_event.tgl_masuk,
+                      tbl_m_event.tgl_keluar,
+                      tbl_m_event.lokasi,
+                      tbl_m_event.jml')
+            ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'inner')
+            ->where('tbl_m_event_harga.status !=', -1)
+            ->where('tbl_m_event.status !=', -1)
+            ->where('tbl_m_event.status_hps !=', '1');
 
-        // First, let's try a simple query to see if we have any data at all
-        $simpleCount = $this->eventsHargaModel->countAllResults();
-        log_message('debug', 'EventPricing: Simple count (all records): ' . $simpleCount);
-        
-        // Test the join query directly
-        $testQuery = $this->eventsHargaModel->db->table('tbl_m_event_harga')
-                                               ->select('tbl_m_event_harga.id, tbl_m_event.event')
-                                               ->join('tbl_m_event', 'tbl_m_event.id = tbl_m_event_harga.id_event', 'inner')
-                                               ->limit(1)
-                                               ->get()
-                                               ->getResult();
-        log_message('debug', 'EventPricing: Test join query result: ' . json_encode($testQuery));
-        
-        // Test simple queries to see if tables are accessible
-        $simpleHarga = $this->eventsHargaModel->db->table('tbl_m_event_harga')->select('*')->limit(1)->get()->getResult();
-        $simpleEvent = $this->eventsHargaModel->db->table('tbl_m_event')->select('*')->limit(1)->get()->getResult();
-        log_message('debug', 'EventPricing: Simple harga query: ' . json_encode($simpleHarga));
-        log_message('debug', 'EventPricing: Simple event query: ' . json_encode($simpleEvent));
-        
-        // Check if tables exist and have data
-        $hargaTableExists = $this->eventsHargaModel->db->tableExists('tbl_m_event_harga');
-        $eventTableExists = $this->eventsHargaModel->db->tableExists('tbl_m_event');
-        log_message('debug', 'EventPricing: tbl_m_event_harga exists: ' . ($hargaTableExists ? 'YES' : 'NO'));
-        log_message('debug', 'EventPricing: tbl_m_event exists: ' . ($eventTableExists ? 'YES' : 'NO'));
-        
-        // List all tables to see what's available
-        $allTables = $this->eventsHargaModel->db->listTables();
-        log_message('debug', 'EventPricing: All tables: ' . implode(', ', $allTables));
-        
-        // Check database connection
-        $dbName = $this->eventsHargaModel->db->getDatabase();
-        log_message('debug', 'EventPricing: Database name: ' . $dbName);
-        
-        if ($hargaTableExists) {
-            $hargaCount = $this->eventsHargaModel->db->table('tbl_m_event_harga')->countAllResults();
-            log_message('debug', 'EventPricing: tbl_m_event_harga count: ' . $hargaCount);
-        }
-        
-        if ($eventTableExists) {
-            $eventCount = $this->eventsHargaModel->db->table('tbl_m_event')->countAllResults();
-            log_message('debug', 'EventPricing: tbl_m_event count: ' . $eventCount);
-            
-            // Check if there are any matching IDs between the tables
-            if ($hargaTableExists) {
-                $hargaIds = $this->eventsHargaModel->db->table('tbl_m_event_harga')
-                                                      ->select('id_event')
-                                                      ->get()
-                                                      ->getResult();
-                $eventIds = $this->eventsHargaModel->db->table('tbl_m_event')
-                                                      ->select('id')
-                                                      ->get()
-                                                      ->getResult();
-                
-                $hargaIdArray = array_column($hargaIds, 'id_event');
-                $eventIdArray = array_column($eventIds, 'id');
-                
-                $matchingIds = array_intersect($hargaIdArray, $eventIdArray);
-                log_message('debug', 'EventPricing: Matching IDs count: ' . count($matchingIds));
-                log_message('debug', 'EventPricing: Harga IDs: ' . implode(', ', $hargaIdArray));
-                log_message('debug', 'EventPricing: Event IDs: ' . implode(', ', $eventIdArray));
-                
-                // Test individual table queries
-                if (!empty($hargaIds)) {
-                    $sampleHarga = $this->eventsHargaModel->db->table('tbl_m_event_harga')
-                                                             ->select('*')
-                                                             ->limit(1)
-                                                             ->get()
-                                                             ->getResult();
-                    log_message('debug', 'EventPricing: Sample harga data: ' . json_encode($sampleHarga[0]));
-                }
-                
-                if (!empty($eventIds)) {
-                    $sampleEvent = $this->eventsHargaModel->db->table('tbl_m_event')
-                                                             ->select('*')
-                                                             ->limit(1)
-                                                             ->get()
-                                                             ->getResult();
-                    log_message('debug', 'EventPricing: Sample event data: ' . json_encode($sampleEvent[0]));
-                }
-            }
-        }
-        
         if (!empty($keyword)) {
             $builder->groupStart()
-                       ->like('tbl_m_event.event', $keyword)
-                   ->groupEnd();
+                ->like('tbl_m_event.event', $keyword)
+                ->groupEnd();
         }
 
-        // Debug: Check if we have data
         $totalCount = $builder->countAllResults(false);
-        log_message('debug', 'EventPricing: Total records found: ' . $totalCount);
-        
+
         // If join failed, get total count from pricing table only
         if ($totalCount == 0) {
             $totalCount = $this->eventsHargaModel->db->table('tbl_m_event_harga')
-                                                     ->where('status !=', -1)
-                                                     ->countAllResults();
-            log_message('debug', 'EventPricing: Total count from pricing table only: ' . $totalCount);
+                ->where('status !=', -1)
+                ->countAllResults();
         }
-        
-        // Debug: Log the SQL query
-        log_message('debug', 'EventPricing: SQL Query: ' . $builder->getCompiledSelect());
-        
-        // Get paginated results
+
         $offset = ($currentPage - 1) * $perPage;
         $pricing = $builder->limit($perPage, $offset)->get()->getResult();
-        
-        // Debug: Log the results
-        log_message('debug', 'EventPricing: Results count: ' . count($pricing));
-        if (!empty($pricing)) {
-            log_message('debug', 'EventPricing: First result: ' . json_encode($pricing[0]));
-            log_message('debug', 'EventPricing: First result object properties: ' . print_r($pricing[0], true));
-        }
-        
+
         // If join failed, try alternative approach
         if (empty($pricing) || !isset($pricing[0]->event)) {
-            log_message('debug', 'EventPricing: Join failed, trying alternative approach');
-            
             // Get pricing data first
             $pricingData = $this->eventsHargaModel->db->table('tbl_m_event_harga')
-                                                     ->select('*')
-                                                     ->where('status !=', -1)
-                                                     ->limit($perPage, $offset)
-                                                     ->get()
-                                                     ->getResult();
-            
+                ->select('*')
+                ->where('status !=', -1)
+                ->limit($perPage, $offset)
+                ->get()
+                ->getResult();
+
             // Then get event data for each pricing
             foreach ($pricingData as $pricingItem) {
                 $eventData = $this->eventsHargaModel->db->table('tbl_m_event')
-                                                       ->select('event, tgl_masuk, tgl_keluar, lokasi, jml')
-                                                       ->where('id', $pricingItem->id_event)
-                                                       ->where('status !=', -1)
-                                                       ->where('status_hps !=', '1')
-                                                       ->get()
-                                                       ->getResult();
-                
+                    ->select('event, tgl_masuk, tgl_keluar, lokasi, jml')
+                    ->where('id', $pricingItem->id_event)
+                    ->where('status !=', -1)
+                    ->where('status_hps !=', '1')
+                    ->get()
+                    ->getResult();
+
                 if (!empty($eventData)) {
                     $pricingItem->event = $eventData[0]->event;
                     $pricingItem->tgl_masuk = $eventData[0]->tgl_masuk;
@@ -202,16 +104,15 @@ class EventPricing extends BaseController
                     $pricingItem->jml = null;
                 }
             }
-            
+
             $pricing = $pricingData;
-            log_message('debug', 'EventPricing: Alternative approach results count: ' . count($pricing));
         }
-        
+
         // Create pager manually
         $pager = \Config\Services::pager();
         $pager->setPath('admin/event-pricing');
         $pager->makeLinks($currentPage, $perPage, $totalCount);
-        
+
         // Add pager properties for view compatibility
         $pager->currentPage = $currentPage;
         $pager->perPage = $perPage;
@@ -225,6 +126,7 @@ class EventPricing extends BaseController
             'keyword' => $keyword,
             'currentPage' => $currentPage,
             'perPage' => $perPage,
+            'user' => $this->ionAuth->user()->row(),
             'statistics' => $this->eventsHargaModel->getPricingStatistics()
         ];
 

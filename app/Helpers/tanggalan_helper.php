@@ -40,8 +40,17 @@ if (!function_exists('tgl_indo5')) {
             1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
             'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
         );
-        $split = explode('-', date('Y-m-d', strtotime($date)));
-        return $split[2] . ' ' . $bulan[(int)$split[1]] . ' ' . $split[0];
+        $timestamp = strtotime($date);
+        $split = explode('-', date('Y-m-d', $timestamp));
+        $result = $split[2] . ' ' . $bulan[(int)$split[1]] . ' ' . $split[0];
+
+        // Check if time part exists and is not 00:00:00
+        $time = date('H:i', $timestamp);
+        if ($time !== '00:00') {
+            $result .= ' - ' . date('H:i', $timestamp);
+        }
+
+        return $result;
     }
 }
 

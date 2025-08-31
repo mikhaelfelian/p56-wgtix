@@ -40,4 +40,45 @@ class EventsGaleriModel extends Model
     ];
     protected $validationMessages = [];
     protected $skipValidation     = false;
+
+    /**
+     * Get gallery images for a specific event
+     * @param int $eventId
+     * @return array
+     */
+    public function getGalleryByEvent($eventId)
+    {
+        return $this->where('id_event', $eventId)
+                    ->where('status', 1)
+                    ->orderBy('is_cover', 'DESC')
+                    ->orderBy('created_at', 'ASC')
+                    ->findAll();
+    }
+
+    /**
+     * Get active gallery images for frontend display
+     * @param int $eventId
+     * @return array
+     */
+    public function getActiveGalleryByEvent($eventId)
+    {
+        return $this->where('id_event', $eventId)
+                    ->where('status', 1)
+                    ->orderBy('is_cover', 'DESC')
+                    ->orderBy('created_at', 'ASC')
+                    ->findAll();
+    }
+
+    /**
+     * Get cover image for event
+     * @param int $eventId
+     * @return array|null
+     */
+    public function getCoverImage($eventId)
+    {
+        return $this->where('id_event', $eventId)
+                    ->where('is_cover', 1)
+                    ->where('status', 1)
+                    ->first();
+    }
 }
