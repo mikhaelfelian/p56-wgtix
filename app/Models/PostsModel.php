@@ -38,4 +38,114 @@ class PostsModel extends Model
         'slug'  => 'required|is_unique[tbl_posts.slug,id,{id}]',
         'status'=> 'in_list[draft,scheduled,published,archived]'
     ];
+
+    /**
+     * Get posts with filters, pagination, and search
+     */
+    public function getPostsWithFilters($perPage, $keyword = '', $page = 1, $kategori = '', $status = null, $activeOnly = true)
+    {
+        $builder = $this->builder();
+        
+        // Apply filters
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                    ->like('judul', $keyword)
+                    ->orLike('excerpt', $keyword)
+                    ->orLike('konten', $keyword)
+                    ->groupEnd();
+        }
+        
+        if (!empty($kategori)) {
+            $builder->where('id_category', $kategori);
+        }
+        
+        if ($status !== null) {
+            $builder->where('status', $status);
+        }
+        
+        if ($activeOnly) {
+            $builder->where('status', 'published');
+        }
+        
+        // Order by created date
+        $builder->orderBy('created_at', 'DESC');
+        
+        // Apply pagination
+        return $this->paginate($perPage, 'default', $page);
+    }
+
+    /**
+     * Get total posts count with filters
+     */
+    public function getTotalPosts($keyword = '', $kategori = '')
+    {
+        $builder = $this->builder();
+        
+        // Apply filters
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                    ->like('judul', $keyword)
+                    ->orLike('excerpt', $keyword)
+                    ->orLike('konten', $keyword)
+                    ->groupEnd();
+        }
+        
+        if (!empty($kategori)) {
+            $builder->where('id_category', $kategori);
+        }
+        
+        return $builder->countAllResults();
+    }
+
+    /**
+     * Get posts by category
+     */
+    public function getPostsByCategory($categoryId, $perPage = 10, $page = 1, $keyword = '', $status = null)
+    {
+        $builder = $this->builder();
+        
+        $builder->where('id_category', $categoryId);
+        
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                    ->like('judul', $keyword)
+                    ->orLike('excerpt', $keyword)
+                    ->orLike('konten', $keyword)
+                    ->groupEnd();
+        }
+        
+        if ($status !== null) {
+            $builder->where('status', $status);
+        }
+        
+        $builder->orderBy('created_at', 'DESC');
+        
+        return $this->paginate($perPage, 'default', $page);
+    }
+
+    /**
+     * Get published posts for frontend
+     */
+    public function getPublishedPosts($perPage = 10, $page = 1, $keyword = '', $categoryId = null)
+    {
+        $builder = $this->builder();
+        
+        $builder->where('status', 'published');
+        
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                    ->like('judul', $keyword)
+                    ->orLike('excerpt', $keyword)
+                    ->orLike('konten', $keyword)
+                    ->groupEnd();
+        }
+        
+        if ($categoryId !== null) {
+            $builder->where('id_category', $categoryId);
+        }
+        
+        $builder->orderBy('published_at', 'DESC');
+        
+        return $this->paginate($perPage, 'default', $page);
+    }
 }

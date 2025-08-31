@@ -23,11 +23,16 @@ $routes->group('events', ['namespace' => 'App\Controllers'], function($routes) {
 
 
 // Auth routes
-$routes->get('auth/login', 'Auth::login');
-$routes->post('auth/cek_login', 'Auth::cek_login');
-$routes->get('auth/logout', 'Auth::logout');
-$routes->get('auth/forgot-password', 'Auth::forgot_password');
-$routes->post('auth/forgot-password', 'Auth::forgot_password');
+// Public Auth routes (for user login, not admin)
+$routes->group('auth', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('login', 'Auth::login_user');
+    $routes->post('cek_login', 'Auth::cek_login_user');
+    $routes->get('logout', 'Auth::logout');
+    $routes->get('forgot-password', 'Auth::forgot_password');
+    $routes->post('forgot-password', 'Auth::forgot_password');
+    $routes->get('register', 'Auth::register');
+    $routes->post('register_new', 'Auth::register_new');
+});
 
 // Auth routes admin
 $routes->group('admin', ['namespace' => 'App\Controllers'], function ($routes) {
@@ -194,6 +199,49 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('update/(:num)', 'StockRacepack::update/$1');
         $routes->get('delete/(:num)', 'StockRacepack::delete/$1');
         $routes->get('low-stock', 'StockRacepack::lowStock');
+    });
+
+    // Admin Berita routes
+    $routes->group('berita', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
+        $routes->get('/', 'Berita::index');
+        $routes->get('create', 'Berita::create');
+        $routes->post('store', 'Berita::store');
+        $routes->get('edit/(:num)', 'Berita::edit/$1');
+        $routes->post('update/(:num)', 'Berita::update/$1');
+        $routes->get('delete/(:num)', 'Berita::delete/$1');
+        $routes->get('gallery/(:num)', 'Berita::gallery/$1');
+        $routes->post('upload-gallery/(:num)', 'Berita::uploadGallery/$1');
+        $routes->get('delete-gallery-image/(:num)', 'Berita::deleteGalleryImage/$1');
+        $routes->get('set-primary-image/(:num)', 'Berita::setPrimaryImage/$1');
+        $routes->post('update-image-order', 'Berita::updateImageOrder');
+        $routes->get('search', 'Berita::search');
+        $routes->get('get-posts-ajax', 'Berita::getPostsAjax');
+    });
+
+    // Admin Berita Category routes
+    $routes->group('berita-category', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
+        $routes->get('/', 'BeritaCategory::index');
+        $routes->get('create', 'BeritaCategory::create');
+        $routes->post('store', 'BeritaCategory::store');
+        $routes->get('edit/(:num)', 'BeritaCategory::edit/$1');
+        $routes->post('update/(:num)', 'BeritaCategory::update/$1');
+        $routes->get('delete/(:num)', 'BeritaCategory::delete/$1');
+        $routes->get('toggle-status/(:num)', 'BeritaCategory::toggleStatus/$1');
+        $routes->post('update-order', 'BeritaCategory::updateOrder');
+    });
+
+    // Admin Berita Gallery routes
+    $routes->group('berita-gallery', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
+        $routes->get('/', 'BeritaGallery::index');
+        $routes->get('upload', 'BeritaGallery::upload');
+        $routes->post('store', 'BeritaGallery::store');
+        $routes->get('edit/(:num)', 'BeritaGallery::edit/$1');
+        $routes->post('update/(:num)', 'BeritaGallery::update/$1');
+        $routes->get('delete/(:num)', 'BeritaGallery::delete/$1');
+        $routes->post('bulk-delete', 'BeritaGallery::bulkDelete');
+        $routes->get('set-primary-image/(:num)', 'BeritaGallery::setPrimaryImage/$1');
+        $routes->post('update-image-order', 'BeritaGallery::updateImageOrder');
+        $routes->get('get-images-by-post/(:num)', 'BeritaGallery::getImagesByPost/$1');
     });
 });
 

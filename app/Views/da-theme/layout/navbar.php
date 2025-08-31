@@ -24,7 +24,7 @@
             </a>
         </div>
         <div class="collapse navbar-collapse" id="main_nav">
-            <a href="<?= base_url('auth/login') ?>" class="btn btn-outline blue pull-right hidden-xs hidden-sm">Sign In</a>
+            <a href="<?= base_url('auth/login') ?>" class="btn btn-outline blue pull-right hidden-xs hidden-sm">Masuk</a>
             <ul class="nav navbar-nav navbar-right">
                 <li class="<?= current_url() == base_url() ? 'active' : '' ?>">
                     <a href="<?= base_url() ?>">Home</a>

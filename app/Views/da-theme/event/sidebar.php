@@ -10,9 +10,9 @@
 
 <!--Widget-->
 <div class="widget widget-product-search row">
-    <h4 class="widget-title">Search</h4>
+    <h4 class="widget-title">Pencarian</h4>
     <form action="#" class="input-group product-search">
-        <input type="text" class="form-control" placeholder="Type your keyword">
+        <input type="text" class="form-control" placeholder="Ketik kata kunci Anda">
         <span class="input-group-addon"><button type="submit"><i
                     class="fa fa-search"></i></button></span>
     </form>
@@ -21,11 +21,11 @@
 <!--Widget-->
 <div class="row widget widget-price-filter">
     <div class="price-filter-inner row m0">
-        <h4 class="widget-title">Filter by Price</h4>
+        <h4 class="widget-title">Filter Harga</h4>
         <form action="#" class="price-range">
             <div class="slider-range"></div>
             <div class="row price-bar">
-                Price: <input type="text" class="range-amount" readonly><br>
+                Harga: <input type="text" class="range-amount" readonly><br>
             </div>
             <input type="submit" value="Filter" class="btn btn-default btn-sm">
         </form>
@@ -53,75 +53,75 @@
 </div>
 
 <script>
-// Wait for jQuery to be available
+// Tunggu sampai jQuery tersedia
 function initSidebarFunctionality() {
-    // Check if jQuery is available
+    // Cek apakah jQuery tersedia
     if (typeof $ === 'undefined' || typeof jQuery === 'undefined') {
-        console.log('jQuery not loaded, retrying...');
+        console.log('jQuery belum dimuat, mencoba lagi...');
         setTimeout(initSidebarFunctionality, 100);
         return;
     }
 
     $(document).ready(function() {
-        // Search functionality
+        // Fungsi pencarian
         $('.product-search').on('submit', function(e) {
             e.preventDefault();
             var keyword = $(this).find('input[type="text"]').val();
             if (keyword && keyword.trim()) {
                 window.location.href = '<?= base_url('events') ?>?keyword=' + encodeURIComponent(keyword.trim());
             } else {
-                // If empty, go to events page without keyword
+                // Jika kosong, ke halaman events tanpa kata kunci
                 window.location.href = '<?= base_url('events') ?>';
             }
         });
 
-        // Search button click functionality
+        // Fungsi klik tombol cari
         $('.product-search button').on('click', function(e) {
             e.preventDefault();
             $(this).closest('form').submit();
         });
 
-        // Price range functionality - Let theme handle the slider, we just customize the display
+        // Fungsi filter harga - biarkan theme handle slider, kita hanya custom tampilan
         var minPrice = 0;
         var maxPrice = 1000000;
         
-        // Wait for theme's slider to initialize, then customize it
+        // Tunggu slider theme terinisialisasi, lalu custom tampilannya
         setTimeout(function() {
             if ($('.slider-range').length > 0 && $('.slider-range').hasClass('ui-slider')) {
-                // Theme slider is initialized, customize the display
-                $('.range-amount').val('Rp 0 - Rp 1,000,000');
+                // Slider theme sudah siap, custom tampilan
+                $('.range-amount').val('Rp 0 - Rp 1.000.000');
                 
-                // Remove all existing slide events from theme
+                // Hapus semua event slide dari theme
                 $('.slider-range').off('slide');
                 
-                // Add our custom slide event with Indonesian formatting
+                // Tambahkan event slide custom dengan format Indonesia
                 $('.slider-range').on('slide', function(event, ui) {
                     minPrice = ui.values[0];
                     maxPrice = ui.values[1];
                     $('.range-amount').val('Rp ' + minPrice.toLocaleString('id-ID') + ' - Rp ' + maxPrice.toLocaleString('id-ID'));
                 });
                 
-                // Also handle slidechange event
+                // Juga handle event slidechange
                 $('.slider-range').on('slidechange', function(event, ui) {
                     minPrice = ui.values[0];
                     maxPrice = ui.values[1];
                     $('.range-amount').val('Rp ' + minPrice.toLocaleString('id-ID') + ' - Rp ' + maxPrice.toLocaleString('id-ID'));
                 });
                 
-                // Set initial values and trigger formatting
+                // Set nilai awal dan trigger format
                 $('.slider-range').slider('values', [0, 1000000]);
-                $('.range-amount').val('Rp 0 - Rp 1,000,000');
+                $('.range-amount').val('Rp 0 - Rp 1.000.000');
                 
-                // Force update the display after a short delay
+                // Paksa update tampilan setelah delay singkat
                 setTimeout(function() {
-                    $('.range-amount').val('Rp 0 - Rp 1,000,000');
+                    $('.range-amount').val('Rp 0 - Rp 1.000.000');
                 }, 100);
                 
-                // Monitor for changes and ensure Rp formatting persists
+                // Pantau perubahan dan pastikan format Rp tetap
                 var formatChecker = setInterval(function() {
                     var currentVal = $('.range-amount').val();
                     if (currentVal && currentVal.indexOf('$') !== -1) {
-                        // Replace $ with Rp and fix formatting
+                        // Ganti $ dengan Rp dan perbaiki format
                         var cleanVal = currentVal.replace(/\$/g, '').replace(/[^0-9\-\s]/g, '');
                         var parts = cleanVal.split('-');
                         if (parts.length === 2) {
@@ -130,33 +130,33 @@ function initSidebarFunctionality() {
                             $('.range-amount').val('Rp ' + min.toLocaleString('id-ID') + ' - Rp ' + max.toLocaleString('id-ID'));
                         }
                     } else if (!currentVal || currentVal.indexOf('Rp') === -1) {
-                        $('.range-amount').val('Rp 0 - Rp 1,000,000');
+                        $('.range-amount').val('Rp 0 - Rp 1.000.000');
                     }
                 }, 200);
                 
-                // Stop monitoring after 5 seconds
+                // Hentikan pemantauan setelah 5 detik
                 setTimeout(function() {
                     clearInterval(formatChecker);
                 }, 5000);
             } else {
-                // Fallback: Replace with simple input fields if slider fails
+                // Fallback: Ganti dengan input sederhana jika slider gagal
                 $('.slider-range').html(
                     '<div style="margin-bottom: 10px;">' +
-                    '<label style="font-size: 12px; color: #666;">Min Price:</label>' +
+                    '<label style="font-size: 12px; color: #666;">Harga Minimum:</label>' +
                     '<input type="number" id="minPriceInput" value="0" min="0" max="1000000" class="form-control" style="width: 100%; margin-top: 5px; font-size: 12px;">' +
                     '</div>' +
                     '<div style="margin-bottom: 10px;">' +
-                    '<label style="font-size: 12px; color: #666;">Max Price:</label>' +
+                    '<label style="font-size: 12px; color: #666;">Harga Maksimum:</label>' +
                     '<input type="number" id="maxPriceInput" value="1000000" min="0" max="1000000" class="form-control" style="width: 100%; margin-top: 5px; font-size: 12px;">' +
                     '</div>'
                 );
                 
-                // Update price display when inputs change
+                // Update tampilan harga saat input berubah
                 $('#minPriceInput, #maxPriceInput').on('input', function() {
                     minPrice = parseInt($('#minPriceInput').val()) || 0;
                     maxPrice = parseInt($('#maxPriceInput').val()) || 1000000;
                     
-                    // Ensure min is not greater than max
+                    // Pastikan min tidak lebih besar dari max
                     if (minPrice > maxPrice) {
                         if ($(this).attr('id') === 'minPriceInput') {
                             $(this).val(maxPrice);
@@ -170,50 +170,50 @@ function initSidebarFunctionality() {
                     $('.range-amount').val('Rp ' + minPrice.toLocaleString('id-ID') + ' - Rp ' + maxPrice.toLocaleString('id-ID'));
                 });
                 
-                $('.range-amount').val('Rp 0 - Rp 1,000,000');
+                $('.range-amount').val('Rp 0 - Rp 1.000.000');
             }
-        }, 500); // Wait 500ms for theme to initialize
+        }, 500); // Tunggu 500ms agar theme siap
 
-        // Price filter functionality
+        // Fungsi filter harga
         $('.price-range').on('submit', function(e) {
             e.preventDefault();
             
-            // Get values from slider or input fields
+            // Ambil nilai dari slider atau input
             if ($('.slider-range').hasClass('ui-slider')) {
-                // Get from jQuery UI slider
+                // Dari jQuery UI slider
                 var values = $('.slider-range').slider('values');
                 minPrice = values[0];
                 maxPrice = values[1];
             } else {
-                // Get from input fields
+                // Dari input manual
                 minPrice = parseInt($('#minPriceInput').val()) || 0;
                 maxPrice = parseInt($('#maxPriceInput').val()) || 1000000;
             }
             
-            // Validate price range
+            // Validasi rentang harga
             if (minPrice > maxPrice) {
-                alert('Minimum price cannot be greater than maximum price!');
+                alert('Harga minimum tidak boleh lebih besar dari harga maksimum!');
                 return;
             }
             
-            // Redirect with price filters
+            // Redirect dengan filter harga
             window.location.href = '<?= base_url('events') ?>?min_price=' + minPrice + '&max_price=' + maxPrice;
         });
 
-        // Category links functionality
+        // Fungsi link kategori
         $('.nav-widget a').on('click', function(e) {
             var href = $(this).attr('href');
             if (href && href !== '#' && href !== 'javascript:void(0)') {
-                // Let the default behavior happen for valid links
+                // Biarkan default untuk link valid
                 return true;
             } else {
                 e.preventDefault();
             }
         });
 
-        // Add functionality to search on Enter key
+        // Fungsi pencarian dengan tombol Enter
         $('.product-search input[type="text"]').on('keypress', function(e) {
-            if (e.which === 13) { // Enter key
+            if (e.which === 13) { // Tombol Enter
                 e.preventDefault();
                 $(this).closest('form').submit();
             }
@@ -221,7 +221,7 @@ function initSidebarFunctionality() {
     });
 }
 
-// Initialize when DOM is ready or jQuery is available
+// Inisialisasi saat DOM siap atau jQuery tersedia
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSidebarFunctionality);
 } else {

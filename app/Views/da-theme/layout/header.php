@@ -17,22 +17,22 @@
         <ul class="nav top-nav">
             <?php if (!empty($Pengaturan->url)): ?>
                 <li class="email">
-                    <a href="mailto:<?= esc($Pengaturan->url) ?>">
-                        <i class="fa fa-envelope-o"></i><?= esc($Pengaturan->url) ?>
+                    <a href="mailto:noreply@<?= getenv('app.domain') ?>">
+                        <i class="fa fa-envelope-o"></i>noreply@<?= getenv('app.domain') ?>
                     </a>
                 </li>
             <?php endif; ?>
             <?php if (!empty($Pengaturan->alamat)): ?>
                 <li>
                     <a href="https://maps.google.com/?q=<?= urlencode($Pengaturan->alamat) ?>" target="_blank">
-                        <i class="fa fa-map-marker"></i><?= esc($Pengaturan->alamat) ?>
+                        <i class="fa fa-map-marker"></i> <?= esc($Pengaturan->alamat) ?>
                     </a>
                 </li>
             <?php endif; ?>
             <?php if (!empty($Pengaturan->kota)): ?>
                 <li>
                     <a href="#">
-                        <i class="fa fa-building"></i><?= ucwords($Pengaturan->kota) ?>
+                        <i class="fa fa-building"></i> <?= ucwords($Pengaturan->kota) ?>
                     </a>
                 </li>
             <?php endif; ?>

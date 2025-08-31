@@ -177,7 +177,7 @@ class EventsModel extends Model
 
         return $builder->paginate($perPage, 'events', $page);
     }
-    
+
     /**
      * Get events with search, pagination, and category filter
      * 
@@ -193,8 +193,9 @@ class EventsModel extends Model
      */
     public function getEventsWithFilters($perPage = 10, $keyword = null, $page = 1, $kategori = null, $status = null, $activeOnly = true, $minPrice = null, $maxPrice = null)
     {
-        $builder = $this->select('tbl_m_event.*, tbl_m_kategori.kategori as kategori')
+        $builder = $this->select('tbl_m_event.*, tbl_m_kategori.kategori as kategori, tbl_m_event_harga.harga')
             ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_event.id_kategori', 'left')
+            ->join('tbl_m_event_harga', 'tbl_m_event_harga.id_event = tbl_m_event.id', 'left')
             ->where('tbl_m_event.status_hps', '0')
             ->orderBy('tbl_m_event.tgl_masuk', 'ASC');
 
@@ -227,11 +228,11 @@ class EventsModel extends Model
 
         // Price filters
         if ($minPrice !== null && $minPrice > 0) {
-            $builder->where('tbl_m_event.harga >=', $minPrice);
+            $builder->where('tbl_m_event_harga.harga >=', $minPrice);
         }
 
         if ($maxPrice !== null && $maxPrice < 1000000) {
-            $builder->where('tbl_m_event.harga <=', $maxPrice);
+            $builder->where('tbl_m_event_harga.harga <=', $maxPrice);
         }
 
         return $builder->paginate($perPage, 'events', $page);
