@@ -31,7 +31,7 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('forgot-password', 'Auth::forgot_password');
     $routes->post('forgot-password', 'Auth::forgot_password');
     $routes->get('register', 'Auth::register');
-    $routes->post('register_new', 'Auth::register_new');
+    $routes->post('register_store', 'Auth::register_store');
 });
 
 // Auth routes admin

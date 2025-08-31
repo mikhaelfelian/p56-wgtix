@@ -53,6 +53,9 @@ if (!isset($Pengaturan)) {
     <!--Theme Styles-->
     <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/style.css') ?>">
     <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/theme.css') ?>">
+    
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
 
     <!--[if lt IE 9]>
         <script src="<?= base_url('/public/assets/theme/da-theme/js/html5shiv.min.js') ?>"></script>
@@ -109,6 +112,41 @@ if (!isset($Pengaturan)) {
 
     <!--Theme Script-->
     <script src="<?= base_url('/public/assets/theme/da-theme/js/theme.js') ?>"></script>
+
+    <!-- Toastr JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+    
+    <!-- Toastr Configuration and Helper Integration -->
+    <script>
+        // Toastr configuration
+        toastr.options = {
+            'closeButton': true,
+            'debug': false,
+            'newestOnTop': true,
+            'progressBar': true,
+            'positionClass': 'toast-top-right',
+            'preventDuplicates': false,
+            'onclick': null,
+            'showDuration': '300',
+            'hideDuration': '1000',
+            'timeOut': '5000',
+            'extendedTimeOut': '1000',
+            'showEasing': 'swing',
+            'hideEasing': 'linear',
+            'showMethod': 'fadeIn',
+            'hideMethod': 'fadeOut'
+        };
+        
+        // Check for flash messages and display them
+        <?php if (session()->getFlashdata('toastr')): ?>
+            <?php $toastr = session()->getFlashdata('toastr'); ?>
+            <?php if (is_array($toastr)): ?>
+                toastr.<?= $toastr['type'] ?? 'info' ?>('<?= addslashes($toastr['message'] ?? '') ?>');
+            <?php else: ?>
+                toastr.info('<?= addslashes($toastr) ?>');
+            <?php endif; ?>
+        <?php endif; ?>
+    </script>
 
     <!-- Custom JavaScript Section -->
     <?= $this->renderSection('js') ?>

@@ -14,7 +14,7 @@ echo $this->section('content');
 <section class="row checkout-content">
     <div class="container">
         <div class="row">
-            <?= form_open('auth/register_user', ['class' => 'col-md-9 checkout-form', 'role' => 'form', 'id' => 'registerForm']) ?>
+            <?= form_open('auth/register_store', ['class' => 'col-md-9 checkout-form', 'role' => 'form', 'id' => 'registerForm']) ?>
             <h3 class="checkout-heading">Informasi Pendaftaran</h3>
             <div class="row">
                 <div class="col-sm-6 form-group">
@@ -71,10 +71,13 @@ echo $this->section('content');
                         'required' => true
                     ]) ?>
                     <div class="password-strength-meter" style="margin-top: 5px;">
-                        <div class="strength-bar" style="height: 5px; background: #eee; border-radius: 3px; overflow: hidden;">
-                            <div class="strength-fill" style="height: 100%; width: 0%; transition: all 0.3s ease;"></div>
+                        <div class="strength-bar"
+                            style="height: 5px; background: #eee; border-radius: 3px; overflow: hidden;">
+                            <div class="strength-fill" style="height: 100%; width: 0%; transition: all 0.3s ease;">
+                            </div>
                         </div>
-                        <small class="strength-text" style="color: #666; font-size: 12px;">Kekuatan kata sandi: <span class="strength-label">Masukkan kata sandi</span></small>
+                        <small class="strength-text" style="color: #666; font-size: 12px;">Kekuatan kata sandi: <span
+                                class="strength-label">Masukkan kata sandi</span></small>
                     </div>
                 </div>
                 <div class="col-sm-6 form-group">
@@ -133,6 +136,8 @@ echo $this->section('content');
             </div>
             <div class="row">
                 <div class="col-sm-6 form-group">
+                </div>
+                <div class="col-sm-6 form-group">
                     <div class="checkbox" style="margin-top: 30px;">
                         <?= form_checkbox([
                             'name' => 'terms',
@@ -147,15 +152,11 @@ echo $this->section('content');
             </div>
 
             <!-- reCAPTCHA v3 Widget -->
-            <div class="form-group">
-                <div class="g-recaptcha" data-sitekey="<?= env('recaptcha.sitekey') ?>" data-size="invisible"></div>
-            </div>
-
             <?= form_submit([
-                'name' => 'submit',
+                'name' => 'btn_submit',
+                'id' => 'submitBtn',
                 'value' => 'Buat Akun',
                 'class' => 'btn btn-default place-order',
-                'id' => 'submitBtn'
             ]) ?>
             <?= form_close() ?>
         </div>
@@ -172,11 +173,11 @@ echo $this->endSection();
 <script>
     $(document).ready(function () {
         // Password strength validation
-        $('#password').on('input', function() {
+        $('#password').on('input', function () {
             const password = $(this).val();
             const strength = checkPasswordStrength(password);
             updatePasswordStrengthMeter(strength);
-            
+
             // Also check password confirmation when password changes
             const confirmPassword = $('#password_confirm').val();
             if (confirmPassword !== '') {
@@ -185,20 +186,24 @@ echo $this->endSection();
         });
 
         // Password confirmation match validation
-        $('#password_confirm').on('input', function() {
+        $('#password_confirm').on('input', function () {
             const password = $('#password').val();
             const confirmPassword = $(this).val();
             updatePasswordMatchIndicator(password, confirmPassword);
         });
 
         // Form submission with reCAPTCHA v3
+        let isSubmitting = false;
+
         $('#registerForm').on('submit', function (e) {
-            e.preventDefault(); // Prevent default submission
+            e.preventDefault();
+
+            if (isSubmitting) return;     // GUARD: cegah double-submit
 
             // Check password strength before proceeding
             const password = $('#password').val();
             const passwordStrength = checkPasswordStrength(password);
-            
+
             if (passwordStrength.score < 3) {
                 alert('Kata sandi terlalu lemah. Silakan gunakan kata sandi yang lebih kuat dengan minimal 8 karakter, termasuk huruf besar, huruf kecil, angka, dan karakter khusus.');
                 $('#password').focus();
@@ -221,34 +226,41 @@ echo $this->endSection();
                 return;
             }
 
+            const formEl = document.getElementById('registerForm');
             const submitBtn = $('#submitBtn');
             const originalText = submitBtn.val();
 
-            // Show loading state
-            submitBtn.val('Memverifikasi...');
-            submitBtn.prop('disabled', true);
+            submitBtn.val('Memverifikasi...').prop('disabled', true);
+            isSubmitting = true;
 
-            // Execute reCAPTCHA v3 and then submit form
             executeRecaptcha()
                 .then(function (token) {
-                    // reCAPTCHA successful, submit the form
+                    // sisipkan token sudah dilakukan di executeRecaptcha()
                     submitBtn.val('Memproses...');
-                    $('#registerForm')[0].submit();
-                })
-                .catch(function (error) {
-                    // reCAPTCHA failed
-                    console.error('reCAPTCHA error:', error);
-                    alert('Verifikasi keamanan gagal. Silakan coba lagi.');
+                    console.log('Submitting form...');
 
-                    // Reset button state
-                    submitBtn.val(originalText);
-                    submitBtn.prop('disabled', false);
+                    // Lepas handler agar tidak intercept lagi,
+                    // lalu submit native "kebal-bentrok"
+                    $('#registerForm').off('submit');
+                    if (formEl.requestSubmit) {
+                        formEl.requestSubmit();
+                    } else {
+                        HTMLFormElement.prototype.submit.call(formEl);
+                    }
+                })
+                .catch(function (err) {
+                    console.error('reCAPTCHA error:', err);
+                    alert('Verifikasi keamanan gagal. Silakan coba lagi.');
+                    isSubmitting = false;
+                    submitBtn.val(originalText).prop('disabled', false);
                 });
 
-            // Re-enable after 10 seconds as fallback
+            // fallback guard reset opsional
             setTimeout(function () {
-                submitBtn.val(originalText);
-                submitBtn.prop('disabled', false);
+                if (isSubmitting) {
+                    isSubmitting = false;
+                    submitBtn.val(originalText).prop('disabled', false);
+                }
             }, 10000);
         });
 
@@ -332,9 +344,9 @@ echo $this->endSection();
                 'width': strength.width,
                 'background-color': strength.color
             });
-            
+
             $('.strength-label').text(strength.strength);
-            
+
             if (strength.score < 3) {
                 $('.strength-text').css('color', '#ff4444');
             } else {
@@ -367,10 +379,40 @@ echo $this->endSection();
     // Execute reCAPTCHA v3 and get score
     function executeRecaptcha() {
         return new Promise((resolve, reject) => {
-            if (typeof grecaptcha !== 'undefined') {
+            console.log('Executing reCAPTCHA...');
+
+            // Check if reCAPTCHA is loaded
+            if (typeof grecaptcha === 'undefined') {
+                console.error('reCAPTCHA not loaded');
+                reject('reCAPTCHA not loaded');
+                return;
+            }
+
+            // Check if site key is available
+            const siteKey = '<?= env('recaptcha.sitekey') ?>';
+            if (!siteKey || siteKey === '') {
+                console.error('reCAPTCHA site key not configured');
+                reject('reCAPTCHA site key not configured');
+                return;
+            }
+
+            console.log('reCAPTCHA site key:', siteKey);
+
+            try {
                 grecaptcha.ready(function () {
-                    grecaptcha.execute('<?= env('recaptcha.sitekey') ?>', { action: 'register' })
+                    console.log('reCAPTCHA ready, executing...');
+                    grecaptcha.execute(siteKey, { action: 'register' })
                         .then(function (token) {
+                            console.log('reCAPTCHA token received:', token ? 'YES' : 'NO');
+                            console.log('Token length:', token ? token.length : 0);
+
+                            // Validate token
+                            if (!token || token === '') {
+                                console.error('Empty token received');
+                                reject('Empty reCAPTCHA token');
+                                return;
+                            }
+
                             // Add the token to a hidden input field
                             if (!$('#g-recaptcha-response').length) {
                                 $('<input>').attr({
@@ -380,14 +422,17 @@ echo $this->endSection();
                                 }).appendTo('#registerForm');
                             }
                             $('#g-recaptcha-response').val(token);
+                            console.log('Token added to form, resolving...');
                             resolve(token);
                         })
                         .catch(function (error) {
+                            console.error('reCAPTCHA execution error:', error);
                             reject(error);
                         });
                 });
-            } else {
-                reject('reCAPTCHA not loaded');
+            } catch (error) {
+                console.error('Error in grecaptcha.ready:', error);
+                reject(error);
             }
         });
     }

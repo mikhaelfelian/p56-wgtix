@@ -145,7 +145,7 @@ class IonAuth extends \CodeIgniter\Config\BaseConfig
 	 */
 	public $siteTitle                = 'Kopmensa POS';       // Site Title, example.com
 	public $adminEmail               = 'admin@kopmensa.com'; // Admin Email, admin@example.com
-	public $defaultGroup             = 'members';           // Default group, use name
+	public $defaultGroup             = 'supervisor';           // Default group, use name
 	public $adminGroup               = 'admin';             // Default administrators group, use name
 	public $identity                 = 'username';          /* You can use any unique column in your table as identity column.
 																	IMPORTANT: If you are changing it from the default (email),

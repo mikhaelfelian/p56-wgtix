@@ -325,7 +325,7 @@ echo $this->endSection();
                 .then(function(token) {
                     // reCAPTCHA successful, submit the form
                     loginBtn.val('Logging in...');
-                    document.getElementById('loginForm').submit();
+                    $('#loginForm')[0].submit();
                 })
                 .catch(function(error) {
                     // reCAPTCHA failed

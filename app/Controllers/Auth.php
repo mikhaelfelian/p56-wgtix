@@ -190,6 +190,22 @@ class Auth extends BaseController
             ]);
         }
 
+        // Ambil user dari database untuk cek tipe
+        $db = \Config\Database::connect();
+        $user = $db->table('tbl_ion_users')
+            ->where('username', $username)
+            ->get()
+            ->getRow();
+
+        if (!$user || $user->tipe != '2') {
+            // Jika bukan tipe user, logout dan redirect
+            $this->ionAuth->logout();
+            return redirect()->to('/auth/login')->with('toastr', [
+                'type' => 'error',
+                'message' => 'Akun Anda tidak memiliki akses ke halaman ini'
+            ]);
+        }
+
         // Redirect ke halaman utama user setelah login
         return redirect()->to('/')->with('toastr', [
             'type' => 'success',
@@ -220,13 +236,27 @@ class Auth extends BaseController
      */
     public function register_store()
     {
-        $validasi = \Config\Services::validation();
+        // Get form data
+        $first_name        = $this->request->getVar('first_name');
+        $last_name         = $this->request->getVar('last_name');
+        $username          = $this->request->getVar('username');
+        $email             = $this->request->getVar('email');
+        $password          = $this->request->getVar('password');
+        $password_confirm  = $this->request->getVar('password_confirm');
+        $company           = $this->request->getVar('company');
+        $phone             = $this->request->getVar('phone');
+        $profile           = $this->request->getVar('profile');
+        $tipe              = $this->request->getVar('tipe');
+        $terms             = $this->request->getVar('terms');
+        $recaptchaResponse = $this->request->getVar('g-recaptcha-response');
 
-        $username = $this->request->getVar('user');
-        $email = $this->request->getVar('email');
-        $password = $this->request->getVar('pass');
-        $password_confirm = $this->request->getVar('pass_confirm');
-        $recaptchaResponse = $this->request->getVar('recaptcha_response');
+        // Check terms agreement
+        if (!$terms) {
+            return redirect()->back()->withInput()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Anda harus menyetujui Syarat & Ketentuan'
+            ]);
+        }
 
         // reCAPTCHA check
         $recaptcha = $this->recaptcha->setExpectedHostname($_SERVER['SERVER_NAME'])
@@ -236,13 +266,28 @@ class Auth extends BaseController
         if (!$recaptcha->isSuccess()) {
             return redirect()->back()->withInput()->with('toastr', [
                 'type' => 'error',
-                'message' => 'reCAPTCHA verification failed. Please try again.'
+                'message' => 'Verifikasi keamanan gagal. Silakan coba lagi.'
             ]);
         }
 
+        // Validation rules
         $rules = [
-            'user' => [
-                'rules' => 'required|min_length[3]|is_unique[users.username]',
+            'first_name' => [
+                'rules' => 'required|min_length[2]',
+                'errors' => [
+                    'required' => 'Nama depan wajib diisi',
+                    'min_length' => 'Nama depan minimal 2 karakter'
+                ]
+            ],
+            'last_name' => [
+                'rules' => 'required|min_length[2]',
+                'errors' => [
+                    'required' => 'Nama belakang wajib diisi',
+                    'min_length' => 'Nama belakang minimal 2 karakter'
+                ]
+            ],
+            'username' => [
+                'rules' => 'required|min_length[3]|is_unique[tbl_ion_users.username]',
                 'errors' => [
                     'required' => 'Username wajib diisi',
                     'min_length' => 'Username minimal 3 karakter',
@@ -250,31 +295,39 @@ class Auth extends BaseController
                 ]
             ],
             'email' => [
-                'rules' => 'required|valid_email|is_unique[users.email]',
+                'rules' => 'required|valid_email|is_unique[tbl_ion_users.email]',
                 'errors' => [
                     'required' => 'Email wajib diisi',
                     'valid_email' => 'Format email tidak valid',
                     'is_unique' => 'Email sudah digunakan'
                 ]
             ],
-            'pass' => [
-                'rules' => 'required|min_length[6]',
+            'password' => [
+                'rules' => 'required|min_length[8]',
                 'errors' => [
                     'required' => 'Password wajib diisi',
-                    'min_length' => 'Password minimal 6 karakter'
+                    'min_length' => 'Password minimal 8 karakter'
                 ]
             ],
-            'pass_confirm' => [
-                'rules' => 'required|matches[pass]',
+            'password_confirm' => [
+                'rules' => 'required|matches[password]',
                 'errors' => [
                     'required' => 'Konfirmasi password wajib diisi',
                     'matches' => 'Konfirmasi password tidak cocok'
                 ]
+            ],
+            'phone' => [
+                'rules' => 'required|regex_match[/^08[0-9]{8,11}$/]',
+                'errors' => [
+                    'required' => 'Nomor telepon wajib diisi',
+                    'regex_match' => 'Format nomor telepon tidak valid (contoh: 085741220427)'
+                ]
             ]
         ];
 
+        // Run validation
         if (!$this->validate($rules)) {
-            $errors = $validasi->getErrors();
+            $errors = $this->validator->getErrors();
             $error_message = implode('<br>', $errors);
             return redirect()->back()->withInput()->with('toastr', [
                 'type' => 'error',
@@ -282,26 +335,143 @@ class Auth extends BaseController
             ]);
         }
 
+        // Prepare additional data (excluding username and email as they're passed separately)
         $additional_data = [
-            'username' => $username,
-            'email' => $email,
-            'tipe' => '2',
+            'first_name' => $first_name,
+            'last_name'  => $last_name,
+            'company'    => $company,
+            'phone'      => $phone,
+            'profile'    => $profile,
+            'tipe'       => $tipe,
         ];
 
-        $register = $this->ionAuth->register($username, $password, $email, $additional_data);
-
-        if (!$register) {
+        // Check if IonAuth is properly loaded
+        if (!isset($this->ionAuth) || !$this->ionAuth) {
             return redirect()->back()->withInput()->with('toastr', [
                 'type' => 'error',
-                'message' => 'Registrasi gagal. Silakan coba lagi.'
+                'message' => 'Sistem autentikasi tidak tersedia. Silakan coba lagi.'
             ]);
         }
+        
+        // Check IonAuth configuration
+        try {
+            $ionAuthConfig = config('IonAuth');
+        } catch (\Exception $e) {
+            // Do nothing, just continue
+        }
+        
+        // Test database connection
+        try {
+            $db = \Config\Database::connect();
+            $testQuery = $db->query('SELECT 1 as test');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('toastr', [
+                'type' => 'error',
+                'message' => 'Koneksi database gagal. Silakan coba lagi.'
+            ]);
+        }
+        
+        try {
+            // Try IonAuth first
+            $register = $this->ionAuth->register($username, $password, $email, $additional_data);
+            
+            if (!$register) {
+                // If IonAuth fails, try manual registration
+                $register = $this->manualRegister($username, $password, $email, $additional_data);
+                
+                if (!$register) {
+                    $error_message = 'Registrasi gagal. Silakan coba lagi.';
+                    return redirect()->back()->withInput()->with('toastr', [
+                        'type' => 'error',
+                        'message' => $error_message
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            // Try manual registration as fallback
+            try {
+                $register = $this->manualRegister($username, $password, $email, $additional_data);
+                
+                if (!$register) {
+                    return redirect()->back()->withInput()->with('toastr', [
+                        'type' => 'error',
+                        'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.'
+                    ]);
+                }
+            } catch (\Exception $e2) {
+                return redirect()->back()->withInput()->with('toastr', [
+                    'type' => 'error',
+                    'message' => 'Terjadi kesalahan sistem. Silakan coba lagi.'
+                ]);
+            }
+        }
+
+        // Get the user ID from the registration result
+        $userId = is_array($register) ? $register['id'] : $register;
+        
+        // User is automatically added to the default group (supervisor) by IonAuth
 
         // Redirect ke halaman login setelah registrasi berhasil
-        return redirect()->to('/auth/login_user')->with('toastr', [
+        return redirect()->to(base_url('/auth/login'))->with('toastr', [
             'type' => 'success',
             'message' => 'Registrasi berhasil! Silakan login.'
         ]);
+    }
+    
+    /**
+     * Manual registration method as fallback when IonAuth fails
+     */
+    private function manualRegister($username, $password, $email, $additionalData)
+    {
+        try {
+            $db = \Config\Database::connect();
+            
+            // Hash password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Get IP address
+            $ipAddress = \Config\Services::request()->getIPAddress();
+            
+            // Prepare user data
+            $userData = [
+                'username' => $username,
+                'password' => $hashedPassword,
+                'email' => $email,
+                'ip_address' => $ipAddress,
+                'created_on' => time(),
+                'active' => 1,
+                'first_name' => $additionalData['first_name'] ?? '',
+                'last_name' => $additionalData['last_name'] ?? '',
+                'company' => $additionalData['company'] ?? '',
+                'phone' => $additionalData['phone'] ?? '',
+                'profile' => $additionalData['profile'] ?? '',
+                'tipe' => $additionalData['tipe'] ?? '2',
+            ];
+            
+            // Insert user
+            $db->table('tbl_ion_users')->insert($userData);
+            $userId = $db->insertID();
+            
+            if (!$userId) {
+                log_message('error', 'Failed to get insert ID for manual registration');
+                return false;
+            }
+            
+            // Add user to supervisor group (group ID 4)
+            $groupData = [
+                'user_id' => $userId,
+                'group_id' => 5, // supervisor group
+            ];
+            
+            $db->table('tbl_ion_users_groups')->insert($groupData);
+            
+            log_message('info', 'Manual registration successful. User ID: ' . $userId);
+            return $userId;
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Manual registration failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function logout()
