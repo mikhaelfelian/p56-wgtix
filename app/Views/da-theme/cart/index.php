@@ -118,6 +118,9 @@ echo $this->endSection();
     $(document).ready(function () {
         // Initialize global CSRF hash
         window.csrf_hash = '<?= csrf_hash() ?>';
+        
+        // Global cart data storage
+        window.cartDataStore = {};
 
         loadCartItems();
         loadPaymentPlatforms();
@@ -152,7 +155,20 @@ echo $this->endSection();
                     var cartData = typeof item.cart_data === 'string' ? JSON.parse(item.cart_data) : item.cart_data;
                     var itemTotal = parseFloat(item.total_price);
 
-                    var row = '<tr class="alert fade in" role="alert" data-cart-id="' + item.id + '">';
+                    // Store cart data globally for use in participant modal
+                    window.cartDataStore[item.id] = {
+                        id: item.id,
+                        event_id: item.event_id || 0,
+                        price_id: item.price_id || 0,
+                        quantity: item.quantity,
+                        unit_price: cartData.harga || 0,
+                        total_price: item.total_price,
+                        event_title: cartData.event_title || '',
+                        price_description: cartData.price_description || '',
+                        cart_data: cartData
+                    };
+
+                    var row = '<tr class="alert fade in" role="alert" data-cart-id="' + item.id + '" data-event-id="' + (item.event_id || 0) + '" data-price-id="' + (item.price_id || 0) + '">';
                     row += '<td>';
                     row += '<div class="media">';
                     if (cartData.event_image) {
@@ -376,9 +392,26 @@ echo $this->endSection();
                     ticketLabel += ' (' + priceDescription + ')';
                 }
                 
+                // Get cart data from global store
+                var cartId = row.attr('data-cart-id');
+                var cartItem = window.cartDataStore[cartId] || {};
+                
+                var eventId = cartItem.event_id || 0;
+                var priceId = cartItem.price_id || 0;
+                var unitPrice = cartItem.unit_price || 0;
+                var totalPricePerItem = unitPrice; // Price per single item
+                
                 // Create participant inputs for each quantity
                 for (var i = 0; i < quantity; i++) {
-                    var html = '<div class="row participant-row" style="margin-bottom: 15px;">';
+                    var html = '<div class="row participant-row" style="margin-bottom: 15px;" ';
+                    html += 'data-event-id="' + eventId + '" ';
+                    html += 'data-price-id="' + priceId + '" ';
+                    html += 'data-unit-price="' + unitPrice + '" ';
+                    html += 'data-total-price="' + totalPricePerItem + '" '; // Price per single item
+                    html += 'data-quantity="1" '; // Each participant is 1 quantity
+                    html += 'data-event-title="' + (cartItem.event_title || '') + '" ';
+                    html += 'data-price-description="' + (cartItem.price_description || '') + '" ';
+                    html += '>';
                     html += '<div class="col-md-6">';
                     html += '<label><strong>Tiket:</strong> ' + ticketLabel + '</label>';
                     html += '</div>';
@@ -494,13 +527,28 @@ echo $this->endSection();
             var participants = [];
             $('.participant-name').each(function(index) {
                 var participantName = $(this).val().trim();
-                var label = $(this).closest('.participant-row').find('label').text();
+                var participantRow = $(this).closest('.participant-row');
+                var label = participantRow.find('label').text();
+                
+                // Get data from participant row
+                var eventId = participantRow.attr('data-event-id') || 0;
+                var priceId = participantRow.attr('data-price-id') || 0;
+                var unitPrice = parseFloat(participantRow.attr('data-unit-price')) || 0;
+                var totalPrice = parseFloat(participantRow.attr('data-total-price')) || 0;
+                var quantity = parseInt(participantRow.attr('data-quantity')) || 1;
                 
                 if (participantName) {
                     participants.push({
                         participant_name: participantName,
                         ticket_info: label.replace('Tiket: ', '').replace(/^<strong>Tiket:<\/strong>\s*/, ''),
-                        participant_number: index + 1
+                        participant_number: index + 1,
+                        event_id: eventId,
+                        price_id: priceId,
+                        quantity: quantity,
+                        unit_price: unitPrice,
+                        total_price: totalPrice,
+                        event_title: participantRow.attr('data-event-title') || label.replace('Tiket: ', '').replace(/^<strong>Tiket:<\/strong>\s*/, '').split(' (')[0],
+                        price_description: participantRow.attr('data-price-description') || (label.includes('(') ? label.split('(')[1].replace(')', '') : '')
                     });
                 }
             });

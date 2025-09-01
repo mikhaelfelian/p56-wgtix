@@ -48,6 +48,11 @@
                             <span class="cart-counter badge" style="position: absolute; top: -8px; right: -8px; background: #ff6b6b; color: white; border-radius: 50%; min-width: 18px; height: 18px; font-size: 11px; line-height: 18px; text-align: center; display: none;">0</span>
                         </a>
                     </li>
+                    <li class="<?= strpos(current_url(), 'my/order') !== false ? 'active' : '' ?>">
+                        <a href="<?= base_url('my/orders') ?>">
+                            <i class="fa fa-list"></i> My Orders
+                        </a>
+                    </li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                             <i class="fa fa-user"></i> <?= esc($user->username) ?> <span class="caret"></span>
@@ -60,6 +65,8 @@
                             </li>
                             <li role="separator" class="divider"></li>
                             <li><a href="<?= base_url('auth/profile') ?>"><i class="fa fa-user"></i> Profile</a></li>
+                            <li><a href="<?= base_url('my/orders') ?>"><i class="fa fa-list"></i> My Orders</a></li>
+                            <li><a href="<?= base_url('cart') ?>"><i class="fa fa-shopping-cart"></i> Cart</a></li>
                             <li><a href="<?= base_url('dashboard') ?>"><i class="fa fa-dashboard"></i> Dashboard</a></li>
                             <li role="separator" class="divider"></li>
                             <li><a href="<?= base_url('auth/logout') ?>"><i class="fa fa-sign-out"></i> Sign out</a></li>

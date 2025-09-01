@@ -1,10 +1,20 @@
 <?php
 
+/**
+ * Create tbl_trans_jual_plat Table Migration
+ * 
+ * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * Date: 2025-09-01
+ * Github: github.com/mikhaelfelian
+ * Description: Create table for storing transaction payment platform details
+ * This file represents the CreateTransJualPlatTable Migration.
+ */
+
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreateTblTransJualPlat extends Migration
+class CreateTransJualPlatTable extends Migration
 {
     public function up()
     {
@@ -19,38 +29,30 @@ class CreateTblTransJualPlat extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
-                'comment'    => 'FK ke tbl_trans_jual.id',
             ],
             'id_platform' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
-                'comment'    => 'FK ke tbl_m_platform.id',
+                'null'       => true,
             ],
             'no_nota' => [
                 'type'       => 'VARCHAR',
-                'constraint' => 50,
-                'null'       => false,
-                'comment'    => 'Snapshot nomor nota',
+                'constraint' => 255,
+                'null'       => true,
             ],
             'platform' => [
                 'type'       => 'VARCHAR',
-                'constraint' => 160,
+                'constraint' => 255,
                 'null'       => false,
-                'comment'    => 'Snapshot nama platform',
             ],
             'nominal' => [
                 'type'       => 'DECIMAL',
-                'constraint' => '32,2',
-                'null'       => false,
-                'default'    => '0.00',
-                'comment'    => 'Nominal pembayaran via platform',
+                'constraint' => '15,2',
+                'default'    => 0.00,
             ],
             'keterangan' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 160,
+                'type'       => 'TEXT',
                 'null'       => true,
             ],
             'created_at' => [
@@ -63,24 +65,18 @@ class CreateTblTransJualPlat extends Migration
             ],
         ]);
 
-        // Primary & indexes
         $this->forge->addKey('id', true);
         $this->forge->addKey('id_penjualan');
         $this->forge->addKey('id_platform');
-
-        // Foreign keys - commented out temporarily to avoid constraint errors
-        // $this->forge->addForeignKey('id_penjualan', 'tbl_trans_jual', 'id', 'CASCADE', 'CASCADE', 'fk_plat_header');
-        // $this->forge->addForeignKey('id_platform',  'tbl_m_platform', 'id', 'CASCADE', 'CASCADE', 'fk_plat_platform');
-
-        $this->forge->createTable('tbl_trans_jual_plat', true, [
-            'ENGINE'  => 'InnoDB',
-            'COMMENT' => 'Pembayaran platform untuk transaksi event',
-        ]);
+        
+        // Add foreign key constraint
+        $this->forge->addForeignKey('id_penjualan', 'tbl_trans_jual', 'id', 'CASCADE', 'CASCADE', 'FK_tbl_trans_jual_plat_penjualan');
+        
+        $this->forge->createTable('tbl_trans_jual_plat');
     }
 
     public function down()
     {
-        // No foreign keys to drop since they're commented out
-        $this->forge->dropTable('tbl_trans_jual_plat', true);
+        $this->forge->dropTable('tbl_trans_jual_plat');
     }
 }

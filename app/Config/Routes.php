@@ -48,6 +48,13 @@ $routes->group('cart', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('store', 'Cart::store'); // Process checkout
 });
 
+// Frontend Transaction routes (User Orders)
+$routes->group('my', ['namespace' => 'App\Controllers\Transaksi'], function($routes) {
+    $routes->get('orders/(:segment)', 'Sale::orders/$1');
+    $routes->get('orders', 'Sale::orders');
+    $routes->get('order/(:num)', 'Sale::detail/$1');
+});
+
 // Grouping admin page routes below.
 // Note: All admin routes are grouped for better organization and protected by 'authAdmin' filter.
 // Keterangan: Tambahkan route baru di dalam grup ini jika ada halaman admin tambahan.

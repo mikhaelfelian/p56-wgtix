@@ -4,11 +4,17 @@ namespace App\Controllers;
 
 use App\Models\CartModel;
 use App\Models\PlatformModel;
+use App\Models\TransJualModel;
+use App\Models\TransJualDetModel;
+use App\Models\TransJualPlatModel;
 
 class Cart extends BaseController
 {
     protected $cartModel;
     protected $platformModel;
+    protected $transJualModel;
+    protected $transJualDetModel;
+    protected $transJualPlatModel;
     protected $ionAuth;
 
     public function __construct()
@@ -16,6 +22,9 @@ class Cart extends BaseController
         parent::__construct();
         $this->cartModel = new CartModel();
         $this->platformModel = new PlatformModel();
+        $this->transJualModel = new TransJualModel();
+        $this->transJualDetModel = new TransJualDetModel();
+        $this->transJualPlatModel = new TransJualPlatModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -344,56 +353,111 @@ class Cart extends BaseController
      */
     public function store()
     {
-        // if (!$this->request->isPost()) {
-        //     return redirect()->back()->with('error', 'Invalid request method');
-        // }
-
-        // try {
-            // Get order data from form
-            $orderDataJson = $this->request->getPost('order_data');
-
-            pre(json_decode($orderDataJson, true));
+        // Get order data from form
+        $orderDataJson = $this->request->getPost('order_data');
+        
+        if (empty($orderDataJson)) {
+            die('No order data received');
+        }
+        
+        // Decode JSON data
+        $data = json_decode($orderDataJson, true);
+        
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            die('Invalid order data format');
+        }
+        
+        // Validate required fields
+        if (empty($data['no_nota']) || empty($data['cart_data']) || empty($data['subtotal'])) {
+            die('Missing required order information');
+        }
+        
+        try {
+            // Start database transaction
+            $this->db->transStart();
             
-        //     if (empty($orderDataJson)) {
-        //         return redirect()->back()->with('error', 'No order data received');
-        //     }
+            // 1. Save to tbl_trans_jual (header)
+            $userId    = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
+            $sessionId = $userId ? null : session_id();
             
-        //     // Decode JSON data
-        //     $data = json_decode($orderDataJson, true);
+            $headerData = [
+                'invoice_no'      => $data['no_nota'],
+                'user_id'         => $userId,
+                'session_id'      => $sessionId,
+                'invoice_date'    => date('Y-m-d H:i:s'),
+                'total_amount'    => $data['subtotal'],
+                'payment_status'  => 'pending',
+                'payment_method'  => 'multiple', // Since we can have multiple payment platforms
+                'notes'           => 'Order from cart checkout',
+                'status'          => 'active',
+                'created_at'      => date('Y-m-d H:i:s'),
+                'updated_at'      => date('Y-m-d H:i:s')
+            ];
             
-        //     if (json_last_error() !== JSON_ERROR_NONE) {
-        //         return redirect()->back()->with('error', 'Invalid order data format');
-        //     }
+            $headerId = $this->transJualModel->insert($headerData);
+            $lastId = $this->db->insertID();
             
-        //     // Show debug preview
-        //     echo '<pre>';
-        //     print_r($data);
-        //     echo '</pre>';
-        //     exit;
-
-        //     // Validate required fields
-        //     if (empty($data['no_nota']) || empty($data['cart_data']) || empty($data['subtotal'])) {
-        //         return redirect()->back()->with('error', 'Missing required order information');
-        //     }
-            
-        //     // Process the order
-        //     $result = $this->processOrder($data);
-            
-        //     if ($result['success']) {
-        //         // Clear cart after successful order
-        //         $userId = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
-        //         $sessionId = $userId ? null : session_id();
-        //         $this->cartModel->clearCart($userId, $sessionId);
+            // 2. Save to tbl_trans_jual_det (detail items)
+            foreach ($data['participant'] as $item) {
+                $detailData = [
+                    'id_penjualan'      => $lastId,
+                    'event_id'          => $item['event_id']         ?? 0,
+                    'price_id'          => $item['price_id']         ?? 0,
+                    'event_title'       => $item['event_title']      ?? '',
+                    'price_description' => $item['price_description']?? '',
+                    'quantity'          => $item['quantity']         ?? 1,
+                    'unit_price'        => $item['unit_price']       ?? 0,
+                    'total_price'       => $item['total_price']      ?? 0,
+                    'item_data'         => json_encode($item),
+                    'created_at'        => date('Y-m-d H:i:s'),
+                    'updated_at'        => date('Y-m-d H:i:s')
+                ];
                 
-        //         return redirect()->to('cart')->with('success', 'Order processed successfully! Invoice: ' . $data['no_nota']);
-        //     } else {
-        //         return redirect()->back()->with('error', $result['message']);
-        //     }
+                $this->transJualDetModel->insert($detailData);
+            }
             
-        // } catch (\Exception $e) {
-        //     log_message('error', 'Order processing error: ' . $e->getMessage());
-        //     return redirect()->back()->with('error', 'An error occurred while processing your order');
-        // }
+            // 3. Save to tbl_trans_jual_plat (payment platforms)
+            if (!empty($data['cart_payments'])) {
+                foreach ($data['cart_payments'] as $payment) {
+                    $platData = [
+                        'id_penjualan'  => $lastId,
+                        'id_platform'   => $payment['platform_id']    ?? 0,
+                        'no_nota'       => $data['no_nota'],
+                        'platform'      => $payment['platform']       ?? '',
+                        'nominal'       => $payment['amount']         ?? 0,
+                        'keterangan'    => $payment['note']           ?? '',
+                        'created_at'    => date('Y-m-d H:i:s'),
+                        'updated_at'    => date('Y-m-d H:i:s'),
+                    ];
+                    
+                    $this->transJualPlatModel->insert($platData);
+                }
+            }
+            
+            // Complete transaction
+            $this->db->transComplete();
+            
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Database transaction failed');
+            }
+            
+            // Clear cart after successful order
+            $this->cartModel->clearCart($userId, $sessionId);
+
+            // Redirect to orders page on success
+            return redirect()->to(base_url('my/orders'));
+            
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            
+            $errorData = [
+                'error' => $e->getMessage(),
+                'original_data' => $data,
+                'transaction_status' => 'FAILED'
+            ];
+            
+            pre($errorData);
+        }
     }
     
     /**

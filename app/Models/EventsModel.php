@@ -150,8 +150,8 @@ class EventsModel extends Model
 
         // Filter for active events only (default behavior)
         if ($activeOnly) {
-            $builder->where('tbl_m_event.status', '1')
-                   ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
+            // $builder->where('tbl_m_event.status', '1');
+                //    ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
         }
 
         // Search functionality
@@ -202,8 +202,8 @@ class EventsModel extends Model
 
         // Filter for active events only (default behavior)
         if ($activeOnly) {
-            $builder->where('tbl_m_event.status', '1')
-                    ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
+            $builder->where('tbl_m_event.status', '1');
+                    // ->where('tbl_m_event.tgl_masuk >=', date('Y-m-d'));
         }
 
         // Search functionality

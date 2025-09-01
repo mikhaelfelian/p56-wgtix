@@ -227,16 +227,18 @@ echo $this->section('content');
 </section>
 
 
-<?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
 <script>
-// Initialize Google Map
-function initEventMap() {
-    const eventLocation = {
+(function() {
+    // Google Map Section
+    <?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
+    // Expose initEventMap globally to fix "initEventMap is not a function" error
+    window.initEventMap = function() {
+        var eventLocation = {
         lat: parseFloat(<?= $event->latitude ?>),
         lng: parseFloat(<?= $event->longitude ?>)
     };
 
-    const map = new google.maps.Map(document.getElementById("eventMap"), {
+        var map = new google.maps.Map(document.getElementById("eventMap"), {
         zoom: 15,
         center: eventLocation,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -249,8 +251,7 @@ function initEventMap() {
         ]
     });
 
-    // Add marker
-    const marker = new google.maps.Marker({
+        var marker = new google.maps.Marker({
         position: eventLocation,
         map: map,
         title: "<?= esc($event->event ?? 'Event Location') ?>",
@@ -260,9 +261,7 @@ function initEventMap() {
         }
     });
 
-    // Add info window
-    const infoWindow = new google.maps.InfoWindow({
-        content: `
+        var infoWindowContent = `
             <div style="padding: 10px; max-width: 250px;">
                 <h6 style="margin: 0 0 5px 0; color: #333;">
                     <i class="fa fa-calendar" style="color: #007bff;"></i> 
@@ -284,40 +283,51 @@ function initEventMap() {
                     </p>
                 <?php endif; ?>
             </div>
-        `
+        `;
+
+        var infoWindow = new google.maps.InfoWindow({
+            content: infoWindowContent
     });
 
-    // Show info window on marker click
-    marker.addListener("click", () => {
+        marker.addListener("click", function() {
         infoWindow.open(map, marker);
     });
 
-    // Auto-open info window
     infoWindow.open(map, marker);
-}
+    };
 
-// Load Google Maps API
+    // Use best-practice async loading for Google Maps JS API
 function loadGoogleMaps() {
-    if (typeof google === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://maps.googleapis.com/maps/api/js?key=<?= getenv('GOOGLE_MAPS_API') ?>&callback=initEventMap';
+        // Only load if not already loaded
+        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+            // Remove any previous script with same src to avoid duplicates
+            var existingScript = document.querySelector('script[data-gmaps="event"]');
+            if (existingScript) existingScript.remove();
+
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=<?= getenv('GOOGLE_MAPS_API') ?>&callback=initEventMap&loading=async';
         script.async = true;
         script.defer = true;
+            script.setAttribute('data-gmaps', 'event');
         document.head.appendChild(script);
     } else {
-        initEventMap();
+            // If already loaded, just call the function
+            window.initEventMap();
     }
 }
+    <?php endif; ?>
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
+        // Google Map
+        <?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
     if (document.getElementById('eventMap')) {
         loadGoogleMaps();
     }
+        <?php endif; ?>
     
-    // Gallery Slider Initialization
+        // Gallery Slider
     <?php if (!empty($eventGallery) && is_array($eventGallery)): ?>
-    // Initialize main gallery slider
+        // Main gallery slider
     $('#eventGallerySlider').owlCarousel({
         items: 1,
         loop: true,
@@ -334,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initialize thumbnail slider
+        // Thumbnail slider
     $('#eventGalleryThumbs').owlCarousel({
         items: 6,
         loop: false,
@@ -349,12 +359,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Thumbnail click functionality
+        // Thumbnail click
     $('.thumb-item').on('click', function() {
         var slideIndex = $(this).data('slide');
         $('#eventGallerySlider').trigger('to.owl.carousel', [slideIndex, 300]);
-        
-        // Update active thumbnail
         $('.thumb-item').removeClass('active');
         $(this).addClass('active');
     });
@@ -366,129 +374,107 @@ document.addEventListener('DOMContentLoaded', function() {
         $('.thumb-item').eq(current).addClass('active');
     });
     <?php endif; ?>
-    
-    // Initialize global CSRF hash
-    window.csrf_hash = '<?= csrf_hash() ?>';
-    
-    // Cart functionality
-    $('.add-to-cart-btn').on('click', function() {
-        var btn = $(this);
-        var eventId = btn.data('event-id');
-        var priceId = btn.data('price-id');
-        var price = btn.data('price');
-        var description = btn.data('description');
-        var quantity = $('input[name="quantity_' + priceId + '"]').val() || 1;
-        
-        // Disable button and show loading
-        btn.prop('disabled', true);
-        btn.find('.btn-text').text('Adding...');
-        btn.find('i').removeClass('fa-shopping-cart').addClass('fa-spinner fa-spin');
-        
-        // Prepare CSRF data
-        var csrfData = {};
-        var csrfToken = '<?= csrf_token() ?>';
-        var csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
-        csrfData[csrfToken] = csrfHash;
-        
-        // AJAX request to add to cart
-        $.ajax({
-            url: '<?= base_url('cart/add') ?>',
-            type: 'POST',
-            dataType: 'json',
-            data: $.extend({
-                event_id: eventId,
-                price_id: priceId,
-                quantity: quantity,
-                price: price,
-                event_title: '<?= esc($event->event ?? 'Event') ?>',
-                event_image: '<?= $event->foto ?? '' ?>',
-                price_description: description,
-                event_date: '<?= $event->tgl_masuk ?? '' ?>',
-                event_location: '<?= $event->lokasi ?? 'TBA' ?>'
-            }, csrfData),
-            success: function(response) {
-                if (response.success) {
-                    // Show success message
-                    toastr.success(response.message);
-                    
-                    // Update cart counter in navbar
-                    updateCartCounter();
-                    
-                    // Update CSRF token for next request
-                    if (response.csrf_hash) {
-                        // Update any hidden CSRF input fields
-                        $('input[name="<?= csrf_token() ?>"]').val(response.csrf_hash);
-                        // Update the global CSRF hash variable
-                        window.csrf_hash = response.csrf_hash;
+
+        // CSRF hash
+        window.csrf_hash = '<?= csrf_hash() ?>';
+
+        // Add to cart
+        $('.add-to-cart-btn').on('click', function() {
+            var btn = $(this);
+            var eventId = btn.data('event-id');
+            var priceId = btn.data('price-id');
+            var price = btn.data('price');
+            var description = btn.data('description');
+            var quantity = $('input[name="quantity_' + priceId + '"]').val() || 1;
+
+            btn.prop('disabled', true);
+            btn.find('.btn-text').text('Adding...');
+            btn.find('i').removeClass('fa-shopping-cart').addClass('fa-spinner fa-spin');
+
+            var csrfData = {};
+            var csrfToken = '<?= csrf_token() ?>';
+            var csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
+            csrfData[csrfToken] = csrfHash;
+
+            $.ajax({
+                url: '<?= base_url('cart/add') ?>',
+                type: 'POST',
+                dataType: 'json',
+                data: $.extend({
+                    event_id: eventId,
+                    price_id: priceId,
+                    quantity: quantity,
+                    price: price,
+                    event_title: '<?= esc($event->event ?? 'Event') ?>',
+                    event_image: '<?= $event->foto ?? '' ?>',
+                    price_description: description,
+                    event_date: '<?= $event->tgl_masuk ?? '' ?>',
+                    event_location: '<?= $event->lokasi ?? 'TBA' ?>'
+                }, csrfData),
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                        updateCartCounter();
+                        if (response.csrf_hash) {
+                            $('input[name="<?= csrf_token() ?>"]').val(response.csrf_hash);
+                            window.csrf_hash = response.csrf_hash;
+                        }
+                        btn.find('.btn-text').text('Added!');
+                        btn.removeClass('btn-primary').addClass('btn-success');
+                        setTimeout(function() {
+                            btn.find('.btn-text').text('Beli');
+                            btn.removeClass('btn-success').addClass('btn-primary');
+                            btn.prop('disabled', false);
+                            btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
+                        }, 2000);
+                    } else {
+                        toastr.error(response.message || 'Failed to add item to cart');
+                        resetButton();
                     }
-                    
-                    // Reset button
-                    btn.find('.btn-text').text('Added!');
-                    btn.removeClass('btn-primary').addClass('btn-success');
-                    
-                    // Reset button after 2 seconds
-                    setTimeout(function() {
-                        btn.find('.btn-text').text('Beli');
-                        btn.removeClass('btn-success').addClass('btn-primary');
-                        btn.prop('disabled', false);
-                        btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
-                    }, 2000);
-                    
-                } else {
-                    toastr.error(response.message || 'Failed to add item to cart');
+                },
+                error: function(xhr) {
+                    var errorMsg = 'An error occurred while adding item to cart';
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.message) errorMsg = response.message;
+                        if (response.debug) console.log('Debug info:', response.debug);
+                    } catch(e) {
+                        console.log('Could not parse error response');
+                    }
+                    toastr.error(errorMsg);
                     resetButton();
                 }
-            },
-            error: function(xhr, status, error) {
-                console.log('AJAX Error:', xhr.responseText);
-                var errorMsg = 'An error occurred while adding item to cart';
-                
-                try {
-                    var response = JSON.parse(xhr.responseText);
-                    if (response.message) {
-                        errorMsg = response.message;
-                    }
-                    if (response.debug) {
-                        console.log('Debug info:', response.debug);
-                    }
-                } catch(e) {
-                    console.log('Could not parse error response');
-                }
-                
-                toastr.error(errorMsg);
-                resetButton();
+            });
+
+            function resetButton() {
+                btn.prop('disabled', false);
+                btn.find('.btn-text').text('Beli');
+                btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
             }
         });
-        
-        function resetButton() {
-            btn.prop('disabled', false);
-            btn.find('.btn-text').text('Beli');
-            btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
+
+        // Update cart counter
+        function updateCartCounter() {
+            $.ajax({
+                url: '<?= base_url('cart/getCount') ?>',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('.cart-counter').text(response.count);
+                        if (response.count > 0) {
+                            $('.cart-counter').show();
+                        } else {
+                            $('.cart-counter').hide();
+                        }
+                    }
+                }
+            });
         }
+
+        updateCartCounter();
     });
-    
-    // Function to update cart counter
-    function updateCartCounter() {
-        $.ajax({
-            url: '<?= base_url('cart/getCount') ?>',
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    $('.cart-counter').text(response.count);
-                    if (response.count > 0) {
-                        $('.cart-counter').show();
-                    } else {
-                        $('.cart-counter').hide();
-                    }
-                }
-            }
-        });
-    }
-    
-    // Load cart counter on page load
-    updateCartCounter();
-});
+})();
 </script>
 
 <style>
@@ -500,7 +486,6 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
-
 .event-gallery-section h4 {
     color: #333;
     margin-bottom: 20px;
@@ -508,26 +493,21 @@ document.addEventListener('DOMContentLoaded', function() {
     border-bottom: 2px solid #007bff;
     padding-bottom: 10px;
 }
-
 .gallery-slider-wrapper {
     position: relative;
 }
-
 .gallery-item {
     position: relative;
     overflow: hidden;
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
-
 .gallery-image {
     transition: transform 0.3s ease;
 }
-
 .gallery-item:hover .gallery-image {
     transform: scale(1.05);
 }
-
 .gallery-caption {
     position: absolute;
     bottom: 0;
@@ -539,24 +519,20 @@ document.addEventListener('DOMContentLoaded', function() {
     transform: translateY(100%);
     transition: transform 0.3s ease;
 }
-
 .gallery-item:hover .gallery-caption {
     transform: translateY(0);
 }
-
 .gallery-caption p {
     margin: 0;
     font-size: 14px;
     line-height: 1.4;
 }
-
 .gallery-badge {
     position: absolute;
     top: 10px;
     right: 10px;
     z-index: 10;
 }
-
 .gallery-badge .badge {
     background: #007bff;
     color: white;
@@ -564,11 +540,9 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 15px;
     font-size: 11px;
 }
-
 .gallery-thumbnails {
     margin-top: 15px;
 }
-
 .thumb-item {
     position: relative;
     border: 2px solid transparent;
@@ -576,21 +550,17 @@ document.addEventListener('DOMContentLoaded', function() {
     overflow: hidden;
     transition: all 0.3s ease;
 }
-
 .thumb-item:hover,
 .thumb-item.active {
     border-color: #007bff;
     box-shadow: 0 2px 8px rgba(0,123,255,0.3);
 }
-
 .thumb-image {
     transition: opacity 0.3s ease;
 }
-
 .thumb-item:hover .thumb-image {
     opacity: 0.8;
 }
-
 .thumb-badge {
     position: absolute;
     top: 2px;
@@ -603,11 +573,9 @@ document.addEventListener('DOMContentLoaded', function() {
     align-items: center;
     justify-content: center;
 }
-
 .thumb-badge i {
     font-size: 8px;
 }
-
 /* Owl Carousel Custom Navigation */
 .gallery-slider .owl-nav {
     position: absolute;
@@ -615,7 +583,6 @@ document.addEventListener('DOMContentLoaded', function() {
     width: 100%;
     transform: translateY(-50%);
 }
-
 .gallery-slider .owl-nav button {
     position: absolute;
     background: rgba(0,0,0,0.5) !important;
@@ -627,37 +594,30 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 16px;
     transition: all 0.3s ease;
 }
-
 .gallery-slider .owl-nav button:hover {
     background: rgba(0,123,255,0.8) !important;
     transform: scale(1.1);
 }
-
 .gallery-slider .owl-nav .owl-prev {
     left: 10px;
 }
-
 .gallery-slider .owl-nav .owl-next {
     right: 10px;
 }
-
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .event-gallery-section {
         padding: 15px;
     }
-    
     .gallery-image {
         height: 200px !important;
     }
-    
     .thumb-image {
         width: 60px !important;
         height: 45px !important;
     }
 }
 </style>
-<?php endif; ?>
 
 <?php
 echo $this->endSection();
