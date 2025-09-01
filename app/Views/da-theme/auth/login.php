@@ -30,7 +30,7 @@ echo $this->section('content');
                     </div>
                 <?php endif; ?>
 
-                <?= form_open('auth/cek_login_user', ['class' => 'login-form', 'role' => 'form', 'id' => 'loginForm']) ?>
+                <?= form_open('auth/cek_login', ['class' => 'login-form', 'role' => 'form', 'id' => 'loginForm']) ?>
                 <h3 class="login-heading">Login Pengguna</h3>
 
                 <div class="form-group">
@@ -77,17 +77,8 @@ echo $this->section('content');
                         </label>
                     </div>
                 </div>
-
-                <!-- reCAPTCHA Widget -->
                 <div class="form-group">
-                    <div class="g-recaptcha" data-sitekey="<?= env('recaptcha.sitekey') ?>" data-size="invisible"></div>
-                    <?php if (session()->getFlashdata('errors.recaptcha')): ?>
-                        <span class="error-message"><?= session()->getFlashdata('errors.recaptcha') ?></span>
-                    <?php endif; ?>
-                </div>
-
-                <div class="form-group">
-                    <?= form_submit('submit', 'Login', ['class' => 'btn btn-primary btn-block rounded-0', 'id' => 'loginBtn']) ?>
+                    <?= form_submit('submit', 'Login', ['class' => 'btn btn-primary btn-block rounded-0', 'id' => 'submitBtn']) ?>
                 </div>
 
                 <div class="text-center">
@@ -95,7 +86,19 @@ echo $this->section('content');
                         Lupa password?
                     </a>
                 </div>
+
+                <!-- Hidden reCAPTCHA token field -->
+                <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
+
                 <?= form_close() ?>
+                <!-- reCAPTCHA info -->
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        This site is protected by reCAPTCHA and the Google
+                        <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+                        <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+                    </small>
+                </div>
 
                 <hr class="divider">
 
@@ -281,7 +284,8 @@ echo $this->endSection();
 
     /* reCAPTCHA v3 Styling - Invisible */
     .g-recaptcha {
-        display: none; /* Hide the widget since v3 is invisible */
+        display: none;
+        /* Hide the widget since v3 is invisible */
     }
 
     /* Responsive adjustments */
@@ -299,53 +303,45 @@ echo $this->endSection();
 <?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
-<!-- Google reCAPTCHA v3 Script -->
-<script src="https://www.google.com/recaptcha/api.js?render=<?= env('recaptcha.sitekey') ?>"></script>
+
+<!-- Add reCAPTCHA v3 -->
+<script src="https://www.google.com/recaptcha/api.js?render=<?= config('Recaptcha')->siteKey ?>"></script>
+<style>
+    /* Style for loading indicator */
+    .loading {
+        position: relative;
+        pointer-events: none;
+    }
+
+    .loading:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+    }
+
+    /* Style for reCAPTCHA badge */
+    .grecaptcha-badge {
+        bottom: 60px !important;
+    }
+</style>
 
 <script>
-    $(document).ready(function () {
-        // Form submission with loading state
-        $('#loginForm').on('submit', function (e) {
-            e.preventDefault(); // Prevent default submission
-            
-            // Validate form before submission
-            if (!validateForm()) {
-                return false;
-            }
-
-            const loginBtn = $('#loginBtn');
-            const originalText = loginBtn.val();
-
-            // Show loading state
-            loginBtn.val('Verifying...');
-            loginBtn.prop('disabled', true);
-
-            // Execute reCAPTCHA v3 and then submit form
-            executeRecaptcha()
-                .then(function(token) {
-                    // reCAPTCHA successful, submit the form
-                    loginBtn.val('Logging in...');
-                    $('#loginForm')[0].submit();
-                })
-                .catch(function(error) {
-                    // reCAPTCHA failed
-                    console.error('reCAPTCHA error:', error);
-                    alert('Verifikasi keamanan gagal. Silakan coba lagi.');
-                    
-                    // Reset button state
-                    loginBtn.val(originalText);
-                    loginBtn.prop('disabled', false);
-                });
-
-            // Re-enable after 10 seconds as fallback
-            setTimeout(function () {
-                loginBtn.val(originalText);
-                loginBtn.prop('disabled', false);
-            }, 10000);
-        });
-
-        // Auto-hide alerts after 5 seconds
-        $('.alert').delay(5000).fadeOut();
+    // Auto-hide alerts after 5 seconds (vanilla JS)
+    document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function (alert) {
+                alert.style.transition = "opacity 0.5s";
+                alert.style.opacity = 0;
+                setTimeout(function () {
+                    alert.style.display = "none";
+                }, 500);
+            });
+        }, 5000);
     });
 
     // Password toggle functionality
@@ -364,8 +360,8 @@ echo $this->endSection();
 
     // Form validation
     function validateForm() {
-        const user = $('#user').val();
-        const pass = $('#pass').val();
+        const user = document.getElementById('user').value.trim();
+        const pass = document.getElementById('pass').value.trim();
 
         if (!user || !pass) {
             alert('Mohon isi semua field yang diperlukan.');
@@ -375,32 +371,58 @@ echo $this->endSection();
         return true;
     }
 
-    // Execute reCAPTCHA v3 and get score
-    function executeRecaptcha() {
-        return new Promise((resolve, reject) => {
-            if (typeof grecaptcha !== 'undefined') {
-                grecaptcha.ready(function() {
-                    grecaptcha.execute('<?= env('recaptcha.sitekey') ?>', {action: 'login'})
-                        .then(function(token) {
-                            // Add the token to a hidden input field
-                            if (!$('#g-recaptcha-response').length) {
-                                $('<input>').attr({
-                                    type: 'hidden',
-                                    id: 'g-recaptcha-response',
-                                    name: 'g-recaptcha-response'
-                                }).appendTo('#loginForm');
-                            }
-                            $('#g-recaptcha-response').val(token);
-                            resolve(token);
-                        })
-                        .catch(function(error) {
-                            reject(error);
-                        });
-                });
-            } else {
-                reject('reCAPTCHA not loaded');
+    // Recaptcha v3
+    grecaptcha.ready(function () {
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (!form) {
+            console.error('Form with id="loginForm" not found.');
+            return;
+        }
+
+        // Prevent double-binding
+        if (form._recaptchaBound) return;
+        form._recaptchaBound = true;
+
+        form.addEventListener('submit', function (e) {
+            // Prevent default submit only if reCAPTCHA token is not set
+            if (!form._recaptchaTokenSet) {
+                e.preventDefault();
+
+                // Show loading state
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    form.classList.add('loading');
+                }
+
+                // Execute reCAPTCHA
+                grecaptcha.execute('<?= config('Recaptcha')->siteKey ?>', { action: 'login' })
+                    .then(function (token) {
+                        // Add token to form
+                        document.getElementById('recaptchaResponse').value = token;
+                        // Mark that token is set to avoid infinite loop
+                        form._recaptchaTokenSet = true;
+                        // Submit the form using the native HTMLFormElement submit method
+                        HTMLFormElement.prototype.submit.call(form);
+                    })
+                    .catch(function (error) {
+                        // Handle error
+                        console.error('reCAPTCHA error:', error);
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error('Error verifying reCAPTCHA. Please try again.');
+                        } else {
+                            alert('Error verifying reCAPTCHA. Please try again.');
+                        }
+
+                        // Reset loading state
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            form.classList.remove('loading');
+                        }
+                    });
             }
         });
-    }
+    });
 </script>
 <?= $this->endSection() ?>

@@ -103,6 +103,7 @@ abstract class BaseController extends Controller
 
         // Set default view data
         $this->data['user']         = $this->ionAuth->user()->row();
+        $this->data['user_level']   = $this->ionAuth->loggedIn() ? $this->ionAuth->getUsersGroups($this->ionAuth->user()->row()->id)->getRow() : null;
         $this->data['Pengaturan']   = $this->pengaturan;
 
         // Check if this is a protected page

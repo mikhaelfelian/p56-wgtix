@@ -46,7 +46,7 @@ class Frontend extends BaseController
      * Display the registration form
      */
     public function index()
-    {
+    {        
         $kategoriOptions = $this->kategoriModel->getActiveCategories();
         $platformOptions = $this->platformModel->getByStatus(1);
         $kelompokOptions = $this->kelompokModel->getDropdownOptions();
@@ -70,10 +70,12 @@ class Frontend extends BaseController
             'events'          => $events,
             'pager'           => $pager,
             'keyword'         => $keyword,
-            'selectedKategori' => $kategori
+            'selectedKategori' => $kategori,
+            // Add this data to every view
+            'footer_text'     => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
         ];
 
-        return view('da-theme/home', $data);
+        return $this->view('da-theme/home', $data);
     }
 
     /**
@@ -108,10 +110,12 @@ class Frontend extends BaseController
             'events'          => $events,
             'pager'           => $pager,
             'keyword'         => $keyword,
-            'selectedKategori' => $kategori
+            'selectedKategori' => $kategori,
+            // Add this data to every view
+            'footer_text'     => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
         ];
 
-        return view('da-theme/event/events', $data);
+        return $this->view('da-theme/event/events', $data);
     }
 
     public function detail($id)
@@ -143,9 +147,11 @@ class Frontend extends BaseController
             'event_price'   => $event_price,
             'eventGallery'  => $eventGallery,
             'pager'         => $pager,
+            // Add this data to every view
+            'footer_text'   => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
         ];
 
-        return view('da-theme/event/detail', $data);
+        return $this->view('da-theme/event/detail', $data);
     }
 
     public function category($id_category = null, $slug = null)
@@ -163,7 +169,8 @@ class Frontend extends BaseController
 
         // If $id_category is not provided, try to get from URI segment (for backward compatibility)
         if ($id_category === null) {
-            $id_category = $this->request->uri->getSegment(2);
+            // Use URI class directly (fix for lint error)
+            $id_category = service('uri')->getSegment(2);
         }
 
         // Get events with filters using new model function signature
@@ -180,8 +187,8 @@ class Frontend extends BaseController
         $pager = $this->eventsModel->pager;
 
         $data = [
-            'title'            => $this->pengaturan->judul,
-            'Pengaturan'       => $this->pengaturan,
+            'title'           => $this->pengaturan->judul,
+            'Pengaturan'      => $this->pengaturan,
             'title_header'     => 'Events Listing',
             'kategoriOptions'  => $kategoriOptions,
             'platformOptions'  => $platformOptions,
@@ -190,10 +197,12 @@ class Frontend extends BaseController
             'events'           => $events,
             'pager'            => $pager,
             'keyword'          => $keyword,
-            'selectedKategori' => $id_category
+            'selectedKategori' => $id_category,
+            // Add this data to every view
+            'footer_text'      => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
         ];
 
-        return view('da-theme/event/categories', $data);
+        return $this->view('da-theme/event/categories', $data);
     }
 
     /**
@@ -276,7 +285,9 @@ class Frontend extends BaseController
                                 'kode_peserta' => $kode_peserta,
                                 'payment_url' => $paymentResult['checkout_url'],
                                 'qr_code' => $qrBase64,
-                                'redirect_to_payment' => true
+                                'redirect_to_payment' => true,
+                                // Add this data to every view/response
+                                'footer_text' => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
                             ]
                         ]);
                     } else {
@@ -294,7 +305,9 @@ class Frontend extends BaseController
                 'data' => [
                     'kode_peserta' => $kode_peserta,
                     'qr_code' => $qrBase64,
-                    'redirect_to_payment' => false
+                    'redirect_to_payment' => false,
+                    // Add this data to every view/response
+                    'footer_text' => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
                 ]
             ]);
         }
@@ -428,10 +441,12 @@ class Frontend extends BaseController
         $data = [
             'title' => 'Payment Success',
             'Pengaturan' => $this->pengaturan,
-            'peserta' => $peserta
+            'peserta' => $peserta,
+            // Add this data to every view
+            'footer_text' => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
         ];
 
-        return view('admin-lte-3/frontend/payment_success', $data);
+        return $this->view('admin-lte-3/frontend/payment_success', $data);
     }
 
     /**
@@ -451,9 +466,11 @@ class Frontend extends BaseController
         $data = [
             'title' => 'Payment Failed',
             'Pengaturan' => $this->pengaturan,
-            'peserta' => $peserta
+            'peserta' => $peserta,
+            // Add this data to every view
+            'footer_text' => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
         ];
 
-        return view('admin-lte-3/frontend/payment_failed', $data);
+        return $this->view('admin-lte-3/frontend/payment_failed', $data);
     }
 }

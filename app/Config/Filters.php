@@ -28,18 +28,19 @@ class Filters extends BaseFilters
      * or [filter_name => [classname1, classname2, ...]]
      */
     public array $aliases = [
-        'csrf'          => CSRF::class,
-        // 'toolbar'       => DebugToolbar::class,
-        'honeypot'      => Honeypot::class,
-        'invalidchars'  => InvalidChars::class,
-        'secureheaders' => SecureHeaders::class,
-        'cors'          => Cors::class,
-        'forcehttps'    => ForceHTTPS::class,
-        'pagecache'     => PageCache::class,
-        'performance'   => PerformanceMetrics::class,
-        'auth'          => AuthFilter::class,
+        'csrf'           => CSRF::class,
+        // 'toolbar'     => DebugToolbar::class,
+        'honeypot'       => Honeypot::class,
+        'invalidchars'   => InvalidChars::class,
+        'secureheaders'  => SecureHeaders::class,
+        'cors'           => Cors::class,
+        'forcehttps'     => ForceHTTPS::class,
+        'pagecache'      => PageCache::class,
+        'performance'    => PerformanceMetrics::class,
+        'auth'           => AuthFilter::class,
         'disableSession' => DisableSessionFilter::class,
-        'jwtauth'       => JWTAuthFilter::class,
+        'authUser'       => AuthFilter::class,
+        'authAdmin'      => AuthFilter::class,
     ];
 
     /**
@@ -85,7 +86,11 @@ class Filters extends BaseFilters
                 'transaksi/retur/jual/sales-items/*',
                 'transaksi/retur/jual/test',
                 'admin/event-gallery/upload',
-                'admin/event-gallery/update-description'
+                'admin/event-gallery/update-description',
+                'cart/getItems',
+                'cart/getCount',
+                'cart/getPlatforms',
+                'cart/test'
             ]],
         ],
         'after' => [

@@ -30,7 +30,7 @@ class Auth extends BaseController
         ];
 
         if ($this->ionAuth->loggedIn()) {
-            return redirect()->to('/dashboard');
+            return redirect()->to('admin/dashboard');
         }
         return $this->login();
     }
@@ -47,7 +47,7 @@ class Auth extends BaseController
         ];
 
         // Tetap gunakan theme lama untuk admin login
-        return view($this->theme->getThemePath() . '/login/login', $data);
+        return $this->view($this->theme->getThemePath() . '/login/login', $data);
     }
 
     public function cek_login()
@@ -107,7 +107,7 @@ class Auth extends BaseController
             ]);
         }
 
-        return redirect()->to('/dashboard')->with('toastr', [
+        return redirect()->to('/admin/dashboard')->with('toastr', [
             'type' => 'success',
             'message' => 'Login successful!'
         ]);
@@ -124,11 +124,11 @@ class Auth extends BaseController
 
         $data = [
             'title'         => 'Login Pengguna',
-            'Pengaturan'    => $this->pengaturan
+            'Pengaturan'    => $this->pengaturan,
         ];
 
         // Menggunakan theme da-theme untuk user login
-        return view('da-theme/auth/login', $data);
+        return $this->view('da-theme/auth/login', $data);
     }
 
     /**
@@ -228,7 +228,7 @@ class Auth extends BaseController
         ];
 
         // Menggunakan theme da-theme untuk user registration
-        return view('da-theme/auth/register', $data);
+        return $this->view('da-theme/auth/register', $data);
     }
 
     /**
@@ -503,6 +503,6 @@ class Auth extends BaseController
             }
         }
 
-        return view($this->theme->getThemePath() . '/login/forgot_password', $this->data);
+        return $this->view($this->theme->getThemePath() . '/login/forgot_password', $this->data);
     }
 }

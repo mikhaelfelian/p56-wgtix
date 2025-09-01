@@ -8,6 +8,7 @@
  */
 
 // Ensure required variables are set
+
 if (!isset($Pengaturan)) {
     throw new \RuntimeException('Settings data not passed to view');
 }
@@ -91,6 +92,7 @@ if (!isset($Pengaturan)) {
         src="<?= base_url('/public/assets/theme/da-theme/vendors/magnific-popup/jquery.magnific-popup.min.js') ?>"></script>
     <!--Owl Carousel-->
     <script src="<?= base_url('/public/assets/theme/da-theme/vendors/owl.carousel/owl.carousel.min.js') ?>"></script>
+    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/bootstrap-select/js/bootstrap-select.min.js') ?>"></script>
     <!--CounterUp-->
     <script src="<?= base_url('/public/assets/theme/da-theme/vendors/couterup/jquery.counterup.min.js') ?>"></script>
     <!--WayPoints-->

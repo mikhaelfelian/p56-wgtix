@@ -34,15 +34,30 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('register_store', 'Auth::register_store');
 });
 
-// Auth routes admin
-$routes->group('admin', ['namespace' => 'App\Controllers'], function ($routes) {
-    $routes->get('/', 'Auth::index');
-    $routes->get('login', 'Auth::login');
-    $routes->post('cek_login', 'Auth::cek_login');
-    $routes->get('logout', 'Auth::logout');
-    $routes->get('forgot-password', 'Auth::forgot_password');
-    $routes->post('forgot-password', 'Auth::forgot_password');
+// Cart routes
+$routes->group('cart', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('/', 'Cart::index');
+    $routes->get('test', 'Cart::test');
+    $routes->post('add', 'Cart::add');
+    $routes->get('getItems', 'Cart::getItems');
+    $routes->get('getCount', 'Cart::getCount');
+    $routes->get('getPlatforms', 'Cart::getPlatforms');
+    $routes->post('updateQuantity', 'Cart::updateQuantity');
+    $routes->post('remove', 'Cart::remove');
+    $routes->post('clear', 'Cart::clear');
+    $routes->post('store', 'Cart::store'); // Process checkout
+});
 
+// Grouping admin page routes below.
+// Note: All admin routes are grouped for better organization and protected by 'authAdmin' filter.
+// Keterangan: Tambahkan route baru di dalam grup ini jika ada halaman admin tambahan.
+
+$routes->get('admin/', 'Auth::index');
+$routes->get('admin/login', 'Auth::login');
+$routes->post('admin/cek_login', 'Auth::cek_login');
+$routes->get('admin/logout', 'Auth::logout');
+
+$routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmin'], function ($routes) {
     // Admin dashboard
     $routes->get('dashboard', 'Dashboard::index');
 
@@ -243,15 +258,14 @@ $routes->group('admin', ['namespace' => 'App\Controllers'], function ($routes) {
         $routes->post('update-image-order', 'BeritaGallery::updateImageOrder');
         $routes->get('get-images-by-post/(:num)', 'BeritaGallery::getImagesByPost/$1');
     });
+
+    // Admin Pengaturan routes
+    $routes->group('pengaturan', ['namespace' => 'App\Controllers'], function ($routes) {
+        $routes->get('app', 'Pengaturan::index');
+        $routes->get('api-tokens', 'Pengaturan::apiTokens');
+    });
 });
 
-// Pengaturan routes
-$routes->group('pengaturan', ['namespace' => 'App\Controllers'], function ($routes) {
-    $routes->get('app', 'Pengaturan::index');
-    $routes->get('api-tokens', 'Pengaturan::apiTokens');
-});
-
-$routes->get('/dashboard', 'Dashboard::index', ['namespace' => 'App\Controllers', 'filter' => 'auth']);
 
 // untuk test
 $routes->get('home/test', 'Home::test');

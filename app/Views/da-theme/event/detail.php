@@ -152,21 +152,25 @@ echo $this->section('content');
                                                         Rp <?= format_angka($price->harga) ?>
                                                     </td>
                                                     <td style="text-align: center; vertical-align: middle;">
-                                                        <input type="number" class="form-control quantity text-center" name="quantity_<?= $price->id ?>" value="1" min="1" style="width:80px; margin: 0 auto;">
+                                                        <?php if ($user_level->name == 'user'): ?>
+                                                            <input type="number" class="form-control quantity text-center" name="quantity_<?= $price->id ?>" value="1" min="1" style="width:80px; margin: 0 auto;">
+                                                        <?php endif; ?>
                                                     </td>
                                                     <td style="text-align: center; vertical-align: middle;">
-                                                        <button class="btn btn-primary btn-sm"
-                                                            data-id="<?= $price->id ?>"
-                                                            data-id_event="<?= $price->id_event ?>"
-                                                            data-harga="<?= $price->harga ?>"
-                                                            data-keterangan="<?= esc($price->keterangan) ?>"
-                                                            data-status="<?= $price->status ?>"
-                                                            data-created_at="<?= $price->created_at ?>"
-                                                            data-updated_at="<?= $price->updated_at ?>"
-                                                            data-deleted_at="<?= $price->deleted_at ?>"
-                                                        >
-                                                            <i class="fa fa-shopping-cart"></i> Beli
-                                                        </button>
+                                                        <?php if (isset($user_level) && $user_level && $user_level->name == 'user'): ?>
+                                                            <button class="btn btn-primary btn-sm add-to-cart-btn"
+                                                                data-event-id="<?= $price->id_event ?>"
+                                                                data-price-id="<?= $price->id ?>"
+                                                                data-price="<?= $price->harga ?>"
+                                                                data-description="<?= esc($price->keterangan) ?>"
+                                                            >
+                                                                <i class="fa fa-shopping-cart"></i> <span class="btn-text">Beli</span>
+                                                            </button>
+                                                        <?php else: ?>
+                                                            <a href="<?= base_url('auth/login') ?>" class="btn btn-warning btn-sm">
+                                                                <i class="fa fa-sign-in"></i> Login untuk membeli
+                                                            </a>
+                                                        <?php endif; ?>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -362,6 +366,128 @@ document.addEventListener('DOMContentLoaded', function() {
         $('.thumb-item').eq(current).addClass('active');
     });
     <?php endif; ?>
+    
+    // Initialize global CSRF hash
+    window.csrf_hash = '<?= csrf_hash() ?>';
+    
+    // Cart functionality
+    $('.add-to-cart-btn').on('click', function() {
+        var btn = $(this);
+        var eventId = btn.data('event-id');
+        var priceId = btn.data('price-id');
+        var price = btn.data('price');
+        var description = btn.data('description');
+        var quantity = $('input[name="quantity_' + priceId + '"]').val() || 1;
+        
+        // Disable button and show loading
+        btn.prop('disabled', true);
+        btn.find('.btn-text').text('Adding...');
+        btn.find('i').removeClass('fa-shopping-cart').addClass('fa-spinner fa-spin');
+        
+        // Prepare CSRF data
+        var csrfData = {};
+        var csrfToken = '<?= csrf_token() ?>';
+        var csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
+        csrfData[csrfToken] = csrfHash;
+        
+        // AJAX request to add to cart
+        $.ajax({
+            url: '<?= base_url('cart/add') ?>',
+            type: 'POST',
+            dataType: 'json',
+            data: $.extend({
+                event_id: eventId,
+                price_id: priceId,
+                quantity: quantity,
+                price: price,
+                event_title: '<?= esc($event->event ?? 'Event') ?>',
+                event_image: '<?= $event->foto ?? '' ?>',
+                price_description: description,
+                event_date: '<?= $event->tgl_masuk ?? '' ?>',
+                event_location: '<?= $event->lokasi ?? 'TBA' ?>'
+            }, csrfData),
+            success: function(response) {
+                if (response.success) {
+                    // Show success message
+                    toastr.success(response.message);
+                    
+                    // Update cart counter in navbar
+                    updateCartCounter();
+                    
+                    // Update CSRF token for next request
+                    if (response.csrf_hash) {
+                        // Update any hidden CSRF input fields
+                        $('input[name="<?= csrf_token() ?>"]').val(response.csrf_hash);
+                        // Update the global CSRF hash variable
+                        window.csrf_hash = response.csrf_hash;
+                    }
+                    
+                    // Reset button
+                    btn.find('.btn-text').text('Added!');
+                    btn.removeClass('btn-primary').addClass('btn-success');
+                    
+                    // Reset button after 2 seconds
+                    setTimeout(function() {
+                        btn.find('.btn-text').text('Beli');
+                        btn.removeClass('btn-success').addClass('btn-primary');
+                        btn.prop('disabled', false);
+                        btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
+                    }, 2000);
+                    
+                } else {
+                    toastr.error(response.message || 'Failed to add item to cart');
+                    resetButton();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', xhr.responseText);
+                var errorMsg = 'An error occurred while adding item to cart';
+                
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.message) {
+                        errorMsg = response.message;
+                    }
+                    if (response.debug) {
+                        console.log('Debug info:', response.debug);
+                    }
+                } catch(e) {
+                    console.log('Could not parse error response');
+                }
+                
+                toastr.error(errorMsg);
+                resetButton();
+            }
+        });
+        
+        function resetButton() {
+            btn.prop('disabled', false);
+            btn.find('.btn-text').text('Beli');
+            btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
+        }
+    });
+    
+    // Function to update cart counter
+    function updateCartCounter() {
+        $.ajax({
+            url: '<?= base_url('cart/getCount') ?>',
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    $('.cart-counter').text(response.count);
+                    if (response.count > 0) {
+                        $('.cart-counter').show();
+                    } else {
+                        $('.cart-counter').hide();
+                    }
+                }
+            }
+        });
+    }
+    
+    // Load cart counter on page load
+    updateCartCounter();
 });
 </script>
 
