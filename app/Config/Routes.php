@@ -55,6 +55,12 @@ $routes->group('my', ['namespace' => 'App\Controllers\Transaksi'], function($rou
     $routes->get('order/(:num)', 'Sale::detail/$1');
 });
 
+// Payment Confirmation routes
+$routes->group('sale', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('confirm/(:num)', 'Sale::confirm/$1');
+    $routes->post('process-confirmation', 'Sale::processConfirmation');
+});
+
 // Grouping admin page routes below.
 // Note: All admin routes are grouped for better organization and protected by 'authAdmin' filter.
 // Keterangan: Tambahkan route baru di dalam grup ini jika ada halaman admin tambahan.
@@ -264,6 +270,17 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('set-primary-image/(:num)', 'BeritaGallery::setPrimaryImage/$1');
         $routes->post('update-image-order', 'BeritaGallery::updateImageOrder');
         $routes->get('get-images-by-post/(:num)', 'BeritaGallery::getImagesByPost/$1');
+    });
+
+    // Admin Transaction routes
+    $routes->group('transaksi/sale', ['namespace' => 'App\Controllers\Admin\Transaksi'], function ($routes) {
+        $routes->get('orders/(:segment)', 'Sale::orders/$1');
+        $routes->get('orders', 'Sale::orders');
+        $routes->get('detail/(:num)', 'Sale::detail/$1');
+        $routes->post('update-status/(:num)', 'Sale::updateStatus/$1');
+        $routes->get('reports', 'Sale::reports');
+        $routes->get('export', 'Sale::export');
+        $routes->get('export/(:segment)', 'Sale::export/$1');
     });
 
     // Admin Pengaturan routes

@@ -87,6 +87,7 @@ class Platform extends BaseController
      */
     public function store()
     {
+        $id = $this->request->getPost('id');
         $rules = [
             // 'id_kategori'       => 'required|integer',
             'nama'              => 'required|max_length[100]',
@@ -104,7 +105,7 @@ class Platform extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to('admin/master/platform/create')->withInput()->with('errors', $this->validator->getErrors());
         }
 
         $id_user           = $this->data['user']->id;
@@ -124,10 +125,10 @@ class Platform extends BaseController
 
         $data = [
             'id_user'           => $id_user,
-            'id_kategori'       => $id_kategori,
+            'id_kategori'       => $id_kategori ?? 0,
             'nama'              => $nama,
             'jenis'             => $jenis,
-            'kategori'          => $kategori,
+            'kategori'          => $kategori ?? '-',
             'nama_rekening'     => $nama_rekening,
             'nomor_rekening'    => $nomor_rekening,
             'deskripsi'         => $deskripsi,
@@ -139,8 +140,25 @@ class Platform extends BaseController
             'status_gateway'    => $status_gateway
         ];
 
-        $result = $this->platformModel->save($data);
-        return redirect()->to(base_url('admin/master/platform'));
+        try {
+            if(!empty($id)){
+                $data['id'] = $id;
+            }
+
+            $result = $this->platformModel->save($data);
+            if ($result) {
+                return redirect()->to(base_url('admin/master/platform'))
+                    ->with('success', 'Platform berhasil ditambahkan.');
+            } else {
+                return redirect()->to(base_url('admin/master/platform/create'))
+                    ->withInput()
+                    ->with('error', 'Gagal menambahkan platform. Silakan coba lagi.');
+            }
+        } catch (\Throwable $e) {
+            return redirect()->to(base_url('admin/master/platform/create'))
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -160,7 +178,7 @@ class Platform extends BaseController
             'kategori'  => $this->kategoriModel->where('status', 1)->findAll()
         ];
 
-        return $this->view($this->theme->getThemePath() . '/master/platform/edit', $data);
+        return $this->view($this->theme->getThemePath() . '/master/platform/create', $data);
     }
 
     /**
@@ -168,7 +186,9 @@ class Platform extends BaseController
      */
     public function update($id)
     {
+        $id = $this->request->getPost('id');
         $platform = $this->platformModel->find($id);
+
         
         if (!$platform) {
             throw new \CodeIgniter\Exceptions\PageNotFoundException("Platform dengan ID $id tidak ditemukan");
@@ -195,6 +215,7 @@ class Platform extends BaseController
         }
 
         $data = [
+            'id'                => $id,
             'id_kategori'       => $this->request->getPost('id_kategori'),
             'nama'              => $this->request->getPost('nama'),
             'jenis'             => $this->request->getPost('jenis'),
@@ -229,9 +250,9 @@ class Platform extends BaseController
         }
 
         if ($this->platformModel->delete($id)) {
-            return redirect()->to('/master/platform')->with('success', 'Data platform berhasil dihapus');
+            return redirect()->to('/admin/master/platform')->with('success', 'Data platform berhasil dihapus');
         } else {
-            return redirect()->to('/master/platform')->with('error', 'Gagal menghapus data platform');
+            return redirect()->to('/admin/master/platform')->with('error', 'Gagal menghapus data platform');
         }
     }
 

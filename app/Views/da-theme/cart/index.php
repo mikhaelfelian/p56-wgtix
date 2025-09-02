@@ -46,11 +46,7 @@ echo $this->section('content');
                             <i class="fa fa-spinner fa-spin"></i> Loading payment methods...
                         </p>
                     </div>
-                    <div class="row m0 text-center">
-                            <button type="button" class="btn btn-primary add-payment-btn"
-                                style="margin-right: 10px;"><i class="fa fa-plus"></i> Metode</button>
-                                <br/><br/>
-                    </div>
+
                 </div>
             </div>
             <div class="col-md-6">
@@ -297,26 +293,7 @@ echo $this->endSection();
                 }
             });
 
-            // Add payment platform row
-            $('.add-payment-btn').on('click', function () {
-                // Get platforms from the first row's select
-                var firstSelect = $('.platform-select').first();
-                if (firstSelect.length === 0) return;
 
-                var platforms = [];
-                firstSelect.find('option').each(function () {
-                    if ($(this).val()) {
-                        platforms.push({
-                            id: $(this).val(),
-                            nama: $(this).data('nama'),
-                            jenis: $(this).data('jenis')
-                        });
-                    }
-                });
-
-                var rowIndex = $('.payment-row').length;
-                addPaymentRow(platforms, rowIndex);
-            });
 
             // Handle checkout form submission
             $('#checkout-form').on('submit', function (e) {
@@ -329,24 +306,17 @@ echo $this->endSection();
                     return false;
                 }
 
-                // Check if payment methods are selected
-                var hasValidPayment = false;
-                $('.payment-row').each(function() {
-                    var platformId = $(this).find('.platform-select').val();
-                    var amount = 0;
-                    try {
-                        amount = parseFloat($(this).find('.payment-amount').autoNumeric('get')) || 0;
-                    } catch(e) {
-                        amount = parseFloat($(this).find('.payment-amount').val().replace(/\./g, '').replace(/,/g, '.')) || 0;
-                    }
-                    
-                    if (platformId && amount > 0) {
-                        hasValidPayment = true;
-                    }
-                });
+                // Check if payment method is selected (single payment)
+                var platformId = $('.platform-select').val();
+                var amount = 0;
+                try {
+                    amount = parseFloat($('.payment-amount').autoNumeric('get')) || 0;
+                } catch(e) {
+                    amount = parseFloat($('.payment-amount').val().replace(/\./g, '').replace(/,/g, '.')) || 0;
+                }
                 
-                if (!hasValidPayment) {
-                    alert('Please select at least one payment method.');
+                if (!platformId || amount <= 0) {
+                    alert('Please select a payment method and enter amount.');
                     return false;
                 }
 
@@ -499,29 +469,26 @@ echo $this->endSection();
                 });
             });
 
-            // Prepare payment platforms from form
+            // Prepare payment platform from form (single payment)
             var cartPayments = [];
-            $('.payment-row').each(function () {
-                var row = $(this);
-                var platformId = row.find('.platform-select').val();
-                var platformName = row.find('.platform-select option:selected').text();
-                var amount = 0;
-                try {
-                    amount = parseFloat(row.find('.payment-amount').autoNumeric('get')) || 0;
-                } catch(e) {
-                    amount = parseFloat(row.find('.payment-amount').val().replace(/\./g, '').replace(/,/g, '.')) || 0;
-                }
-                var note = row.find('.payment-note').val();
+            var platformId = $('.platform-select').val();
+            var platformName = $('.platform-select option:selected').text();
+            var amount = 0;
+            try {
+                amount = parseFloat($('.payment-amount').autoNumeric('get')) || 0;
+            } catch(e) {
+                amount = parseFloat($('.payment-amount').val().replace(/\./g, '').replace(/,/g, '.')) || 0;
+            }
+            var note = $('.payment-note').val();
 
-                if (platformId && amount > 0) {
-                    cartPayments.push({
-                        platform_id: platformId,
-                        platform: platformName,
-                        amount: amount,
-                        note: note
-                    });
-                }
-            });
+            if (platformId && amount > 0) {
+                cartPayments.push({
+                    platform_id: platformId,
+                    platform: platformName,
+                    amount: amount,
+                    note: note
+                });
+            }
 
             // Prepare participant list from modal inputs
             var participants = [];
@@ -775,31 +742,31 @@ echo $this->endSection();
             });
         }
 
-        // Display payment platforms
+        // Display payment platforms (single payment method)
         function displayPaymentPlatforms(platforms) {
             var container = $('#payment-platforms-list');
             container.empty();
 
             if (platforms && platforms.length > 0) {
-                // Create initial default payment row
-                addPaymentRow(platforms, 0); // Add first row by default
+                // Create single payment row
+                createSinglePaymentRow(platforms);
             } else {
                 showNoPlatforms();
             }
         }
 
-        // Add payment row
-        function addPaymentRow(platforms, rowIndex) {
+        // Create single payment row
+        function createSinglePaymentRow(platforms) {
             var container = $('#payment-platforms-list');
             var subtotalText = $('#cart-subtotal').text();
             var subtotal = parseIndonesianNumber(subtotalText);
 
-            var html = '<div class="payment-row" data-row="' + rowIndex + '" style="margin-bottom: 15px;">';
+            var html = '<div class="payment-row" style="margin-bottom: 15px;">';
             html += '<div class="row">';
 
             // Platform selection
             html += '<div class="col-sm-4">';
-            html += '<select class="form-control rounded-0 platform-select" name="payment_platform_' + rowIndex + '" data-row="' + rowIndex + '">';
+            html += '<select class="form-control rounded-0 platform-select" name="payment_platform">';
             html += '<option value="">Pilih Platform</option>';
 
             platforms.forEach(function (platform) {
@@ -814,22 +781,13 @@ echo $this->endSection();
             html += '</div>';
 
             // Amount input
-            html += '<div class="col-sm-3">';
-            html += '<input type="text" class="form-control rounded-0 payment-amount autonumber" name="payment_amount_' + rowIndex + '" value="' + (rowIndex === 0 ? subtotal : 0) + '" data-row="' + rowIndex + '" placeholder="Jumlah">';
+            html += '<div class="col-sm-4">';
+            html += '<input type="text" class="form-control rounded-0 payment-amount autonumber" name="payment_amount" value="' + subtotal + '" placeholder="Jumlah">';
             html += '</div>';
 
             // Notes input
             html += '<div class="col-sm-4">';
-            html += '<input type="text" class="form-control rounded-0 payment-note" name="payment_note_' + rowIndex + '" placeholder="Catatan ..." data-row="' + rowIndex + '">';
-            html += '</div>';
-
-            // Remove button
-            html += '<div class="col-sm-1">';
-            if (rowIndex > 0) {
-                html += '<a href="#" class="remove-payment-btn" data-row="' + rowIndex + '" title="Hapus" style="color: #d9534f; font-size: 16px;">';
-                html += '<i class="fa fa-trash"></i>';
-                html += '</a>';
-            }
+            html += '<input type="text" class="form-control rounded-0 payment-note" name="payment_note" placeholder="Catatan ...">';
             html += '</div>';
 
             html += '</div>';
@@ -837,14 +795,8 @@ echo $this->endSection();
 
             container.append(html);
 
-            // Bind events for this row
-            bindPaymentRowEvents(rowIndex);
-        }
-
-        // Bind payment row events
-        function bindPaymentRowEvents(rowIndex) {
-            // Initialize autoNumber for this row
-            $('.payment-amount[data-row="' + rowIndex + '"]').autoNumeric({
+            // Initialize autoNumeric for the payment amount
+            $('.payment-amount').autoNumeric({
                 aSep: '.',
                 aDec: ',',
                 aSign: '',
@@ -852,63 +804,9 @@ echo $this->endSection();
                 vMax: '999999999',
                 mDec: 0
             });
-            
-            // Remove payment row
-            $('.remove-payment-btn[data-row="' + rowIndex + '"]').on('click', function (e) {
-                e.preventDefault();
-                $('.payment-row[data-row="' + rowIndex + '"]').remove();
-                updatePaymentTotals();
-            });
-
-            // Update totals when amount changes
-            $('.payment-amount[data-row="' + rowIndex + '"]').on('input change keyup', function () {
-                updatePaymentTotals();
-            });
         }
 
-        // Update payment totals
-        function updatePaymentTotals() {
-            var totalPayments = 0;
-            var validPayments = 0;
 
-            $('.payment-amount').each(function () {
-                var amount = 0;
-                try {
-                    // Get value from autoNumeric
-                    amount = parseFloat($(this).autoNumeric('get')) || 0;
-                } catch(e) {
-                    // Fallback if autoNumeric not initialized
-                    amount = parseFloat($(this).val().replace(/\./g, '').replace(/,/g, '.')) || 0;
-                }
-                var platformSelected = $(this).closest('.payment-row').find('.platform-select').val();
-
-                if (amount > 0 && platformSelected) {
-                    totalPayments += amount;
-                    validPayments++;
-                }
-            });
-
-            var cartTotal = parseIndonesianNumber($('#cart-total').text());
-
-            // Remove existing validation indicators
-            $('.payment-validation-info').remove();
-
-            // Add simple payment summary
-            var cartTotal = parseIndonesianNumber($('#cart-total').text());
-            var difference = totalPayments - cartTotal;
-
-            if (validPayments > 0 && Math.abs(difference) > 1) {
-                var summaryHtml = '<div class="payment-validation-info row m0" style="margin-top: 10px;">';
-                summaryHtml += '<small class="text-muted">';
-                if (difference > 1) {
-                    summaryHtml += '<i class="fa fa-info-circle"></i> Kelebihan: Rp ' + number_format(Math.abs(difference), 0, ',', '.');
-                } else {
-                    summaryHtml += '<i class="fa fa-warning"></i> Kurang: Rp ' + number_format(Math.abs(difference), 0, ',', '.');
-                }
-                summaryHtml += '</small></div>';
-                $('#payment-platforms-list').after(summaryHtml);
-            }
-        }
 
         // Show no platforms message
         function showNoPlatforms() {

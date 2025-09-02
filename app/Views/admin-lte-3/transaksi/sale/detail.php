@@ -1,30 +1,27 @@
 <?php
+
 /**
- * Sale Order Detail View
- * 
- * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
- * Date: 2025-09-01
- * Github: github.com/mikhaelfelian
- * Description: View for displaying detailed information of a sales order
- * This file represents the Sale Order Detail View.
+ * @description Admin transaction detail view - displays complete order information with management controls
+ * @author CodeIgniter Development Team
+ * @since 2025-01-15
+ * @version 1.0.0
  */
 
-echo $this->extend('admin-lte-3/layout/main'); 
-echo $this->section('content');
-?>
+echo $this->extend(theme_path('main')); ?>
+
+<?= $this->section('content') ?>
 
 <!-- Content Header (Page header) -->
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0">Order Details</h1>
+                <h1 class="m-0">Transaction Detail</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Home</a></li>
-                    <li class="breadcrumb-item">Transaksi</li>
-                    <li class="breadcrumb-item"><a href="<?= base_url('transaksi/sale/orders') ?>">Orders</a></li>
+                    <li class="breadcrumb-item"><a href="<?= base_url('admin/dashboard') ?>">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="<?= base_url('admin/transaksi/sale/orders') ?>">Transaksi</a></li>
                     <li class="breadcrumb-item active">Detail</li>
                 </ol>
             </div>
@@ -35,322 +32,312 @@ echo $this->section('content');
 <!-- Main content -->
 <section class="content">
     <div class="container-fluid">
-        
-        <!-- Order Header Information -->
+
+        <!-- Flash Messages -->
+        <?php if (session()->getFlashdata('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <?= session()->getFlashdata('success') ?>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (session()->getFlashdata('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <?= session()->getFlashdata('error') ?>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Order Header -->
         <div class="row">
-            <div class="col-md-8">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <i class="fas fa-file-invoice"></i> Invoice Information
+                            <i class="fas fa-file-invoice"></i> Invoice #<?= esc($order->invoice_no) ?>
                         </h3>
+                        <div class="card-tools">
+                            <a href="<?= base_url('admin/transaksi/sale/orders') ?>" class="btn btn-sm btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Orders
+                            </a>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <strong>Invoice Number:</strong><br>
-                                <span class="text-primary h5"><?= esc($order->invoice_no) ?></span><br><br>
-                                
-                                <strong>Invoice Date:</strong><br>
-                                <?= date('d F Y, H:i', strtotime($order->invoice_date)) ?><br><br>
-                                
-                                <strong>Customer:</strong><br>
-                                <?php if ($order->user_id): ?>
-                                    <i class="fas fa-user"></i> User ID: <?= $order->user_id ?>
-                                <?php else: ?>
-                                    <i class="fas fa-user-secret"></i> Guest User
-                                <?php endif; ?>
+                                <h5>Order Information</h5>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Invoice No:</strong></td>
+                                        <td><?= esc($order->invoice_no) ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Invoice Date:</strong></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($order->invoice_date)) ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Payment Method:</strong></td>
+                                        <td><?= esc($order->payment_method) ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Amount:</strong></td>
+                                        <td><strong class="text-success">Rp <?= number_format($order->total_amount, 0, ',', '.') ?></strong></td>
+                                    </tr>
+                                </table>
                             </div>
                             <div class="col-md-6">
-                                <strong>Total Amount:</strong><br>
-                                <span class="h4 text-success">Rp <?= number_format($order->total_amount, 0, ',', '.') ?></span><br><br>
-                                
-                                <strong>Payment Method:</strong><br>
-                                <?= esc($order->payment_method) ?><br><br>
-                                
-                                <strong>Payment Reference:</strong><br>
-                                <?= $order->payment_reference ? esc($order->payment_reference) : '-' ?>
+                                <h5>Customer Information</h5>
+                                <table class="table table-sm">
+                                    <?php if ($user): ?>
+                                        <tr>
+                                            <td><strong>Customer:</strong></td>
+                                            <td><?= esc($user->first_name . ' ' . $user->last_name) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Username:</strong></td>
+                                            <td><?= esc($user->username) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Email:</strong></td>
+                                            <td><?= esc($user->email) ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>User ID:</strong></td>
+                                            <td><?= $order->user_id ?></td>
+                                        </tr>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td><strong>Customer:</strong></td>
+                                            <td><span class="text-muted">Guest User</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>User ID:</strong></td>
+                                            <td><?= $order->user_id ?: 'N/A' ?></td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </table>
                             </div>
                         </div>
-                        
-                        <?php if ($order->notes): ?>
-                        <hr>
-                        <strong>Notes:</strong><br>
-                        <p class="text-muted"><?= nl2br(esc($order->notes)) ?></p>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-md-4">
+        </div>
+
+        <!-- Status Management -->
+        <div class="row">
+            <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-info-circle"></i> Status Information
-                        </h3>
+                        <h3 class="card-title">Payment Status</h3>
                     </div>
                     <div class="card-body">
-                        <strong>Payment Status:</strong><br>
-                        <?php
-                        $statusClass = [
-                            'pending' => 'warning',
-                            'paid' => 'success', 
-                            'failed' => 'danger',
-                            'cancelled' => 'secondary'
-                        ];
-                        $class = $statusClass[$order->payment_status] ?? 'info';
-                        ?>
-                        <span class="badge badge-<?= $class ?> p-2" style="font-size: 14px;">
-                            <?= ucfirst($order->payment_status) ?>
-                        </span><br><br>
-                        
-                        <strong>Order Status:</strong><br>
-                        <?php
-                        $orderStatusClass = [
-                            'active' => 'primary',
-                            'cancelled' => 'secondary',
-                            'completed' => 'success'
-                        ];
-                        $orderClass = $orderStatusClass[$order->status] ?? 'info';
-                        ?>
-                        <span class="badge badge-<?= $orderClass ?> p-2" style="font-size: 14px;">
-                            <?= ucfirst($order->status) ?>
-                        </span><br><br>
-                        
-                        <strong>Created:</strong><br>
-                        <small class="text-muted"><?= date('d/m/Y H:i', strtotime($order->created_at)) ?></small><br><br>
-                        
-                        <strong>Last Updated:</strong><br>
-                        <small class="text-muted"><?= date('d/m/Y H:i', strtotime($order->updated_at)) ?></small>
-                        
-                        <?php if ($has_admin_access): ?>
-                        <hr>
-                        <button type="button" class="btn btn-warning btn-block update-status-btn" 
-                                data-order-id="<?= $order->id ?>" 
-                                data-current-status="<?= $order->payment_status ?>">
-                            <i class="fas fa-edit"></i> Update Status
-                        </button>
-                        <?php endif; ?>
+                        <form method="POST" action="<?= base_url('admin/transaksi/sale/update-status/' . $order->id) ?>">
+                            <?= csrf_field() ?>
+                            <div class="form-group">
+                                <label>Current Status:</label>
+                                <?php
+                                $statusColor = [
+                                    'pending' => 'warning',
+                                    'paid' => 'success',
+                                    'failed' => 'danger',
+                                    'cancelled' => 'secondary'
+                                ];
+                                $color = $statusColor[$order->payment_status] ?? 'info';
+                                ?>
+                                <p><span class="badge badge-<?= $color ?> badge-lg"><?= ucfirst($order->payment_status) ?></span></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="payment_status">Update Payment Status:</label>
+                                <select class="form-control" name="payment_status" id="payment_status">
+                                    <option value="">-- Select Status --</option>
+                                    <option value="pending" <?= $order->payment_status === 'pending' ? 'selected' : '' ?>>Pending</option>
+                                    <option value="paid" <?= $order->payment_status === 'paid' ? 'selected' : '' ?>>Paid</option>
+                                    <option value="failed" <?= $order->payment_status === 'failed' ? 'selected' : '' ?>>Failed</option>
+                                    <option value="cancelled" <?= $order->payment_status === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Status
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Order Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="<?= base_url('admin/transaksi/sale/update-status/' . $order->id) ?>">
+                            <?= csrf_field() ?>
+                            <div class="form-group">
+                                <label>Current Status:</label>
+                                <?php
+                                $orderStatusColor = [
+                                    'active' => 'primary',
+                                    'cancelled' => 'secondary',
+                                    'completed' => 'success'
+                                ];
+                                $orderColor = $orderStatusColor[$order->status] ?? 'info';
+                                ?>
+                                <p><span class="badge badge-<?= $orderColor ?> badge-lg"><?= ucfirst($order->status) ?></span></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="order_status">Update Order Status:</label>
+                                <select class="form-control" name="order_status" id="order_status">
+                                    <option value="">-- Select Status --</option>
+                                    <option value="active" <?= $order->status === 'active' ? 'selected' : '' ?>>Active</option>
+                                    <option value="completed" <?= $order->status === 'completed' ? 'selected' : '' ?>>Completed</option>
+                                    <option value="cancelled" <?= $order->status === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Update Status
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Order Items -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-shopping-cart"></i> Order Items
-                </h3>
-            </div>
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Event</th>
-                            <th>Price Description</th>
-                            <th class="text-center">Quantity</th>
-                            <th class="text-right">Unit Price</th>
-                            <th class="text-right">Total Price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (!empty($order_details)): ?>
-                            <?php 
-                            $grandTotal = 0;
-                            foreach ($order_details as $detail): 
-                                $grandTotal += $detail->total_price;
-                            ?>
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Order Items</h3>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <strong><?= esc($detail->event_title) ?></strong>
-                                        <?php if ($detail->item_data): ?>
-                                            <?php $itemData = json_decode($detail->item_data, true); ?>
-                                            <?php if (isset($itemData['event_date'])): ?>
-                                                <br><small class="text-muted">
-                                                    <i class="fas fa-calendar"></i> <?= esc($itemData['event_date']) ?>
-                                                </small>
-                                            <?php endif; ?>
-                                            <?php if (isset($itemData['event_location'])): ?>
-                                                <br><small class="text-muted">
-                                                    <i class="fas fa-map-marker-alt"></i> <?= esc($itemData['event_location']) ?>
-                                                </small>
-                                            <?php endif; ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= esc($detail->price_description) ?></td>
-                                    <td class="text-center">
-                                        <span class="badge badge-info"><?= $detail->quantity ?></span>
-                                    </td>
-                                    <td class="text-right">Rp <?= number_format($detail->unit_price, 0, ',', '.') ?></td>
-                                    <td class="text-right"><strong>Rp <?= number_format($detail->total_price, 0, ',', '.') ?></strong></td>
+                                    <th>Event</th>
+                                    <th>Price Description</th>
+                                    <th>Participant Info</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total Price</th>
                                 </tr>
-                            <?php endforeach; ?>
-                            <tr class="bg-light">
-                                <td colspan="4" class="text-right"><strong>Grand Total:</strong></td>
-                                <td class="text-right"><strong class="h5 text-success">Rp <?= number_format($grandTotal, 0, ',', '.') ?></strong></td>
-                            </tr>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">No order items found</td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($order_details)): ?>
+                                    <?php
+                                    $grandTotal = 0;
+                                    foreach ($order_details as $detail):
+                                        $grandTotal += $detail->total_price;
+                                        $itemData = json_decode($detail->item_data, true) ?: [];
+                                    ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?= esc($detail->event_title ?: 'N/A') ?></strong><br>
+                                                <small class="text-muted">Event ID: <?= $detail->event_id ?: 'N/A' ?></small>
+                                            </td>
+                                            <td>
+                                                <?= esc($detail->price_description ?: 'N/A') ?><br>
+                                                <small class="text-muted">Price ID: <?= $detail->price_id ?: 'N/A' ?></small>
+                                            </td>
+                                            <td>
+                                                <?php if (isset($itemData['participant_name'])): ?>
+                                                    <strong><?= esc($itemData['participant_name']) ?></strong><br>
+                                                    <small class="text-muted">Participant #<?= $itemData['participant_number'] ?? 'N/A' ?></small>
+                                                <?php else: ?>
+                                                    <span class="text-muted">No participant info</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td><?= $detail->quantity ?: 1 ?></td>
+                                            <td>Rp <?= number_format($detail->unit_price ?: 0, 0, ',', '.') ?></td>
+                                            <td><strong>Rp <?= number_format($detail->total_price ?: 0, 0, ',', '.') ?></strong></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <tr class="bg-light">
+                                        <td colspan="5" class="text-right"><strong>Grand Total:</strong></td>
+                                        <td><strong class="text-success">Rp <?= number_format($grandTotal, 0, ',', '.') ?></strong></td>
+                                    </tr>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            No order items found
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Payment Platforms -->
+        <!-- Payment Details -->
         <?php if (!empty($payment_platforms)): ?>
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-credit-card"></i> Payment Methods
-                </h3>
-            </div>
-            <div class="card-body table-responsive p-0">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Platform</th>
-                            <th class="text-right">Amount</th>
-                            <th>Notes</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $totalPayments = 0;
-                        foreach ($payment_platforms as $payment): 
-                            $totalPayments += $payment->nominal;
-                        ?>
-                            <tr>
-                                <td>
-                                    <strong><?= esc($payment->platform) ?></strong>
-                                </td>
-                                <td class="text-right">
-                                    <strong>Rp <?= number_format($payment->nominal, 0, ',', '.') ?></strong>
-                                </td>
-                                <td>
-                                    <small class="text-muted"><?= $payment->keterangan ? esc($payment->keterangan) : '-' ?></small>
-                                </td>
-                                <td>
-                                    <small class="text-muted"><?= date('d/m/Y H:i', strtotime($payment->created_at)) ?></small>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <tr class="bg-light">
-                            <td><strong>Total Payments:</strong></td>
-                            <td class="text-right"><strong class="h6 text-primary">Rp <?= number_format($totalPayments, 0, ',', '.') ?></strong></td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Payment Details</h3>
+                    </div>
+                    <div class="card-body table-responsive p-0">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Platform</th>
+                                    <th>Transaction ID</th>
+                                    <th>Amount</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $totalPayments = 0;
+                                foreach ($payment_platforms as $payment):
+                                    $totalPayments += $payment->nominal;
+                                ?>
+                                    <tr>
+                                        <td><?= date('d/m/Y H:i', strtotime($payment->created_at)) ?></td>
+                                        <td><?= esc($payment->platform) ?></td>
+                                        <td><?= esc($payment->no_nota ?: 'N/A') ?></td>
+                                        <td><strong>Rp <?= number_format($payment->nominal, 0, ',', '.') ?></strong></td>
+                                        <td><?= esc($payment->keterangan ?: '-') ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <tr class="bg-light">
+                                    <td colspan="3" class="text-right"><strong>Total Payments:</strong></td>
+                                    <td><strong class="text-info">Rp <?= number_format($totalPayments, 0, ',', '.') ?></strong></td>
+                                    <td></td>
+                                </tr>
+                                <?php if ($order->total_amount != $totalPayments): ?>
+                                <tr class="bg-warning">
+                                    <td colspan="3" class="text-right"><strong>Remaining Balance:</strong></td>
+                                    <td><strong>Rp <?= number_format($order->total_amount - $totalPayments, 0, ',', '.') ?></strong></td>
+                                    <td></td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
         <?php endif; ?>
 
-        <!-- Action Buttons -->
-        <div class="row">
-            <div class="col-12">
-                <a href="<?= base_url('transaksi/sale/orders') ?>" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Orders
-                </a>
-                <button type="button" class="btn btn-primary float-right" onclick="window.print()">
-                    <i class="fas fa-print"></i> Print Invoice
-                </button>
-            </div>
-        </div>
-        
     </div>
 </section>
 
-<!-- Status Update Modal -->
-<?php if ($has_admin_access): ?>
-<div class="modal fade" id="statusUpdateModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">Update Order Status</h4>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="statusUpdateForm">
-                    <input type="hidden" id="orderId" name="order_id">
-                    <div class="form-group">
-                        <label>Payment Status</label>
-                        <select class="form-control" id="paymentStatus" name="status" required>
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                            <option value="failed">Failed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Notes (Optional)</label>
-                        <textarea class="form-control" id="statusNotes" name="notes" rows="3" placeholder="Add notes about status change..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmStatusUpdate">Update Status</button>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-<?php echo $this->endSection(); ?>
+<?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
-<?php if ($has_admin_access): ?>
 <script>
-$(document).ready(function() {
-    // Handle status update button click
-    $('.update-status-btn').on('click', function() {
-        var orderId = $(this).data('order-id');
-        var currentStatus = $(this).data('current-status');
-        
-        $('#orderId').val(orderId);
-        $('#paymentStatus').val(currentStatus);
-        $('#statusNotes').val('');
-        
-        $('#statusUpdateModal').modal('show');
-    });
-    
-    // Handle status update confirmation
-    $('#confirmStatusUpdate').on('click', function() {
-        var formData = $('#statusUpdateForm').serialize();
-        
-        $.ajax({
-            url: '<?= base_url('transaksi/sale/updateStatus') ?>',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            beforeSend: function() {
-                $('#confirmStatusUpdate').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('#statusUpdateModal').modal('hide');
-                    location.reload(); // Refresh the page to show updated status
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function() {
-                toastr.error('An error occurred while updating status');
-            },
-            complete: function() {
-                $('#confirmStatusUpdate').prop('disabled', false).html('Update Status');
-            }
-        });
-    });
+// Print function
+window.addEventListener('beforeprint', function() {
+    document.title = 'Invoice <?= esc($order->invoice_no) ?>';
 });
 </script>
-<?php endif; ?>
 <?= $this->endSection() ?>

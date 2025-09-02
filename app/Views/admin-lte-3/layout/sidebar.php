@@ -24,7 +24,7 @@
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                 <!-- Dashboard -->
                 <li class="nav-item">
-                    <a href="<?= base_url('dashboard') ?>"
+                    <a href="<?= base_url('admin/dashboard') ?>"
                         class="nav-link <?= isMenuActive('dashboard') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-tachometer-alt"></i>
                         <p>Dashboard</p>
@@ -134,6 +134,86 @@
                                 <?= nbs(3) ?>
                                 <i class="fas fa-images nav-icon"></i>
                                 <p>Galeri Event</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Transaksi -->
+                <li class="nav-header">TRANSAKSI</li>
+                
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['admin/transaksi/sale']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['admin/transaksi/sale']) ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-shopping-cart"></i>
+                        <p>
+                            Penjualan
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <!-- Orders Management -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/orders') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/orders') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-list-alt"></i>
+                                <p>Daftar Pesanan</p>
+                            </a>
+                        </li>
+                        <!-- Pending Orders -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/orders/pending') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/orders/pending') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-clock"></i>
+                                <p>Pesanan Pending</p>
+                            </a>
+                        </li>
+                        <!-- Paid Orders -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/orders/paid') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/orders/paid') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-check-circle"></i>
+                                <p>Pesanan Terbayar</p>
+                            </a>
+                        </li>
+                        <!-- Failed Orders -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/orders/failed') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/orders/failed') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-times-circle"></i>
+                                <p>Pesanan Gagal</p>
+                            </a>
+                        </li>
+                        <!-- Cancelled Orders -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/orders/cancelled') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/orders/cancelled') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-ban"></i>
+                                <p>Pesanan Dibatalkan</p>
+                            </a>
+                        </li>
+                        <!-- Reports -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/reports') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/reports') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-chart-bar"></i>
+                                <p>Laporan Penjualan</p>
+                            </a>
+                        </li>
+                        <!-- Export -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/export') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/export') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-download"></i>
+                                <p>Export Data</p>
                             </a>
                         </li>
                     </ul>

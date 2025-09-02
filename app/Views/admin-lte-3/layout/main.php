@@ -108,44 +108,114 @@ if (!isset($Pengaturan)) {
     <!-- ./wrapper -->
     <?= $this->renderSection('js') ?>
 
-    <!-- Add this script for toastr notifications -->
+    <!-- Global Toastr Configuration -->
     <script>
-        $(document).ready(function () {
-            // Toastr options
-            toastr.options = {
-                closeButton: true,
-                debug: false,
-                newestOnTop: true,
-                progressBar: true,
-                positionClass: "toast-top-right",
-                preventDuplicates: false,
-                onclick: null,
-                showDuration: "300",
-                hideDuration: "1000",
-                timeOut: "5000",
-                extendedTimeOut: "1000",
-                showEasing: "swing",
-                hideEasing: "linear",
-                showMethod: "fadeIn",
-                hideMethod: "fadeOut"
-            };
+        // Global toastr configuration - available anywhere
+        window.toastrConfig = {
+            closeButton: true,
+            debug: false,
+            newestOnTop: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            preventDuplicates: false,
+            onclick: null,
+            showDuration: "300",
+            hideDuration: "1000",
+            timeOut: "5000",
+            extendedTimeOut: "1000",
+            showEasing: "swing",
+            hideEasing: "linear",
+            showMethod: "fadeIn",
+            hideMethod: "fadeOut"
+        };
 
-            // Flash messages
+        // Global toastr helper functions
+        window.showToast = {
+            success: function(message, title = null) {
+                toastr.options = window.toastrConfig;
+                toastr.success(message, title);
+            },
+            error: function(message, title = null) {
+                toastr.options = window.toastrConfig;
+                toastr.error(message, title);
+            },
+            warning: function(message, title = null) {
+                toastr.options = window.toastrConfig;
+                toastr.warning(message, title);
+            },
+            info: function(message, title = null) {
+                toastr.options = window.toastrConfig;
+                toastr.info(message, title);
+            },
+            // Custom method for AJAX responses
+            fromResponse: function(response) {
+                if (response.success) {
+                    this.success(response.message || 'Operation completed successfully');
+                } else {
+                    this.error(response.message || 'Operation failed');
+                }
+            },
+            // Method for handling validation errors
+            validationErrors: function(errors) {
+                if (typeof errors === 'object') {
+                    Object.keys(errors).forEach(function(field) {
+                        if (Array.isArray(errors[field])) {
+                            errors[field].forEach(function(error) {
+                                showToast.error(error, 'Validation Error');
+                            });
+                        } else {
+                            showToast.error(errors[field], 'Validation Error');
+                        }
+                    });
+                } else if (typeof errors === 'string') {
+                    this.error(errors, 'Validation Error');
+                }
+            }
+        };
+
+        $(document).ready(function () {
+            // Apply global toastr configuration
+            toastr.options = window.toastrConfig;
+
+            // Handle flash messages from CodeIgniter session
             <?php if (session()->getFlashdata('success')): ?>
-                toastr.success('<?= session()->getFlashdata('success') ?>');
+                showToast.success('<?= addslashes(session()->getFlashdata('success')) ?>');
             <?php endif; ?>
 
             <?php if (session()->getFlashdata('error')): ?>
-                toastr.error('<?= session()->getFlashdata('error') ?>');
+                showToast.error('<?= addslashes(session()->getFlashdata('error')) ?>');
             <?php endif; ?>
 
             <?php if (session()->getFlashdata('warning')): ?>
-                toastr.warning('<?= session()->getFlashdata('warning') ?>');
+                showToast.warning('<?= addslashes(session()->getFlashdata('warning')) ?>');
             <?php endif; ?>
 
             <?php if (session()->getFlashdata('info')): ?>
-                toastr.info('<?= session()->getFlashdata('info') ?>');
+                showToast.info('<?= addslashes(session()->getFlashdata('info')) ?>');
             <?php endif; ?>
+
+            // Global AJAX error handler
+            $(document).ajaxError(function(event, xhr, settings) {
+                if (xhr.status === 403) {
+                    showToast.error('Access forbidden. Please check your permissions.', 'Error 403');
+                } else if (xhr.status === 404) {
+                    showToast.error('Resource not found.', 'Error 404');
+                } else if (xhr.status === 500) {
+                    showToast.error('Internal server error. Please try again.', 'Error 500');
+                } else if (xhr.status !== 200 && xhr.status !== 0) {
+                    showToast.error('An error occurred: ' + xhr.statusText, 'Error ' + xhr.status);
+                }
+            });
+
+            // Global CSRF token refresh for AJAX
+            window.refreshCSRFToken = function() {
+                $.get('<?= base_url("csrf-token") ?>', function(data) {
+                    if (data.token) {
+                        $('meta[name="X-CSRF-TOKEN"]').attr('content', data.token);
+                        window.csrf_hash = data.token;
+                    }
+                });
+            };
         });
     </script>
 

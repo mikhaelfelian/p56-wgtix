@@ -387,7 +387,7 @@ class Cart extends BaseController
                 'invoice_date'    => date('Y-m-d H:i:s'),
                 'total_amount'    => $data['subtotal'],
                 'payment_status'  => 'pending',
-                'payment_method'  => 'multiple', // Since we can have multiple payment platforms
+                'payment_method'  => $data['cart_payments']['platform_id'], // Since we can have multiple payment platforms
                 'notes'           => 'Order from cart checkout',
                 'status'          => 'active',
                 'created_at'      => date('Y-m-d H:i:s'),
@@ -444,7 +444,25 @@ class Cart extends BaseController
             // Clear cart after successful order
             $this->cartModel->clearCart($userId, $sessionId);
 
-            // Redirect to orders page on success
+            // Check if payment confirmation is needed
+            if (!empty($data['cart_payments'])) {
+                foreach ($data['cart_payments'] as $payment) {
+                    $platformId = $payment['platform_id'] ?? 0;
+                    
+                    // If platform is not ID 1, check platform requirements
+                    if ($platformId != 1) {
+                        $platform = $this->platformModel->find($platformId);
+                        
+                        // Check if platform requires manual confirmation
+                        if ($platform && $platform->status_system == 0 && $platform->status_gateway == 0) {
+                            // Redirect to payment confirmation page
+                            return redirect()->to(base_url('sale/confirm/' . $lastId));
+                        }
+                    }
+                }
+            }
+
+            // Default redirect to orders page
             return redirect()->to(base_url('my/orders'));
             
         } catch (\Exception $e) {

@@ -38,7 +38,8 @@ class PlatformModel extends Model
         'logo',
         'hasil',
         'status',
-        'status_gateway'
+        'status_gateway',
+        'status_system'
     ];
 
     // Dates - Note: This table doesn't have timestamp fields based on the schema provided
