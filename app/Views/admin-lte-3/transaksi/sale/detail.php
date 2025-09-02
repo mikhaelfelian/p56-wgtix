@@ -64,6 +64,15 @@ echo $this->extend(theme_path('main')); ?>
                             <a href="<?= base_url('admin/transaksi/sale/orders') ?>" class="btn btn-sm btn-secondary">
                                 <i class="fas fa-arrow-left"></i> Back to Orders
                             </a>
+                            <a href="<?= base_url('admin/transaksi/sale/invoice/' . $order->id) ?>" class="btn btn-sm btn-success">
+                                <i class="fas fa-file-pdf"></i> Invoice PDF
+                            </a>
+                            <a href="<?= base_url('admin/transaksi/sale/dot-matrix-invoice/' . $order->id) ?>" class="btn btn-sm btn-warning">
+                                <i class="fas fa-print"></i> Dot Matrix
+                            </a>
+                            <a href="<?= base_url('admin/transaksi/sale/tickets/' . $order->id) ?>" class="btn btn-sm btn-info">
+                                <i class="fas fa-ticket-alt"></i> All Tickets
+                            </a>
                             <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
                                 <i class="fas fa-print"></i> Print
                             </button>
@@ -225,6 +234,7 @@ echo $this->extend(theme_path('main')); ?>
                                     <th>Quantity</th>
                                     <th>Unit Price</th>
                                     <th>Total Price</th>
+                                    <th>Ticket</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -255,15 +265,25 @@ echo $this->extend(theme_path('main')); ?>
                                             <td><?= $detail->quantity ?: 1 ?></td>
                                             <td>Rp <?= number_format($detail->unit_price ?: 0, 0, ',', '.') ?></td>
                                             <td><strong>Rp <?= number_format($detail->total_price ?: 0, 0, ',', '.') ?></strong></td>
+                                            <td>
+                                                <a href="<?= base_url('admin/transaksi/sale/ticket/' . $detail->id) ?>" class="btn btn-sm btn-warning" title="Download Ticket">
+                                                    <i class="fas fa-ticket-alt"></i>
+                                                </a>
+                                                <?php if (!empty($detail->qrcode)): ?>
+                                                    <span class="badge badge-success">QR Ready</span>
+                                                <?php else: ?>
+                                                    <span class="badge badge-secondary">No QR</span>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                     <tr class="bg-light">
-                                        <td colspan="5" class="text-right"><strong>Grand Total:</strong></td>
+                                        <td colspan="6" class="text-right"><strong>Grand Total:</strong></td>
                                         <td><strong class="text-success">Rp <?= number_format($grandTotal, 0, ',', '.') ?></strong></td>
                                     </tr>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
+                                        <td colspan="7" class="text-center text-muted py-4">
                                             No order items found
                                         </td>
                                     </tr>
@@ -292,6 +312,7 @@ echo $this->extend(theme_path('main')); ?>
                                     <th>Transaction ID</th>
                                     <th>Amount</th>
                                     <th>Notes</th>
+                                    <th>Attachments</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -306,16 +327,47 @@ echo $this->extend(theme_path('main')); ?>
                                         <td><?= esc($payment->no_nota ?: 'N/A') ?></td>
                                         <td><strong>Rp <?= number_format($payment->nominal, 0, ',', '.') ?></strong></td>
                                         <td><?= esc($payment->keterangan ?: '-') ?></td>
+                                        <td>
+                                            <?php
+                                            $files = [];
+                                            if (!empty($payment->foto)) {
+                                                $decoded = json_decode($payment->foto, true);
+                                                if (is_array($decoded)) {
+                                                    $files = $decoded;
+                                                }
+                                            }
+                                            ?>
+                                            <?php if (!empty($files)): ?>
+                                                <?php foreach ($files as $file): ?>
+                                                    <?php
+                                                    $filePath = base_url('public/file/sale/' . $order->id . '/' . $file['filename']);
+                                                    $ext = strtolower($file['extension'] ?? pathinfo($file['filename'], PATHINFO_EXTENSION));
+                                                    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif']);
+                                                    ?>
+                                                    <?php if ($isImage): ?>
+                                                        <a href="<?= $filePath ?>" target="_blank">
+                                                            <img src="<?= $filePath ?>" style="width:40px;height:40px;object-fit:cover;" alt="<?= esc($file['original_name']) ?>">
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <a href="<?= $filePath ?>" target="_blank">
+                                                            <i class="fas fa-file-pdf text-danger"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                                 <tr class="bg-light">
-                                    <td colspan="3" class="text-right"><strong>Total Payments:</strong></td>
+                                    <td colspan="4" class="text-right"><strong>Total Payments:</strong></td>
                                     <td><strong class="text-info">Rp <?= number_format($totalPayments, 0, ',', '.') ?></strong></td>
                                     <td></td>
                                 </tr>
                                 <?php if ($order->total_amount != $totalPayments): ?>
                                 <tr class="bg-warning">
-                                    <td colspan="3" class="text-right"><strong>Remaining Balance:</strong></td>
+                                    <td colspan="4" class="text-right"><strong>Remaining Balance:</strong></td>
                                     <td><strong>Rp <?= number_format($order->total_amount - $totalPayments, 0, ',', '.') ?></strong></td>
                                     <td></td>
                                 </tr>
@@ -333,8 +385,48 @@ echo $this->extend(theme_path('main')); ?>
 
 <?= $this->endSection() ?>
 
+<?= $this->section('css') ?>
+<!-- Ekko Lightbox CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css">
+<style>
+.payment-attachments .card {
+    transition: transform 0.2s;
+}
+.payment-attachments .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.payment-attachments img {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.payment-attachments img:hover {
+    opacity: 0.8;
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('js') ?>
+<!-- Ekko Lightbox JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.min.js"></script>
 <script>
+$(document).ready(function() {
+    // Initialize Ekko Lightbox
+    $(document).on('click', '[data-toggle="lightbox"]', function(event) {
+        event.preventDefault();
+        $(this).ekkoLightbox({
+            alwaysShowClose: true,
+            showArrows: true,
+            onShown: function() {
+                console.log('Lightbox shown');
+            },
+            onContentLoaded: function() {
+                console.log('Lightbox content loaded');
+            }
+        });
+    });
+});
+
 // Print function
 window.addEventListener('beforeprint', function() {
     document.title = 'Invoice <?= esc($order->invoice_no) ?>';

@@ -367,6 +367,16 @@ class Cart extends BaseController
             die('Invalid order data format');
         }
         
+        // Debug: Log the received data structure
+        log_message('info', 'Order data received: ' . json_encode($data));
+        
+        // Temporary debug output
+        if (isset($data['cart_payments'])) {
+            log_message('info', 'Cart payments structure: ' . json_encode($data['cart_payments']));
+        } else {
+            log_message('warning', 'cart_payments not found in data');
+        }
+        
         // Validate required fields
         if (empty($data['no_nota']) || empty($data['cart_data']) || empty($data['subtotal'])) {
             die('Missing required order information');
@@ -387,7 +397,7 @@ class Cart extends BaseController
                 'invoice_date'    => date('Y-m-d H:i:s'),
                 'total_amount'    => $data['subtotal'],
                 'payment_status'  => 'pending',
-                'payment_method'  => $data['cart_payments']['platform_id'], // Since we can have multiple payment platforms
+                'payment_method'  => $data['cart_payments'][0]['platform_id'], // Since we can have multiple payment platforms
                 'notes'           => 'Order from cart checkout',
                 'status'          => 'active',
                 'created_at'      => date('Y-m-d H:i:s'),
@@ -419,9 +429,15 @@ class Cart extends BaseController
             // 3. Save to tbl_trans_jual_plat (payment platforms)
             if (!empty($data['cart_payments'])) {
                 foreach ($data['cart_payments'] as $payment) {
+                    // Ensure platform_id exists
+                    if (!isset($payment['platform_id'])) {
+                        log_message('error', 'Missing platform_id in payment data during save: ' . json_encode($payment));
+                        continue; // Skip this payment
+                    }
+                    
                     $platData = [
                         'id_penjualan'  => $lastId,
-                        'id_platform'   => $payment['platform_id']    ?? 0,
+                        'id_platform'   => $payment['platform_id'],
                         'no_nota'       => $data['no_nota'],
                         'platform'      => $payment['platform']       ?? '',
                         'nominal'       => $payment['amount']         ?? 0,
@@ -447,10 +463,16 @@ class Cart extends BaseController
             // Check if payment confirmation is needed
             if (!empty($data['cart_payments'])) {
                 foreach ($data['cart_payments'] as $payment) {
-                    $platformId = $payment['platform_id'] ?? 0;
+                    // Debug: Check the actual structure
+                    // if (!isset($payment['platform_id'])) {
+                    //     log_message('error', 'Missing platform_id in payment data: ' . json_encode($payment));
+                    //     continue; // Skip this payment if platform_id is missing
+                    // }
+                    
+                    $platformId = $payment['platform_id'];
                     
                     // If platform is not ID 1, check platform requirements
-                    if ($platformId != 1) {
+                    if ($platformId != '1') {
                         $platform = $this->platformModel->find($platformId);
                         
                         // Check if platform requires manual confirmation
@@ -473,8 +495,8 @@ class Cart extends BaseController
                 'original_data' => $data,
                 'transaction_status' => 'FAILED'
             ];
-            
             pre($errorData);
+            // return redirect()->to(base_url('my/orders'));
         }
     }
     

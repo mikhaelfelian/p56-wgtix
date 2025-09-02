@@ -27,10 +27,8 @@
 				</div>
 				<div class="col-md-5 col-md-pull-7 half-side">
 					<div class="footer-about left-box footer-widget row">
-						<h3 class="footer-title">About Us</h3>
-						<p>Lorem ipsum dolor sit amet, consectetur some dymmy adipiscing elit. Nam turpis quam, sodales
-							in text she ante sagittis, varius efficitur mauris. Nam turpis quam, sodales in text should
-							be able. to...</p>
+						<h3 class="footer-title">Tentang Kami</h3>
+						<p>Platform resmi manajemen tiket untuk konser, wisata, dan berbagai event spesial. Nikmati pengalaman pemesanan tiket yang mudah, aman, dan terpercaya hanya di WGPTIX.com.</p>
 					</div>
 					<div class="copyright-row left-box footer-widget row">
 						&copy; Copyright <?= date('Y') ?> - <?= esc($Pengaturan->judul_app ?? $Pengaturan->judul ?? 'Your Site') ?>. All Rights Reserved.

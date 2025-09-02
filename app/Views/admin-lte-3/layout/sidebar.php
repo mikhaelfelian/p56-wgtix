@@ -42,15 +42,6 @@
                     </a>
                 </li>
 
-                <!-- Jadwal -->
-                <li class="nav-item">
-                    <a href="<?= base_url('admin/jadwal') ?>"
-                        class="nav-link <?= isMenuActive('admin/jadwal') ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-calendar-alt"></i>
-                        <p>Jadwal</p>
-                    </a>
-                </li>
-
                 <!-- Racepack -->
                 <li
                     class="nav-item has-treeview <?= isMenuActive(['admin/racepack', 'admin/kategori-racepack', 'admin/stock-racepack']) ? 'menu-open' : '' ?>">

@@ -53,12 +53,17 @@ $routes->group('my', ['namespace' => 'App\Controllers\Transaksi'], function($rou
     $routes->get('orders/(:segment)', 'Sale::orders/$1');
     $routes->get('orders', 'Sale::orders');
     $routes->get('order/(:num)', 'Sale::detail/$1');
+    $routes->get('invoice/(:num)', 'Sale::downloadInvoice/$1');
+    $routes->get('dot-matrix-invoice/(:num)', 'Sale::downloadDotMatrixInvoice/$1');
+    $routes->get('ticket/(:num)', 'Sale::downloadTicket/$1');
+    $routes->get('tickets/(:num)', 'Sale::downloadAllTickets/$1');
 });
 
 // Payment Confirmation routes
 $routes->group('sale', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('confirm/(:num)', 'Sale::confirm/$1');
     $routes->post('process-confirmation', 'Sale::processConfirmation');
+    $routes->post('upload-payment-proof/(:num)', 'Sale::uploadPaymentProof/$1');
 });
 
 // Grouping admin page routes below.
@@ -281,6 +286,10 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('reports', 'Sale::reports');
         $routes->get('export', 'Sale::export');
         $routes->get('export/(:segment)', 'Sale::export/$1');
+        $routes->get('invoice/(:num)', 'Sale::downloadInvoice/$1');
+        $routes->get('dot-matrix-invoice/(:num)', 'Sale::downloadDotMatrixInvoice/$1');
+        $routes->get('ticket/(:num)', 'Sale::downloadTicket/$1');
+        $routes->get('tickets/(:num)', 'Sale::downloadAllTickets/$1');
     });
 
     // Admin Pengaturan routes

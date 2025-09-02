@@ -90,7 +90,8 @@ class Filters extends BaseFilters
                 'cart/getItems',
                 'cart/getCount',
                 'cart/getPlatforms',
-                'cart/test'
+                'cart/test',
+                'sale/upload-payment-proof/*'
             ]],
         ],
         'after' => [

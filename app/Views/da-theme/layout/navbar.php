@@ -33,12 +33,6 @@
                     <li class="<?= strpos(current_url(), 'event') !== false ? 'active' : '' ?>">
                         <a href="<?= base_url('events') ?>">Event</a>
                     </li>
-                    <li class="<?= strpos(current_url(), 'berita') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('news') ?>">Berita</a>
-                    </li>
-                    <li class="<?= strpos(current_url(), 'about') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('about') ?>">About</a>
-                    </li>
                     <li class="<?= strpos(current_url(), 'contact') !== false ? 'active' : '' ?>">
                         <a href="<?= base_url('contact') ?>">Contact</a>
                     </li>
@@ -64,10 +58,8 @@
                                 <small>Member since <?= date('d-m-Y', $user->created_on) ?></small>
                             </li>
                             <li role="separator" class="divider"></li>
-                            <li><a href="<?= base_url('auth/profile') ?>"><i class="fa fa-user"></i> Profile</a></li>
                             <li><a href="<?= base_url('my/orders') ?>"><i class="fa fa-list"></i> My Orders</a></li>
                             <li><a href="<?= base_url('cart') ?>"><i class="fa fa-shopping-cart"></i> Cart</a></li>
-                            <li><a href="<?= base_url('dashboard') ?>"><i class="fa fa-dashboard"></i> Dashboard</a></li>
                             <li role="separator" class="divider"></li>
                             <li><a href="<?= base_url('auth/logout') ?>"><i class="fa fa-sign-out"></i> Sign out</a></li>
                         </ul>

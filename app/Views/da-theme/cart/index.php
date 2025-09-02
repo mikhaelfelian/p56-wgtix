@@ -46,7 +46,6 @@ echo $this->section('content');
                             <i class="fa fa-spinner fa-spin"></i> Loading payment methods...
                         </p>
                     </div>
-
                 </div>
             </div>
             <div class="col-md-6">
@@ -315,6 +314,10 @@ echo $this->endSection();
                     amount = parseFloat($('.payment-amount').val().replace(/\./g, '').replace(/,/g, '.')) || 0;
                 }
                 
+                // Debug payment validation
+                console.log('Validation - Platform ID:', platformId);
+                console.log('Validation - Amount:', amount);
+                
                 if (!platformId || amount <= 0) {
                     alert('Please select a payment method and enter amount.');
                     return false;
@@ -481,14 +484,31 @@ echo $this->endSection();
             }
             var note = $('.payment-note').val();
 
+            // Debug logging
+            console.log('Platform ID:', platformId);
+            console.log('Platform Name:', platformName);
+            console.log('Amount:', amount);
+            console.log('Note:', note);
+
             if (platformId && amount > 0) {
                 cartPayments.push({
-                    platform_id: platformId,
+                    platform_id: parseInt(platformId), // Ensure it's an integer
                     platform: platformName,
                     amount: amount,
                     note: note
                 });
+            } else {
+                // Even if no valid payment, add an empty payment object to prevent errors
+                console.log('Warning: No valid payment platform selected');
+                cartPayments.push({
+                    platform_id: 0,
+                    platform: 'No Payment Selected',
+                    amount: 0,
+                    note: ''
+                });
             }
+
+            console.log('Final cartPayments:', cartPayments);
 
             // Prepare participant list from modal inputs
             var participants = [];
@@ -521,7 +541,7 @@ echo $this->endSection();
             });
 
             // Return data in your specified format
-            return {
+            var orderData = {
                 no_nota: notaNumber,
                 subtotal: subtotal,
                 subtotal_formatted: 'Rp ' + number_format(subtotal, 0, ',', '.'),
@@ -529,6 +549,12 @@ echo $this->endSection();
                 cart_payments: cartPayments,
                 participant: participants
             };
+
+            // Debug: Log the complete order data
+            console.log('Complete order data:', orderData);
+            console.log('Order data JSON:', JSON.stringify(orderData));
+
+            return orderData;
         }
 
         // Generate nota number

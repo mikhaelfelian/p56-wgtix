@@ -35,7 +35,6 @@ class PesertaModel extends Model
         'email',
         'id_kelompok',
         'id_kategori',
-        'id_platform',
         'status',
         'qr_code',
         'tripay_reference',
@@ -60,7 +59,6 @@ class PesertaModel extends Model
         'email'           => 'permit_empty|valid_email|max_length[100]',
         'id_kelompok'     => 'permit_empty|integer',
         'id_kategori'     => 'permit_empty|integer',
-        'id_platform'     => 'permit_empty|integer',
         'status'          => 'required|in_list[0,1]',
         'id_user'         => 'required|integer'
     ];
@@ -139,7 +137,8 @@ class PesertaModel extends Model
         return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC');
+                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC')
+                   ->findAll();
     }
 
     /**
@@ -214,7 +213,8 @@ class PesertaModel extends Model
                    ->orLike('no_hp', $keyword)
                    ->orLike('email', $keyword)
                    ->groupEnd()
-                   ->orderBy('nama_lengkap', 'ASC');
+                   ->orderBy('nama_lengkap', 'ASC')
+                   ->findAll();
     }
 
     /**
