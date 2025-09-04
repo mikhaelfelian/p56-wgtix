@@ -47,16 +47,13 @@ class Peserta extends BaseController
         $page    = $this->request->getGet('page') ?? 1;
         $perPage = 10;
 
-        $query = $this->pesertaModel;
-
         if ($search) {
-            $query = $query->searchPeserta($search);
+            $peserta = $this->pesertaModel->searchPesertaQuery($search)->paginate($perPage);
         } else {
-            $query = $query->getPesertaWithGroup();
+            $peserta = $this->pesertaModel->getPesertaWithGroupQuery()->paginate($perPage);
         }
-
-        $peserta = $query->paginate($perPage);
-        $pager   = $this->pesertaModel->pager;
+        
+        $pager = $this->pesertaModel->pager;
 
         // Get latest participant for QR code display in success message
         $latestPeserta = null;
@@ -82,7 +79,7 @@ class Peserta extends BaseController
      */
     public function show($id = null)
     {
-        $peserta = $this->pesertaModel->getPesertaWithGroup()->where('tbl_peserta.id', $id)->first();
+        $peserta = $this->pesertaModel->getPesertaWithGroupQuery()->where('tbl_peserta.id', $id)->first();
 
         if (!$peserta) {
             return redirect()->to('/admin/peserta/daftar')
@@ -507,16 +504,13 @@ class Peserta extends BaseController
         $page    = $this->request->getGet('page') ?? 1;
         $perPage = 10;
 
-        $query = $this->kelompokModel;
-
         if ($search) {
-            $query = $query->searchKelompok($search);
+            $kelompok = $this->kelompokModel->searchKelompokQuery($search)->paginate($perPage);
         } else {
-            $query = $query->getKelompokWithMemberCount();
+            $kelompok = $this->kelompokModel->getKelompokWithMemberCountQuery()->paginate($perPage);
         }
-
-        $kelompok = $query->paginate($perPage);
-        $pager    = $this->kelompokModel->pager;
+        
+        $pager = $this->kelompokModel->pager;
 
         $data = [
             'title'       => 'Kelompok Peserta',

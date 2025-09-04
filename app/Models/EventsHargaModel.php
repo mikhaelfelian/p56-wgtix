@@ -74,12 +74,26 @@ class EventsHargaModel extends Model
     }
 
     /**
-     * Get all pricing for an event
+     * Get all pricing for an event from published event
      * 
      * @param int $eventId
      * @return array
      */
     public function getEventPricing($eventId)
+    {
+        return $this->where('id_event', $eventId)
+                    ->where('status', '1')
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+    }
+
+    /**
+     * Get all pricing for an event from admin event
+     * 
+     * @param int $eventId
+     * @return array
+     */
+    public function getEventPricings($eventId)
     {
         return $this->where('id_event', $eventId)
                     ->orderBy('created_at', 'DESC')

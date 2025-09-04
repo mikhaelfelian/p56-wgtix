@@ -181,7 +181,7 @@ echo $this->section('content');
                 <div class="row mt-4">
                     <div class="col-md-12">
                         <div class="text-center">
-                            <?= $pager->links() ?>
+                            <?= $pager->links('default', 'datheme_pagination') ?>
                         </div>
                     </div>
                 </div>

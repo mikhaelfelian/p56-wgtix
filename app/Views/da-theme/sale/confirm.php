@@ -240,7 +240,7 @@ echo $this->extend('da-theme/layout/main'); ?>
                                 Submit Payment Confirmation
                             </button>
                             
-                            <a href="<?= base_url('my/orders') ?>" class="btn btn-default btn-block" 
+                            <a href="<?= base_url('sale/orders') ?>" class="btn btn-default btn-block" 
                                style="margin-top: 15px; padding: 12px; border: 2px solid #e0e6ed; 
                                       border-radius: 8px; font-weight: 600; transition: all 0.3s ease;"
                                onmouseover="this.style.borderColor='#667eea'; this.style.color='#667eea'"

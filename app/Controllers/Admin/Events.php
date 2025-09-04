@@ -214,7 +214,7 @@ class Events extends BaseController
         $data = [
             'title' => 'Detail Event',
             'event' => $event,
-            'pricing' => $this->eventsHargaModel->getEventPricing($id),
+            'pricing' => $this->eventsHargaModel->getEventPricings($id),
             'gallery' => $this->eventGaleriModel->getGalleryByEvent($id),
             'capacity_info' => $this->eventsModel->getEventCapacityInfo($id)
         ];
@@ -469,7 +469,7 @@ class Events extends BaseController
                 ->with('error', 'Event tidak ditemukan');
         }
 
-        $prices = $this->eventsHargaModel->getPricesByEvent($eventId);
+        $prices = $this->eventsHargaModel->getEventPricings($eventId);
 
         $data = [
             'title' => 'Kelola Harga Event: ' . $event->event,

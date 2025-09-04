@@ -291,24 +291,6 @@ class Cart extends BaseController
     }
 
     /**
-     * Test method to debug cart functionality
-     */
-    public function test()
-    {
-        $userId = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
-        $sessionId = $userId ? null : session_id();
-        
-        return $this->response->setJSON([
-            'success' => true,
-            'user_id' => $userId,
-            'session_id' => $sessionId,
-            'logged_in' => $this->ionAuth->loggedIn(),
-            'csrf_token' => csrf_token(),
-            'csrf_hash' => csrf_hash()
-        ]);
-    }
-
-    /**
      * Display cart page
      */
     public function index()
@@ -324,12 +306,12 @@ class Cart extends BaseController
         $platforms = $this->platformModel->getByStatus(1);
 
         $data = [
-            'title' => 'Shopping Cart',
-            'cart_items' => $cartItems,
-            'cart_total' => $cartTotal,
-            'cart_count' => $cartCount,
-            'formatted_total' => 'Rp ' . number_format($cartTotal, 0, ',', '.'),
-            'platforms' => $platforms
+            'title'           => 'Shopping Cart',
+            'cart_items'      => $cartItems,
+            'cart_total'      => $cartTotal,
+            'cart_count'      => $cartCount,
+            'formatted_total' => format_angka($cartTotal),
+            'platforms'       => $platforms,
         ];
 
         return $this->view('da-theme/cart/index', $data);
@@ -365,16 +347,6 @@ class Cart extends BaseController
         
         if (json_last_error() !== JSON_ERROR_NONE) {
             die('Invalid order data format');
-        }
-        
-        // Debug: Log the received data structure
-        log_message('info', 'Order data received: ' . json_encode($data));
-        
-        // Temporary debug output
-        if (isset($data['cart_payments'])) {
-            log_message('info', 'Cart payments structure: ' . json_encode($data['cart_payments']));
-        } else {
-            log_message('warning', 'cart_payments not found in data');
         }
         
         // Validate required fields
@@ -431,7 +403,6 @@ class Cart extends BaseController
                 foreach ($data['cart_payments'] as $payment) {
                     // Ensure platform_id exists
                     if (!isset($payment['platform_id'])) {
-                        log_message('error', 'Missing platform_id in payment data during save: ' . json_encode($payment));
                         continue; // Skip this payment
                     }
                     
@@ -460,32 +431,34 @@ class Cart extends BaseController
             // Clear cart after successful order
             $this->cartModel->clearCart($userId, $sessionId);
 
-            // Check if payment confirmation is needed
+            // Check if payment confirmation or gateway is needed
             if (!empty($data['cart_payments'])) {
                 foreach ($data['cart_payments'] as $payment) {
-                    // Debug: Check the actual structure
-                    // if (!isset($payment['platform_id'])) {
-                    //     log_message('error', 'Missing platform_id in payment data: ' . json_encode($payment));
-                    //     continue; // Skip this payment if platform_id is missing
-                    // }
-                    
                     $platformId = $payment['platform_id'];
                     
                     // If platform is not ID 1, check platform requirements
                     if ($platformId != '1') {
                         $platform = $this->platformModel->find($platformId);
                         
-                        // Check if platform requires manual confirmation
-                        if ($platform && $platform->status_system == 0 && $platform->status_gateway == 0) {
-                            // Redirect to payment confirmation page
-                            return redirect()->to(base_url('sale/confirm/' . $lastId));
+                        if ($platform) {
+                            // If status_system == 0 and status_gateway == 1, throw into tripay payment gateway
+                            if ($platform->status_system == 0 && $platform->status_gateway == 1 && $platform->jenis == 'tripay') {
+                                // Redirect to tripay payment gateway page
+                                return redirect()->to(base_url('sale/tripay/' . $lastId));
+                            }
+
+                            // If status_system == 0 and status_gateway == 0, manual confirmation
+                            if ($platform->status_system == 0 && $platform->status_gateway == 0) {
+                                // Redirect to payment confirmation page
+                                return redirect()->to(base_url('sale/confirm/' . $lastId));
+                            }
                         }
                     }
                 }
             }
 
             // Default redirect to orders page
-            return redirect()->to(base_url('my/orders'));
+            return redirect()->to(base_url('sale/orders'));
             
         } catch (\Exception $e) {
             $this->db->transRollback();
@@ -495,39 +468,141 @@ class Cart extends BaseController
                 'original_data' => $data,
                 'transaction_status' => 'FAILED'
             ];
-            pre($errorData);
-            // return redirect()->to(base_url('my/orders'));
+            
+            return redirect()->to(base_url('sale/orders'))->with('error', $e->getMessage());
         }
     }
-    
+
     /**
-     * Process order data
+     * Handle Tripay Payment Gateway
+     * @param int $orderId
      */
-    private function processOrder($data)
+    public function pg_tripay($orderId = null)
     {
-        try {
-            // Here you can implement your order processing logic
-            // For now, let's just log the data and return success
-            
-            log_message('info', 'Processing order: ' . json_encode($data));
-            
-            // You can add database operations here:
-            // 1. Save to tbl_trans_jual (invoice)
-            // 2. Save to tbl_trans_jual_det (invoice details)
-            // 3. Save participants if needed
-            // 4. Process payments
-            
-            return [
-                'success' => true,
-                'message' => 'Order processed successfully',
-                'invoice_no' => $data['no_nota']
-            ];
-            
-        } catch (\Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Failed to process order: ' . $e->getMessage()
+        // Validate orderId
+        if (empty($orderId) || !is_numeric($orderId)) {
+            return $this->response->setStatusCode(400)->setBody('Invalid order ID');
+        }
+
+        // Fetch order data
+        $order = $this->transJualModel->find($orderId);
+        if (!$order) {
+            return $this->response->setStatusCode(404)->setBody('Order not found');
+        }
+
+        // Fetch payment platform info
+        $platform = $this->platformModel->find($order->payment_method);
+        if (!$platform || $platform->status_gateway != 1) {
+            return $this->response->setStatusCode(400)->setBody('Invalid payment gateway');
+        }
+
+        // Prepare Tripay API request
+        $tripayApiKey = getenv('TRIPAY_API_KEY');
+        $tripayMerchantCode = getenv('TRIPAY_MERCHANT_CODE');
+        $tripayPrivateKey = getenv('TRIPAY_PRIVATE_KEY');
+        $tripayApiUrl = 'https://tripay.co.id/api/transaction/create';
+
+        // Prepare payload
+        $payload = [
+            'method'         => $platform->kode_gateway, // e.g. 'BRIVA', 'BNIVA', etc.
+            'merchant_ref'   => $order->invoice_no,
+            'amount'         => $order->total_amount,
+            'customer_name'  => $order->user_id ? $this->ionAuth->user($order->user_id)->row()->first_name : 'Guest',
+            'customer_email' => $order->user_id ? $this->ionAuth->user($order->user_id)->row()->email : '',
+            'order_items'    => [],
+            'callback_url'   => base_url('cart/pg_tripay_callback'),
+            'return_url'     => base_url('sale/orders'),
+            'expired_time'   => strtotime('+1 day'),
+            'signature'      => hash_hmac('sha256', $tripayMerchantCode.$order->invoice_no.$order->total_amount, $tripayPrivateKey)
+        ];
+
+        // Get order items
+        $orderItems = $this->transJualDetModel->where('id_penjualan', $orderId)->findAll();
+        foreach ($orderItems as $item) {
+            $payload['order_items'][] = [
+                'sku'      => $item->event_id,
+                'name'     => $item->event_title,
+                'price'    => $item->unit_price,
+                'quantity' => $item->quantity,
+                'product_url' => base_url('event/detail/' . $item->event_id)
             ];
         }
+
+        // Send request to Tripay
+        $client = \Config\Services::curlrequest();
+        try {
+            $response = $client->post($tripayApiUrl, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $tripayApiKey,
+                    'Accept'        => 'application/json'
+                ],
+                'form_params' => $payload,
+                'http_errors' => false
+            ]);
+            $result = json_decode($response->getBody(), true);
+
+            if (isset($result['success']) && $result['success'] && isset($result['data']['checkout_url'])) {
+                // Optionally, save Tripay reference to order
+                $this->transJualModel->update($orderId, [
+                    'tripay_ref' => $result['data']['reference'] ?? null,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+                // Redirect to Tripay checkout
+                return redirect()->to($result['data']['checkout_url']);
+            } else {
+                $errorMsg = isset($result['message']) ? $result['message'] : 'Failed to create Tripay transaction';
+                return $this->response->setStatusCode(500)->setBody('Tripay Error: ' . $errorMsg);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setStatusCode(500)->setBody('Tripay Exception: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle Tripay Payment Gateway Callback
+     */
+    public function pg_tripay_callback()
+    {
+        // Tripay will POST JSON to this endpoint
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true);
+
+        // Log callback for debugging
+        log_message('info', 'Tripay Callback: ' . $json);
+
+        if (!$data || !isset($data['merchant_ref']) || !isset($data['status'])) {
+            return $this->response->setStatusCode(400)->setBody('Invalid callback data');
+        }
+
+        // Find order by merchant_ref (invoice_no)
+        $order = $this->transJualModel->where('invoice_no', $data['merchant_ref'])->first();
+        if (!$order) {
+            return $this->response->setStatusCode(404)->setBody('Order not found');
+        }
+
+        // Update payment status based on Tripay status
+        $status = $data['status'];
+        $update = [];
+        if ($status == 'PAID') {
+            $update['payment_status'] = 'paid';
+            $update['status'] = 'completed';
+        } elseif ($status == 'EXPIRED') {
+            $update['payment_status'] = 'expired';
+            $update['status'] = 'expired';
+        } elseif ($status == 'FAILED') {
+            $update['payment_status'] = 'failed';
+            $update['status'] = 'failed';
+        } else {
+            $update['payment_status'] = strtolower($status);
+        }
+        $update['updated_at'] = date('Y-m-d H:i:s');
+
+        $this->transJualModel->update($order->id, $update);
+
+        // Optionally, log the update
+        log_message('info', 'Tripay Callback Update: Order ' . $order->id . ' status updated to ' . $status);
+
+        // Respond to Tripay
+        return $this->response->setJSON(['success' => true]);
     }
 }

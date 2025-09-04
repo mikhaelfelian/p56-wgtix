@@ -63,7 +63,7 @@ class Events extends BaseController
         }
 
         // Get related events
-        $relatedEvents = $this->eventsModel->where('status', 1)
+        $relatedEvents = $this->eventsModel->where('status', '1')
                                            ->where('id !=', $id)
                                            ->where('id_kategori', $event->id_kategori)
                                            ->limit(4)

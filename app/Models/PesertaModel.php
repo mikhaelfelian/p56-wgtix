@@ -142,6 +142,19 @@ class PesertaModel extends Model
     }
 
     /**
+     * Get participants with group and kategori info (for pagination)
+     * 
+     * @return $this
+     */
+    public function getPesertaWithGroupQuery()
+    {
+        return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
+                   ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+                   ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
+                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC');
+    }
+
+    /**
      * Get participants by group
      * 
      * @param int $idKelompok
@@ -215,6 +228,26 @@ class PesertaModel extends Model
                    ->groupEnd()
                    ->orderBy('nama_lengkap', 'ASC')
                    ->findAll();
+    }
+
+    /**
+     * Search participants (for pagination)
+     * 
+     * @param string $keyword
+     * @return $this
+     */
+    public function searchPesertaQuery($keyword)
+    {
+        return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
+                   ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+                   ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
+                   ->groupStart()
+                   ->like('tbl_peserta.nama_lengkap', $keyword)
+                   ->orLike('tbl_peserta.kode_peserta', $keyword)
+                   ->orLike('tbl_peserta.no_hp', $keyword)
+                   ->orLike('tbl_peserta.email', $keyword)
+                   ->groupEnd()
+                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC');
     }
 
     /**

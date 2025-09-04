@@ -133,6 +133,10 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
+                                        <a href="<?= base_url("admin/events/view/$row->id") ?>"
+                                            class="btn btn-primary btn-sm rounded-0" title="Lihat">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
                                         <a href="<?= base_url("admin/events/edit/$row->id") ?>"
                                             class="btn btn-warning btn-sm rounded-0" title="Edit">
                                             <i class="fas fa-edit"></i>

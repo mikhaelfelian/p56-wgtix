@@ -152,7 +152,7 @@ echo $this->section('content');
                                                         Rp <?= format_angka($price->harga) ?>
                                                     </td>
                                                     <td style="text-align: center; vertical-align: middle;">
-                                                        <?php if ($user_level->name == 'user'): ?>
+                                                        <?php if (isset($user_level) && $user_level && $user_level->name == 'user'): ?>
                                                             <input type="number" class="form-control quantity text-center" name="quantity_<?= $price->id ?>" value="1" min="1" style="width:80px; margin: 0 auto;">
                                                         <?php endif; ?>
                                                     </td>

@@ -42,8 +42,8 @@
                             <span class="cart-counter badge" style="position: absolute; top: -8px; right: -8px; background: #ff6b6b; color: white; border-radius: 50%; min-width: 18px; height: 18px; font-size: 11px; line-height: 18px; text-align: center; display: none;">0</span>
                         </a>
                     </li>
-                    <li class="<?= strpos(current_url(), 'my/order') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('my/orders') ?>">
+                    <li class="<?= strpos(current_url(), 'sale/order') !== false ? 'active' : '' ?>">
+                        <a href="<?= base_url('sale/orders') ?>">
                             <i class="fa fa-list"></i> My Orders
                         </a>
                     </li>
@@ -58,7 +58,7 @@
                                 <small>Member since <?= date('d-m-Y', $user->created_on) ?></small>
                             </li>
                             <li role="separator" class="divider"></li>
-                            <li><a href="<?= base_url('my/orders') ?>"><i class="fa fa-list"></i> My Orders</a></li>
+                            <li><a href="<?= base_url('sale/orders') ?>"><i class="fa fa-list"></i> My Orders</a></li>
                             <li><a href="<?= base_url('cart') ?>"><i class="fa fa-shopping-cart"></i> Cart</a></li>
                             <li role="separator" class="divider"></li>
                             <li><a href="<?= base_url('auth/logout') ?>"><i class="fa fa-sign-out"></i> Sign out</a></li>
@@ -74,15 +74,6 @@
                     </li>
                     <li class="<?= strpos(current_url(), 'event') !== false ? 'active' : '' ?>">
                         <a href="<?= base_url('events') ?>">Event</a>
-                    </li>
-                    <li class="<?= strpos(current_url(), 'berita') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('news') ?>">Berita</a>
-                    </li>
-                    <li class="<?= strpos(current_url(), 'about') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('about') ?>">About</a>
-                    </li>
-                    <li class="<?= strpos(current_url(), 'contact') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('contact') ?>">Contact</a>
                     </li>
                 </ul>
             <?php endif; ?>

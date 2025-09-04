@@ -41,7 +41,7 @@ echo $this->section('content');
                             <span class="status <?= $statusClass ?>"><?= $statusText ?></span>
                         </div>
                         <p class="due-date">Jatuh Tempo:
-                            <?= date('d/m/Y', strtotime($order->invoice_date . ' +7 days')) ?></p>
+                            <?= tgl_indo8(date('Y-m-d', strtotime($order->invoice_date . ' +7 days'))) ?></p>
                     </div>
                 </div>
             </div>
@@ -56,7 +56,7 @@ echo $this->section('content');
                         <strong><?= esc($Pengaturan->judul_app) ?></strong><br>
                         <?= isset($user) ? esc($user->first_name . ' ' . $user->last_name) : 'Guest User' ?><br>
                         User ID: <?= $order->user_id ? $order->user_id : 'Guest' ?><br>
-                        <?= date('d/m/Y', strtotime($order->created_at)) ?>
+                        <?= tgl_indo8($order->created_at) ?>
                     </div>
                 </div>
                 <div class="col-md-6 text-right">
@@ -72,11 +72,11 @@ echo $this->section('content');
             <div class="row invoice-meta">
                 <div class="col-md-6">
                     <p><strong>Tanggal Invoice</strong></p>
-                    <p><?= date('d/m/Y', strtotime($order->invoice_date)) ?></p>
+                    <p><?= tgl_indo8($order->invoice_date) ?></p>
                 </div>
                 <div class="col-md-6 text-right">
                     <p><strong>Metode Pembayaran</strong></p>
-                    <p><?= esc($order->payment_method) ?></p>
+                    <p><?= esc($payment_records->nama) ?></p>
                 </div>
             </div>
 
@@ -111,7 +111,7 @@ echo $this->section('content');
                                             <?php endif; ?>
                                         </td>
                                         <td style="padding: 15px; border: 1px solid #ddd; text-align: right;">
-                                            <strong>Rp <?= number_format($detail->total_price, 2, ',', '.') ?></strong>
+                                            <strong>Rp <?= format_angka($detail->total_price, 2) ?></strong>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -132,7 +132,7 @@ echo $this->section('content');
                                         <strong>Total</strong>
                                     </td>
                                     <td style="padding: 15px; border: 1px solid #ddd; text-align: right;">
-                                        <strong>Rp <?= number_format($grandTotal, 2, ',', '.') ?></strong>
+                                        <strong>Rp <?= format_angka($grandTotal, 2) ?></strong>
                                     </td>
                                 </tr>
                             </tbody>
@@ -157,21 +157,27 @@ echo $this->section('content');
                         <table class="table">
                             <thead>
                                 <tr style="background-color: #f8f9fa;">
+                                    <th style="padding: 15px; border: 1px solid #ddd;">#</th>
                                     <th style="padding: 15px; border: 1px solid #ddd;">Tanggal Transaksi</th>
                                     <th style="padding: 15px; border: 1px solid #ddd;">Metode Pembayaran</th>
                                     <th style="padding: 15px; border: 1px solid #ddd;">ID Transaksi</th>
                                     <th style="padding: 15px; border: 1px solid #ddd; text-align: right;">Jumlah</th>
+                                    <th style="padding: 15px; border: 1px solid #ddd;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php
                                 $totalPayments = 0;
+                                $rowNum = 1;
                                 foreach ($payment_platforms as $payment):
                                     $totalPayments += $payment->nominal;
                                     ?>
                                     <tr>
                                         <td style="padding: 15px; border: 1px solid #ddd;">
-                                            <?= date('d/m/Y', strtotime($payment->created_at)) ?>
+                                            <?= $rowNum++ ?>
+                                        </td>
+                                        <td style="padding: 15px; border: 1px solid #ddd;">
+                                            <?= tgl_indo8($payment->created_at) ?>
                                         </td>
                                         <td style="padding: 15px; border: 1px solid #ddd;">
                                             <?= esc($payment->platform) ?>
@@ -180,7 +186,18 @@ echo $this->section('content');
                                             <?= esc($payment->no_nota ?: '-') ?>
                                         </td>
                                         <td style="padding: 15px; border: 1px solid #ddd; text-align: right;">
-                                            Rp <?= number_format($payment->nominal, 2, ',', '.') ?>
+                                            Rp <?= format_angka($payment->nominal, 2) ?>
+                                        </td>
+                                        <td style="padding: 15px; border: 1px solid #ddd;">
+                                            <?php if ($order->payment_status == 'pending'): ?>
+                                                <a href="<?= base_url('sale/' . $payment->platform . '/' . $order->id) ?>" class="btn btn-sm btn-success">
+                                                    <i class="fa fa-credit-card"></i> Bayar
+                                                </a>
+                                            <?php else: ?>
+                                                <a href="<?= base_url('sale/order/' . $payment->id) ?>" class="btn btn-sm btn-primary">
+                                                    <i class="fa fa-link"></i> Lihat
+                                                </a>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -200,7 +217,7 @@ echo $this->section('content');
                             <div class="col-md-4">
                                 <div class="summary-box">
                                     <p><strong>Sisa Tagihan</strong> <span class="float-right">Rp
-                                            <?= number_format($grandTotal - $totalPayments, 2, ',', '.') ?></span></p>
+                                            <?= format_angka($grandTotal - $totalPayments, 2) ?></span></p>
                                 </div>
                             </div>
                         </div>
@@ -219,7 +236,7 @@ echo $this->section('content');
                             <div class="col-md-4">
                                 <div class="summary-box">
                                     <p><strong>Sisa Tagihan</strong> <span class="float-right">Rp
-                                            <?= number_format($grandTotal, 2, ',', '.') ?></span></p>
+                                            <?= format_angka($grandTotal, 2) ?></span></p>
                                 </div>
                             </div>
                         </div>
@@ -231,7 +248,7 @@ echo $this->section('content');
             <div class="invoice-actions">
                 <div class="row">
                     <div class="col-md-6">
-                        <a href="<?= base_url('my/orders') ?>" class="btn btn-secondary">
+                        <a href="<?= base_url('sale/orders') ?>" class="btn btn-secondary">
                             <i class="fa fa-arrow-left"></i> Semua Invoice
                         </a>
                     </div>
@@ -239,10 +256,10 @@ echo $this->section('content');
                         <a href="<?= base_url('my/invoice/' . $order->id) ?>" class="btn btn-success">
                             <i class="fa fa-file-pdf-o"></i> Invoice PDF
                         </a>
-                        <a href="<?= base_url('my/dot-matrix-invoice/' . $order->id) ?>" class="btn btn-warning">
+                        <a href="<?= base_url('sale/print-dotmatrix/' . $order->id) ?>" class="btn btn-warning">
                             <i class="fa fa-print"></i> Dot Matrix
                         </a>
-                        <a href="<?= base_url('my/tickets/' . $order->id) ?>" class="btn btn-info">
+                        <a href="<?= base_url('sale/print-ticket/' . $order->id) ?>" class="btn btn-info">
                             <i class="fa fa-ticket"></i> All Tickets
                         </a>
                     </div>

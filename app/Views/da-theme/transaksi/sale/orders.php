@@ -29,11 +29,11 @@ echo $this->section('content');
         <div class="row" style="margin-bottom: 20px;">
             <div class="col-md-12">
                 <div class="text-center">
-                    <a href="<?= base_url('my/orders/all') ?>" class="btn <?= $current_status === 'all' ? 'btn-primary' : 'btn-default' ?>" style="margin: 5px;">All (<?= $stats['all'] ?>)</a>
-                    <a href="<?= base_url('my/orders/pending') ?>" class="btn <?= $current_status === 'pending' ? 'btn-warning' : 'btn-default' ?>" style="margin: 5px;">Pending (<?= $stats['pending'] ?>)</a>
-                    <a href="<?= base_url('my/orders/paid') ?>" class="btn <?= $current_status === 'paid' ? 'btn-success' : 'btn-default' ?>" style="margin: 5px;">Paid (<?= $stats['paid'] ?>)</a>
-                    <a href="<?= base_url('my/orders/failed') ?>" class="btn <?= $current_status === 'failed' ? 'btn-danger' : 'btn-default' ?>" style="margin: 5px;">Failed (<?= $stats['failed'] ?>)</a>
-                    <a href="<?= base_url('my/orders/cancelled') ?>" class="btn <?= $current_status === 'cancelled' ? 'btn-default' : 'btn-default' ?>" style="margin: 5px;">Cancelled (<?= $stats['cancelled'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/all') ?>" class="btn <?= $current_status === 'all' ? 'btn-primary' : 'btn-default' ?>" style="margin: 5px;">All (<?= $stats['all'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/pending') ?>" class="btn <?= $current_status === 'pending' ? 'btn-warning' : 'btn-default' ?>" style="margin: 5px;">Pending (<?= $stats['pending'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/paid') ?>" class="btn <?= $current_status === 'paid' ? 'btn-success' : 'btn-default' ?>" style="margin: 5px;">Paid (<?= $stats['paid'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/failed') ?>" class="btn <?= $current_status === 'failed' ? 'btn-danger' : 'btn-default' ?>" style="margin: 5px;">Failed (<?= $stats['failed'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/cancelled') ?>" class="btn <?= $current_status === 'cancelled' ? 'btn-default' : 'btn-default' ?>" style="margin: 5px;">Cancelled (<?= $stats['cancelled'] ?>)</a>
                 </div>
             </div>
         </div>
@@ -88,7 +88,7 @@ echo $this->section('content');
                                     <span class="label label-<?= $orderColor ?>"><?= ucfirst($order->status) ?></span>
                                 </td>
                                 <td>
-                                    <a href="<?= base_url('my/order/' . $order->id) ?>" class="btn btn-sm btn-primary">
+                                    <a href="<?= base_url('sale/order/' . $order->id) ?>" class="btn btn-sm btn-primary">
                                         <i class="fa fa-eye"></i> View
                                     </a>
                                 </td>
@@ -115,7 +115,7 @@ echo $this->section('content');
         <div class="row">
             <div class="col-md-12">
                 <div class="text-center">
-                    <?= $pager->links() ?>
+                    <?= $pager->links('default', 'datheme_pagination') ?>
                 </div>
             </div>
         </div>

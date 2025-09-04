@@ -105,6 +105,20 @@ class KelompokPesertaModel extends Model
         return $this->select('tbl_kelompok_peserta.*, COUNT(tbl_peserta.id) as jumlah_anggota')
                    ->join('tbl_peserta', 'tbl_peserta.id_kelompok = tbl_kelompok_peserta.id', 'left')
                    ->groupBy('tbl_kelompok_peserta.id')
+                   ->orderBy('tbl_kelompok_peserta.nama_kelompok', 'ASC')
+                   ->findAll();
+    }
+
+    /**
+     * Get groups with member count (for pagination)
+     * 
+     * @return $this
+     */
+    public function getKelompokWithMemberCountQuery()
+    {
+        return $this->select('tbl_kelompok_peserta.*, COUNT(tbl_peserta.id) as jumlah_anggota')
+                   ->join('tbl_peserta', 'tbl_peserta.id_kelompok = tbl_kelompok_peserta.id', 'left')
+                   ->groupBy('tbl_kelompok_peserta.id')
                    ->orderBy('tbl_kelompok_peserta.nama_kelompok', 'ASC');
     }
 
@@ -161,7 +175,27 @@ class KelompokPesertaModel extends Model
                    ->orLike('kode_kelompok', $keyword)
                    ->orLike('deskripsi', $keyword)
                    ->groupEnd()
-                   ->orderBy('nama_kelompok', 'ASC');
+                   ->orderBy('nama_kelompok', 'ASC')
+                   ->findAll();
+    }
+
+    /**
+     * Search groups (for pagination)
+     * 
+     * @param string $keyword
+     * @return $this
+     */
+    public function searchKelompokQuery($keyword)
+    {
+        return $this->select('tbl_kelompok_peserta.*, COUNT(tbl_peserta.id) as jumlah_anggota')
+                   ->join('tbl_peserta', 'tbl_peserta.id_kelompok = tbl_kelompok_peserta.id', 'left')
+                   ->groupStart()
+                   ->like('tbl_kelompok_peserta.nama_kelompok', $keyword)
+                   ->orLike('tbl_kelompok_peserta.kode_kelompok', $keyword)
+                   ->orLike('tbl_kelompok_peserta.deskripsi', $keyword)
+                   ->groupEnd()
+                   ->groupBy('tbl_kelompok_peserta.id')
+                   ->orderBy('tbl_kelompok_peserta.nama_kelompok', 'ASC');
     }
 
     /**

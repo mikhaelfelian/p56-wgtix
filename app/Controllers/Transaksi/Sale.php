@@ -134,7 +134,7 @@ class Sale extends BaseController
 
         if (!$order) {
             session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // Get order details
@@ -159,14 +159,17 @@ class Sale extends BaseController
      */
     public function updateStatus()
     {
+        // Step 1: Authentication check
         if (!$this->ionAuth->loggedIn()) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Not authorized']);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Not authorized'
+            ]);
         }
 
+        // Step 2: Authorization check (admin access)
         $user = $this->ionAuth->user()->row();
         $userGroups = $this->ionAuth->getUsersGroups($user->id)->getResult();
-        
-        // Check if user has admin access
         $hasAdminAccess = false;
         foreach ($userGroups as $group) {
             if (in_array($group->name, ['admin', 'super_admin', 'manager'])) {
@@ -174,51 +177,61 @@ class Sale extends BaseController
                 break;
             }
         }
-
         if (!$hasAdminAccess) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Admin access required']);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Admin access required'
+            ]);
         }
 
-        $orderId = $this->request->getPost('order_id');
+        // Step 3: Input validation
+        $orderId   = $this->request->getPost('order_id');
         $newStatus = $this->request->getPost('status');
-        $notes = $this->request->getPost('notes');
+        $notes     = $this->request->getPost('notes');
 
         $validStatuses = ['pending', 'paid', 'failed', 'cancelled'];
         if (!in_array($newStatus, $validStatuses)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid status']);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid status'
+            ]);
         }
 
+        // Step 4: Retrieve current order
+        $currentOrder = $this->transJualModel->find($orderId);
+        if (!$currentOrder) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Order not found'
+            ]);
+        }
+
+        // Step 5: Prepare update data
         $updateData = [
             'payment_status' => $newStatus,
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at'     => date('Y-m-d H:i:s')
         ];
-
-        if ($notes) {
+        if (!empty($notes)) {
             $updateData['notes'] = $notes;
         }
 
-        // Get current order to check previous payment status
-        $currentOrder = $this->transJualModel->find($orderId);
-        if (!$currentOrder) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Order not found']);
-        }
-
+        // Step 6: Update order
         $result = $this->transJualModel->update($orderId, $updateData);
 
+        // Step 7: Post-update actions and response
         if ($result) {
-            // Generate QR codes and save participants if payment status changed to 'paid'
+            // If payment status changed to 'paid', generate QR codes and save participants
             if ($newStatus === 'paid' && $currentOrder->payment_status !== 'paid') {
                 $this->generateQRCodesForOrder($orderId);
                 $this->saveParticipantsFromOrder($orderId);
             }
-            
             return $this->response->setJSON([
-                'success' => true, 
+                'success' => true,
                 'message' => 'Order status updated successfully'
             ]);
         } else {
             return $this->response->setJSON([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Failed to update order status'
             ]);
         }
@@ -265,12 +278,12 @@ class Sale extends BaseController
 
         if (!$hasAdminAccess) {
             session()->setFlashdata('error', 'Admin access required');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // TODO: Implement Excel export functionality
         session()->setFlashdata('info', 'Export functionality will be implemented soon');
-        return redirect()->to('my/orders/' . $status);
+        return redirect()->to('sale/orders/' . $status);
     }
 
     /**
@@ -293,7 +306,7 @@ class Sale extends BaseController
         
         if (!$order) {
             session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // Get order items
@@ -322,7 +335,7 @@ class Sale extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'PDF generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate PDF invoice: ' . $e->getMessage());
-            return redirect()->to('my/order/' . $invoiceId);
+            return redirect()->to('sale/order/' . $invoiceId);
         }
     }
 
@@ -346,7 +359,7 @@ class Sale extends BaseController
         
         if (!$order) {
             session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // Get order items
@@ -375,7 +388,7 @@ class Sale extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Dot matrix PDF generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate dot matrix invoice: ' . $e->getMessage());
-            return redirect()->to('my/order/' . $invoiceId);
+            return redirect()->to('sale/order/' . $invoiceId);
         }
     }
 
@@ -396,7 +409,7 @@ class Sale extends BaseController
         
         if (!$orderDetail) {
             session()->setFlashdata('error', 'Ticket not found');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // Get main order and ensure user can only access their own tickets
@@ -407,7 +420,7 @@ class Sale extends BaseController
         
         if (!$order) {
             session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // Get event info
@@ -437,7 +450,7 @@ class Sale extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'Ticket generation failed for order detail ' . $orderDetailId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate ticket: ' . $e->getMessage());
-            return redirect()->to('my/order/' . $orderDetail->id_penjualan);
+            return redirect()->to('sale/order/' . $orderDetail->id_penjualan);
         }
     }
 
@@ -462,7 +475,7 @@ class Sale extends BaseController
         
         if (!$order) {
             session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('my/orders');
+            return redirect()->to('sale/orders');
         }
 
         // Get all order details (each represents a participant/ticket)
@@ -470,7 +483,7 @@ class Sale extends BaseController
         
         if (empty($orderDetails)) {
             session()->setFlashdata('error', 'No tickets found for this order');
-            return redirect()->to('my/order/' . $invoiceId);
+            return redirect()->to('sale/order/' . $invoiceId);
         }
 
         try {
@@ -516,7 +529,7 @@ class Sale extends BaseController
         } catch (\Exception $e) {
             log_message('error', 'All tickets generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate tickets: ' . $e->getMessage());
-            return redirect()->to('my/order/' . $invoiceId);
+            return redirect()->to('sale/order/' . $invoiceId);
         }
     }
 

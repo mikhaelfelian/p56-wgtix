@@ -34,10 +34,9 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('register_store', 'Auth::register_store');
 });
 
-// Cart routes
-$routes->group('cart', ['namespace' => 'App\Controllers'], function($routes) {
+// Cart routes (filtered with authUser)
+$routes->group('cart', ['namespace' => 'App\Controllers', 'filter' => 'authUser'], function($routes) {
     $routes->get('/', 'Cart::index');
-    $routes->get('test', 'Cart::test');
     $routes->post('add', 'Cart::add');
     $routes->get('getItems', 'Cart::getItems');
     $routes->get('getCount', 'Cart::getCount');
@@ -45,25 +44,33 @@ $routes->group('cart', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->post('updateQuantity', 'Cart::updateQuantity');
     $routes->post('remove', 'Cart::remove');
     $routes->post('clear', 'Cart::clear');
-    $routes->post('store', 'Cart::store'); // Process checkout
 });
 
-// Frontend Transaction routes (User Orders)
-$routes->group('my', ['namespace' => 'App\Controllers\Transaksi'], function($routes) {
+
+
+// Sale routes (Payment, Orders, Tickets)
+$routes->group('sale', ['namespace' => 'App\Controllers'], function($routes) {
+    // Order processing
+    $routes->post('store', 'Sale::store'); // Moved from cart/store
+    
+    // Orders management
     $routes->get('orders/(:segment)', 'Sale::orders/$1');
     $routes->get('orders', 'Sale::orders');
-    $routes->get('order/(:num)', 'Sale::detail/$1');
-    $routes->get('invoice/(:num)', 'Sale::downloadInvoice/$1');
-    $routes->get('dot-matrix-invoice/(:num)', 'Sale::downloadDotMatrixInvoice/$1');
-    $routes->get('ticket/(:num)', 'Sale::downloadTicket/$1');
-    $routes->get('tickets/(:num)', 'Sale::downloadAllTickets/$1');
-});
-
-// Payment Confirmation routes
-$routes->group('sale', ['namespace' => 'App\Controllers'], function($routes) {
+    $routes->get('order/(:num)', 'Sale::detail/$1'); // Order detail page
+    
+    // Payment confirmation
     $routes->get('confirm/(:num)', 'Sale::confirm/$1');
     $routes->post('process-confirmation', 'Sale::processConfirmation');
     $routes->post('upload-payment-proof/(:num)', 'Sale::uploadPaymentProof/$1');
+
+    // Print/Download routes
+    $routes->get('print-dotmatrix/(:num)', 'Sale::print_dm/$1');
+    $routes->get('print-ticket/(:num)', 'Sale::print_pdf_ticket/$1'); // Single order tickets
+    $routes->get('print-ticket', 'Sale::print_pdf_ticket'); // All user tickets
+
+    // Tripay routes
+    $routes->get('tripay/(:num)', 'Sale::pg_tripay/$1');
+    $routes->post('tripay/callback', 'Sale::pg_tripay_callback');
 });
 
 // Grouping admin page routes below.

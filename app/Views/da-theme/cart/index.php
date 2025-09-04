@@ -51,7 +51,7 @@ echo $this->section('content');
             <div class="col-md-6">
                 <div class="cart-related-boxs row">
                     <h4 class="this-title">Shopping Cart Total</h4>
-                    <form action="<?= base_url('cart/store') ?>" method="post" class="input-group cupon-get form-box"
+                    <form action="<?= base_url('sale/store') ?>" method="post" class="input-group cupon-get form-box"
                         id="checkout-form">
                         <dl class="dl-horizontal">
                             <dt>Sub-Total</dt>
@@ -798,7 +798,7 @@ echo $this->endSection();
             platforms.forEach(function (platform) {
                 var label = platform.nama;
                 if (platform.jenis) {
-                    label += ' (' + platform.jenis + ')';
+                    label += '';
                 }
                 html += '<option value="' + platform.id + '" data-nama="' + platform.nama + '" data-jenis="' + (platform.jenis || '') + '">' + label + '</option>';
             });
