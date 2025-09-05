@@ -49,7 +49,7 @@ $routes->group('cart', ['namespace' => 'App\Controllers', 'filter' => 'authUser'
 
 
 // Sale routes (Payment, Orders, Tickets)
-$routes->group('sale', ['namespace' => 'App\Controllers'], function($routes) {
+$routes->group('sale', ['namespace' => 'App\Controllers', 'filter' => 'authUser'], function($routes) {
     // Order processing
     $routes->post('store', 'Sale::store'); // Moved from cart/store
     
@@ -70,8 +70,11 @@ $routes->group('sale', ['namespace' => 'App\Controllers'], function($routes) {
 
     // Tripay routes
     $routes->get('tripay/(:num)', 'Sale::pg_tripay/$1');
-    $routes->post('tripay/callback', 'Sale::pg_tripay_callback');
 });
+
+// Tripay payment gateway callback route (no CSRF protection needed for external callbacks)
+$routes->post('sale/tripay/callback', 'Sale::pg_tripay_callback');
+$routes->get('sale/test-callback', 'Sale::test_callback'); // Test endpoint
 
 // Grouping admin page routes below.
 // Note: All admin routes are grouped for better organization and protected by 'authAdmin' filter.

@@ -12,7 +12,7 @@ echo $this->extend('da-theme/layout/main'); ?>
 <?= $this->section('content') ?>
 
 <!--Page Cover-->
-<section class="row page-cover" data-bgimage="<?= base_url('public/assets/theme/da-theme/images/page-cover/5.jpg') ?>">
+<section class="row page-cover" data-bgimage="<?= base_url('assets/theme/da-theme/images/page-cover/5.jpg') ?>">
     <div class="row m0">
         <div class="container">
             <h2 class="page-title"></h2>

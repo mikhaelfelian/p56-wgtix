@@ -1,74 +1,80 @@
+# /.htaccess di: htdocs/p56-wgtix
 RewriteEngine On
 RewriteBase /p56-wgtix
 
-# Allow direct access to files
+# 1) Kalau file/dir beneran ada, langsung serve
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# Route all other requests through index.php
-RewriteRule ^(.*)$ index.php [QSA,L]
+# 2) Tangani request ke /file/... -> arahkan ke /public/file/...
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^file/(.*)$ public/file/$1 [L]
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 
+# 3) Sisanya route ke front controller di /public/index.php
+RewriteRule ^(.*)$ public/index.php [QSA,L]
+
+# ----------------------
 # Security Headers
+# ----------------------
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-XSS-Protection "1; mode=block"
-    Header set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Frame-Options "SAMEORIGIN"
 </IfModule>
 
-# PHP settings
+# ----------------------
+# PHP settings (opsional)
+# ----------------------
 <IfModule mod_php.c>
     php_value session.cookie_httponly 1
     php_value session.use_only_cookies 1
     php_value session.cookie_samesite "Lax"
 </IfModule>
 
+# ----------------------
 # Enable Gzip compression
+# ----------------------
 <IfModule mod_deflate.c>
-    # Compress HTML, CSS, JavaScript, Text, XML and fonts
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/javascript
     AddOutputFilterByType DEFLATE application/javascript
-    AddOutputFilterByType DEFLATE application/rss+xml
-    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
-    AddOutputFilterByType DEFLATE application/x-font
-    AddOutputFilterByType DEFLATE application/x-font-opentype
-    AddOutputFilterByType DEFLATE application/x-font-otf
-    AddOutputFilterByType DEFLATE application/x-font-truetype
-    AddOutputFilterByType DEFLATE application/x-font-ttf
-    AddOutputFilterByType DEFLATE application/x-javascript
-    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/json
     AddOutputFilterByType DEFLATE application/xml
-    AddOutputFilterByType DEFLATE font/opentype
-    AddOutputFilterByType DEFLATE font/otf
-    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE application/xhtml+xml
     AddOutputFilterByType DEFLATE image/svg+xml
     AddOutputFilterByType DEFLATE image/x-icon
-    AddOutputFilterByType DEFLATE text/css
-    AddOutputFilterByType DEFLATE text/html
-    AddOutputFilterByType DEFLATE text/javascript
-    AddOutputFilterByType DEFLATE text/plain
-    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
 </IfModule>
 
-# Add these lines to your .htaccess file
-AddType text/css .css
-AddType application/javascript .js
-AddType application/json .json
-
-# Force MIME types
+# ----------------------
+# MIME Types
+# (cukup via mod_mime agar tidak dobel)
+# ----------------------
 <IfModule mod_mime.c>
     AddType text/css .css
-    AddType text/javascript .js
+    AddType application/javascript .js
     AddType application/json .json
 </IfModule>
 
-# Set proper headers
+# (Opsional) Paksa Content-Type utk ekstensi tertentu
+# Catatan: bisa konflik dengan server/CDN. Pakai bila perlu saja.
 <IfModule mod_headers.c>
-    <FilesMatch "\.(css)$">
-        Header set Content-Type "text/css"
+    <FilesMatch "\.css$">
+        Header set Content-Type "text/css; charset=UTF-8"
     </FilesMatch>
-    <FilesMatch "\.(js)$">
-        Header set Content-Type "application/javascript"
+    <FilesMatch "\.js$">
+        Header set Content-Type "application/javascript; charset=UTF-8"
     </FilesMatch>
 </IfModule>
 
+# ----------------------
+# PHP Handler (sesuaikan dengan server Anda)
+# ----------------------
 AddHandler application/x-httpd-php82 .php

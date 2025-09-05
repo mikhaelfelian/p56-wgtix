@@ -13,10 +13,10 @@ echo $this->extend('da-theme/layout/main');
 echo $this->section('content');
 ?>
 <!--Page Cover-->
-<section class="row page-cover" data-bgimage="<?= base_url('public/assets/theme/da-theme/images/page-cover/5.jpg') ?>">
+<section class="row page-cover" data-bgimage="<?= base_url('assets/theme/da-theme/images/page-cover/5.jpg') ?>">
     <div class="row m0">
         <div class="container">
-            <h2 class="page-title">My Orders</h2>
+            <h2 class="page-title">Pesanan Saya</h2>
         </div>
     </div>
 </section>
@@ -29,11 +29,11 @@ echo $this->section('content');
         <div class="row" style="margin-bottom: 20px;">
             <div class="col-md-12">
                 <div class="text-center">
-                    <a href="<?= base_url('sale/orders/all') ?>" class="btn <?= $current_status === 'all' ? 'btn-primary' : 'btn-default' ?>" style="margin: 5px;">All (<?= $stats['all'] ?>)</a>
-                    <a href="<?= base_url('sale/orders/pending') ?>" class="btn <?= $current_status === 'pending' ? 'btn-warning' : 'btn-default' ?>" style="margin: 5px;">Pending (<?= $stats['pending'] ?>)</a>
-                    <a href="<?= base_url('sale/orders/paid') ?>" class="btn <?= $current_status === 'paid' ? 'btn-success' : 'btn-default' ?>" style="margin: 5px;">Paid (<?= $stats['paid'] ?>)</a>
-                    <a href="<?= base_url('sale/orders/failed') ?>" class="btn <?= $current_status === 'failed' ? 'btn-danger' : 'btn-default' ?>" style="margin: 5px;">Failed (<?= $stats['failed'] ?>)</a>
-                    <a href="<?= base_url('sale/orders/cancelled') ?>" class="btn <?= $current_status === 'cancelled' ? 'btn-default' : 'btn-default' ?>" style="margin: 5px;">Cancelled (<?= $stats['cancelled'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/all') ?>" class="btn <?= $current_status === 'all' ? 'btn-primary' : 'btn-default' ?>" style="margin: 5px;">Semua (<?= $stats['all'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/pending') ?>" class="btn <?= $current_status === 'pending' ? 'btn-warning' : 'btn-default' ?>" style="margin: 5px;">Menunggu (<?= $stats['pending'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/paid') ?>" class="btn <?= $current_status === 'paid' ? 'btn-success' : 'btn-default' ?>" style="margin: 5px;">Lunas (<?= $stats['paid'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/failed') ?>" class="btn <?= $current_status === 'failed' ? 'btn-danger' : 'btn-default' ?>" style="margin: 5px;">Gagal (<?= $stats['failed'] ?>)</a>
+                    <a href="<?= base_url('sale/orders/cancelled') ?>" class="btn <?= $current_status === 'cancelled' ? 'btn-default' : 'btn-default' ?>" style="margin: 5px;">Dibatalkan (<?= $stats['cancelled'] ?>)</a>
                 </div>
             </div>
         </div>
@@ -42,12 +42,12 @@ echo $this->section('content');
             <table class="table cart-table">
                 <thead>
                     <tr>
-                        <th class="col-xs-3">Invoice No</th>
-                        <th class="col-xs-2">Date</th>
-                        <th class="col-xs-2">Amount</th>
-                        <th class="col-xs-2">Payment Status</th>
-                        <th class="col-xs-2">Order Status</th>
-                        <th class="col-xs-1">Action</th>
+                        <th class="col-xs-3">No. Invoice</th>
+                        <th class="col-xs-2">Tanggal</th>
+                        <th class="col-xs-2">Jumlah</th>
+                        <th class="col-xs-2">Status Pembayaran</th>
+                        <th class="col-xs-2">Status Pesanan</th>
+                        <th class="col-xs-1">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,8 +73,16 @@ echo $this->section('content');
                                         'cancelled' => 'default'
                                     ];
                                     $color = $statusColor[$order->payment_status] ?? 'info';
+                                    // label payment status in Indonesian
+                                    $labelPaymentStatus = [
+                                        'pending' => 'Menunggu',
+                                        'paid' => 'Lunas',
+                                        'failed' => 'Gagal',
+                                        'cancelled' => 'Dibatalkan'
+                                    ];
+                                    $labelStatus = $labelPaymentStatus[$order->payment_status] ?? ucfirst($order->payment_status);
                                     ?>
-                                    <span class="label label-<?= $color ?>"><?= ucfirst($order->payment_status) ?></span>
+                                    <span class="label label-<?= $color ?>"><?= $labelStatus ?></span>
                                 </td>
                                 <td>
                                     <?php
@@ -84,12 +92,19 @@ echo $this->section('content');
                                         'completed' => 'success'
                                     ];
                                     $orderColor = $orderStatusColor[$order->status] ?? 'info';
+                                    // label order status in Indonesian
+                                    $labelOrderStatus = [
+                                        'active' => 'Aktif',
+                                        'cancelled' => 'Dibatalkan',
+                                        'completed' => 'Selesai'
+                                    ];
+                                    $labelOrder = $labelOrderStatus[$order->status] ?? ucfirst($order->status);
                                     ?>
-                                    <span class="label label-<?= $orderColor ?>"><?= ucfirst($order->status) ?></span>
+                                    <span class="label label-<?= $orderColor ?>"><?= $labelOrder ?></span>
                                 </td>
                                 <td>
                                     <a href="<?= base_url('sale/order/' . $order->id) ?>" class="btn btn-sm btn-primary">
-                                        <i class="fa fa-eye"></i> View
+                                        <i class="fa fa-eye"></i> Lihat
                                     </a>
                                 </td>
                             </tr>
@@ -98,10 +113,10 @@ echo $this->section('content');
                         <tr>
                             <td colspan="6" class="text-center" style="padding: 50px;">
                                 <i class="fa fa-inbox fa-3x text-muted"></i><br><br>
-                                <h4 class="text-muted">No Orders Found</h4>
-                                <p class="text-muted">You haven't placed any orders yet.</p>
+                                <h4 class="text-muted">Pesanan Tidak Ditemukan</h4>
+                                <p class="text-muted">Anda belum melakukan pemesanan apapun.</p>
                                 <a href="<?= base_url('events') ?>" class="btn btn-primary">
-                                    <i class="fa fa-shopping-cart"></i> Browse Events
+                                    <i class="fa fa-shopping-cart"></i> Lihat Event
                                 </a>
                             </td>
                         </tr>

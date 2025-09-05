@@ -582,11 +582,6 @@ class Sale extends BaseController{
      */
     public function print_dm($invoiceId)
     {
-        // Check if user is logged in
-        if (!$this->ionAuth->loggedIn()) {
-            return redirect()->to('auth/login');
-        }
-
         $user = $this->ionAuth->user()->row();
 
         // Get order details and ensure user can only access their own orders
@@ -596,8 +591,7 @@ class Sale extends BaseController{
         ])->first();
         
         if (!$order) {
-            session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('error', 'Order not found or access denied');
         }
 
         // Get order items
@@ -608,7 +602,7 @@ class Sale extends BaseController{
 
         try {
             // Create dot matrix PDF instance
-            $pdf = new DotMatrixInvoicePdf($order, $orderDetails, $paymentPlatforms, $user);
+            $pdf = new DotMatrixInvoicePdf($order, $orderDetails, $paymentPlatforms, $user, $this->pengaturan);
             
             // Generate PDF content
             $pdfContent = $pdf->generateInvoice();
@@ -626,7 +620,8 @@ class Sale extends BaseController{
         } catch (\Exception $e) {
             log_message('error', 'Dot matrix PDF generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate dot matrix invoice: ' . $e->getMessage());
-            return redirect()->to('sale/orders');
+            echo $e->getMessage();
+            // return redirect()->to('sale/orders');
         }
     }
 
@@ -635,78 +630,88 @@ class Sale extends BaseController{
      */
     public function print_pdf_ticket($invoiceId = null)
     {
-        // Check if user is logged in
-        if (!$this->ionAuth->loggedIn()) {
-            return redirect()->to('auth/login');
-        }
+        $data = [
+            'Pengaturan'    => $this->pengaturan,
+            'items'         => $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll(),
+        ];
 
-        $user = $this->ionAuth->user()->row();
-
-        // If no invoiceId provided, show all tickets for user
-        if ($invoiceId === null) {
-            return $this->printAllUserTickets();
-        }
-
-        // Get order and ensure user can only access their own orders
-        $order = $this->transJualModel->where([
-            'id' => $invoiceId,
-            'user_id' => $user->id // Security check
-        ])->first();
-        
-        if (!$order) {
-            session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('sale/orders');
-        }
-
-        // Get all order details (each represents a participant/ticket)
-        $orderDetails = $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll();
-        
-        if (empty($orderDetails)) {
-            session()->setFlashdata('error', 'No tickets found for this order');
-            return redirect()->to('sale/orders');
-        }
-
-        try {
-            // Create a master PDF to combine all individual tickets
-            $masterPdf = new \TCPDF('L', 'mm', array(210, 148.5), true, 'UTF-8', false);
-            $masterPdf->SetCreator('WGTIX System');
-            $masterPdf->SetAuthor('WGTIX Event Management');
-            $masterPdf->SetTitle('Event Tickets - Invoice #' . $order->invoice_no);
-            $masterPdf->SetMargins(0, 0, 0);
-            $masterPdf->SetAutoPageBreak(FALSE);
-
-            // Generate individual ticket for each order detail/participant
-            foreach ($orderDetails as $index => $orderDetail) {
-                // Event info
-                $event = (object)[
-                    'title' => $orderDetail->event_title ?: 'Event',
-                    'date' => $order->invoice_date,
-                    'location' => 'Event Venue'
-                ];
-
-                // Add page to master PDF
-                $masterPdf->AddPage();
-                
-                // Draw ticket content
-                $this->drawTicketInMasterPdf($masterPdf, $orderDetail, $order, $user, $event, $index + 1, count($orderDetails));
-            }
-            
-            // Set headers for PDF download
-            $filename = 'Tickets_' . $order->invoice_no . '_' . date('Y-m-d') . '.pdf';
-            
-            return $this->response
-                ->setHeader('Content-Type', 'application/pdf')
-                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->setHeader('Cache-Control', 'private, max-age=0, must-revalidate')
-                ->setHeader('Pragma', 'public')
-                ->setBody($masterPdf->Output('S'));
-                
-        } catch (\Exception $e) {
-            log_message('error', 'Tickets generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
-            session()->setFlashdata('error', 'Failed to generate tickets: ' . $e->getMessage());
-            return redirect()->to('sale/orders');
-        }
+        return view('/events/ticket/ticket', $data);
     }
+
+    // public function print_pdf_ticket($invoiceId = null)
+    // {
+    //     // Check if user is logged in
+    //     if (!$this->ionAuth->loggedIn()) {
+    //         return redirect()->to('auth/login');
+    //     }
+
+    //     $user = $this->ionAuth->user()->row();
+
+    //     // If no invoiceId provided, show all tickets for user
+    //     if ($invoiceId === null) {
+    //         return $this->printAllUserTickets();
+    //     }
+
+    //     // Get order and ensure user can only access their own orders
+    //     $order = $this->transJualModel->where([
+    //         'id' => $invoiceId,
+    //         'user_id' => $user->id // Security check
+    //     ])->first();
+        
+    //     if (!$order) {
+    //         session()->setFlashdata('error', 'Order not found or access denied');
+    //         return redirect()->to('sale/orders');
+    //     }
+
+    //     // Get all order details (each represents a participant/ticket)
+    //     $orderDetails = $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll();
+        
+    //     if (empty($orderDetails)) {
+    //         session()->setFlashdata('error', 'No tickets found for this order');
+    //         return redirect()->to('sale/orders');
+    //     }
+
+    //     try {
+    //         // Create a master PDF to combine all individual tickets
+    //         $masterPdf = new \TCPDF('L', 'mm', array(210, 148.5), true, 'UTF-8', false);
+    //         $masterPdf->SetCreator('WGTIX System');
+    //         $masterPdf->SetAuthor('WGTIX Event Management');
+    //         $masterPdf->SetTitle('Event Tickets - Invoice #' . $order->invoice_no);
+    //         $masterPdf->SetMargins(0, 0, 0);
+    //         $masterPdf->SetAutoPageBreak(FALSE);
+
+    //         // Generate individual ticket for each order detail/participant
+    //         foreach ($orderDetails as $index => $orderDetail) {
+    //             // Event info
+    //             $event = (object)[
+    //                 'title' => $orderDetail->event_title ?: 'Event',
+    //                 'date' => $order->invoice_date,
+    //                 'location' => 'Event Venue'
+    //             ];
+
+    //             // Add page to master PDF
+    //             $masterPdf->AddPage();
+                
+    //             // Draw ticket content
+    //             $this->drawTicketInMasterPdf($masterPdf, $orderDetail, $order, $user, $event, $index + 1, count($orderDetails));
+    //         }
+            
+    //         // Set headers for PDF download
+    //         $filename = 'Tickets_' . $order->invoice_no . '_' . date('Y-m-d') . '.pdf';
+            
+    //         return $this->response
+    //             ->setHeader('Content-Type', 'application/pdf')
+    //             ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+    //             ->setHeader('Cache-Control', 'private, max-age=0, must-revalidate')
+    //             ->setHeader('Pragma', 'public')
+    //             ->setBody($masterPdf->Output('S'));
+                
+    //     } catch (\Exception $e) {
+    //         log_message('error', 'Tickets generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
+    //         session()->setFlashdata('error', 'Failed to generate tickets: ' . $e->getMessage());
+    //         return redirect()->to('sale/orders');
+    //     }
+    // }
 
     /**
      * Print all tickets for the current user
@@ -1094,40 +1099,150 @@ class Sale extends BaseController{
      */
     public function pg_tripay_callback()
     {
-        // Tripay will POST JSON to this endpoint
-        $json = file_get_contents('php://input');
-        $data = json_decode($json, true);
+        // Set JSON response header
+        $this->response->setContentType('application/json');
+        
+        // Only accept POST requests
+        if (!$this->request->is('post')) {
+            log_message('error', 'Tripay Callback: Non-POST request received');
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
 
-        if (!$data || !isset($data['merchant_ref']) || !isset($data['status'])) {
-            return $this->response->setStatusCode(400)->setBody('Invalid callback data');
+        // Read raw POST body (JSON)
+        $json = file_get_contents('php://input');
+        
+        // Log callback for debugging
+        log_message('info', 'Tripay Callback received: ' . $json);
+        
+        // Check if we have any data
+        if (empty($json)) {
+            log_message('error', 'Tripay Callback: Empty request body');
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Empty request body']);
+        }
+        
+        $data = json_decode($json, true);
+        
+        // Check JSON decode error
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            log_message('error', 'Tripay Callback: JSON decode error - ' . json_last_error_msg());
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid JSON']);
+        }
+
+        // Validate required fields
+        if (
+            !$data ||
+            !isset($data['merchant_ref']) ||
+            !isset($data['status']) ||
+            !isset($data['payment_method']) ||
+            !isset($data['payment_method_code']) ||
+            !isset($data['total_amount'])
+        ) {
+            log_message('error', 'Tripay Callback: Invalid callback data - ' . json_encode($data));
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid callback data']);
         }
 
         // Find order by merchant_ref (invoice_no)
         $order = $this->transJualModel->where('invoice_no', $data['merchant_ref'])->first();
         if (!$order) {
-            return $this->response->setStatusCode(404)->setBody('Order not found');
+            log_message('error', 'Tripay Callback: Order not found for merchant_ref: ' . $data['merchant_ref']);
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Order not found']);
         }
 
         // Update payment status based on Tripay status
         $status = $data['status'];
         $update = [];
-        if ($status == 'PAID') {
+
+        // Normalize status to uppercase for comparison
+        $statusUpper = strtoupper(trim($status));
+
+        // Default values
+        $update['payment_status'] = strtolower($statusUpper);
+        $update['status'] = $order->status; // fallback to current status
+
+        // Map Tripay status to our enum: 'pending','paid','failed','cancelled'
+        if ($statusUpper === 'PAID') {
             $update['payment_status'] = 'paid';
-            $update['status'] = 'completed';
-        } elseif ($status == 'EXPIRED') {
-            $update['payment_status'] = 'expired';
-            $update['status'] = 'expired';
-        } elseif ($status == 'FAILED') {
+            $update['status'] = 'paid';
+        } elseif ($statusUpper === 'UNPAID' || $statusUpper === 'PENDING') {
+            $update['payment_status'] = 'pending';
+            $update['status'] = 'pending';
+        } elseif ($statusUpper === 'EXPIRED' || $statusUpper === 'FAILED') {
             $update['payment_status'] = 'failed';
-            $update['status'] = 'failed';
-        } else {
-            $update['payment_status'] = strtolower($status);
+            $update['status'] = 'cancelled';
+        } elseif ($statusUpper === 'CANCELLED') {
+            $update['payment_status'] = 'cancelled';
+            $update['status'] = 'cancelled';
         }
+
+        // Fallback: if payment_status is still empty, set to 'pending'
+        if (empty($update['payment_status'])) {
+            $update['payment_status'] = 'pending';
+            $update['status'] = 'active';
+        }
+
         $update['updated_at'] = date('Y-m-d H:i:s');
 
-        $this->transJualModel->update($order->id, $update);
+        // Use payment_reference only if not empty
+        if (!empty($data['reference'])) {
+            $update['payment_reference'] = $data['reference'];
+        }
 
-        // Respond to Tripay
-        return $this->response->setJSON(['success' => true]);
+        try {
+            $this->transJualModel->update($order->id, $update);
+            log_message('info', 'Tripay Callback: Order ' . $order->id . ' status updated to ' . $status);
+
+            // Optionally, record payment to trans_jual_plat if paid and not already recorded
+            if (strtoupper($status) === 'PAID') {
+                // Get platform ID for proper foreign key relationship
+                $platform = $this->platformModel->where('gateway_kode', $data['payment_method_code'])->first();
+
+                // Prepare payment data
+                $platData = [
+                    'id_penjualan' => $order->id,
+                    'id_platform'  => $platform ? $platform->id : null,
+                    'platform'     => 'tripay',
+                    'nominal'      => $data['total_amount'],
+                    'keterangan'   => 'Payment via Tripay - ' . ($data['payment_method'] ?? '').' - '.$data['reference'] ?? null,
+                    'updated_at'   => date('Y-m-d H:i:s'),
+                ];
+
+                // Check if payment already exists for this order and platform
+                $platExists = $this->transJualPlatModel
+                    ->where('id_penjualan', $order->id)
+                    ->first();
+
+                if ($platExists) {
+                    // Update the existing payment record
+                    $this->transJualPlatModel
+                        ->where('id', $platExists->id)
+                        ->set($platData)
+                        ->update();
+                } else {
+                    // Insert new payment record
+                    $platData['created_at'] = date('Y-m-d H:i:s');
+                    $this->transJualPlatModel->insert($platData);
+                }
+            }
+
+            // Respond to Tripay
+            return $this->response->setJSON(['success' => true]);
+            
+        } catch (\Exception $e) {
+            log_message('error', 'Tripay Callback: Database error - ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Database error']);
+        }
+    }
+
+    /**
+     * Test endpoint to verify callback route is working
+     */
+    public function test_callback()
+    {
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Callback route is working',
+            'method' => $this->request->getMethod(),
+            'time' => date('Y-m-d H:i:s')
+        ]);
     }
 }

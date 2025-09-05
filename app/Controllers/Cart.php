@@ -510,7 +510,7 @@ class Cart extends BaseController
             'customer_name'  => $order->user_id ? $this->ionAuth->user($order->user_id)->row()->first_name : 'Guest',
             'customer_email' => $order->user_id ? $this->ionAuth->user($order->user_id)->row()->email : '',
             'order_items'    => [],
-            'callback_url'   => base_url('cart/pg_tripay_callback'),
+            'callback_url'   => base_url('sale/tripay/callback'),
             'return_url'     => base_url('sale/orders'),
             'expired_time'   => strtotime('+1 day'),
             'signature'      => hash_hmac('sha256', $tripayMerchantCode.$order->invoice_no.$order->total_amount, $tripayPrivateKey)

@@ -12,7 +12,7 @@ echo $this->section('content');
 ?>
 <!--Page Cover-->
 <section class="row page-cover"
-    data-bgimage="<?php base_url('/public/assets/theme/da-theme/images/page-cover/5.jpg') ?>">
+    data-bgimage="<?php base_url('assets/theme/da-theme/images/page-cover/5.jpg') ?>">
     <div class="row m0">
         <div class="container">
             <h2 class="page-title"><?= $title_header ?></h2>
@@ -34,9 +34,9 @@ echo $this->section('content');
                             <div class="img-holder">
                                 <?php
                                 if (!empty($event->foto)):
-                                    $foto = base_url('/public/file/events/' . $event->id . '/' . $event->foto);
+                                    $foto = base_url('file/events/' . $event->id . '/' . $event->foto);
                                 else:
-                                    $foto = base_url('/public/assets/theme/da-theme/images/Shop/2.jpg');
+                                    $foto = base_url('assets/theme/da-theme/images/Shop/2.jpg');
                                 endif;
                                 ?>
                                 <img src="<?= $foto ?>" width="360" height="339" alt="" alt="" class="product-img">

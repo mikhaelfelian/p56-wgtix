@@ -29,38 +29,38 @@ if (!isset($Pengaturan)) {
         rel="stylesheet" type="text/css">
 
     <!--Bootstrap-->
-    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/bootstrap.min.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/bootstrap-theme.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/da-theme/css/bootstrap.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/da-theme/css/bootstrap-theme.min.css') ?>">
     <!--jQuery UI-->
-    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/vendors/jquery-ui/jquery-ui.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/da-theme/vendors/jquery-ui/jquery-ui.min.css') ?>">
     <!--Font Awesome-->
-    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/font-awesome.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/da-theme/css/font-awesome.min.css') ?>">
     <!--Owl Carousel-->
     <link rel="stylesheet"
-        href="<?= base_url('/public/assets/theme/da-theme/vendors/owl.carousel/owl.carousel.css') ?>">
+        href="<?= base_url('assets/theme/da-theme/vendors/owl.carousel/owl.carousel.css') ?>">
     <!--Magnific Popup-->
     <link rel="stylesheet"
-        href="<?= base_url('/public/assets/theme/da-theme/vendors/magnific-popup/magnific-popup.css') ?>">
+        href="<?= base_url('assets/theme/da-theme/vendors/magnific-popup/magnific-popup.css') ?>">
     <!-- RS5.0 Main Stylesheet -->
     <link rel="stylesheet" type="text/css"
-        href="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/css/settings.css') ?>">
+        href="<?= base_url('assets/theme/da-theme/vendors/revolution/css/settings.css') ?>">
 
     <!-- RS5.0 Layers and Navigation Styles -->
     <link rel="stylesheet" type="text/css"
-        href="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/css/layers.css') ?>">
+        href="<?= base_url('assets/theme/da-theme/vendors/revolution/css/layers.css') ?>">
     <link rel="stylesheet" type="text/css"
-        href="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/css/navigation.css') ?>">
+        href="<?= base_url('assets/theme/da-theme/vendors/revolution/css/navigation.css') ?>">
 
     <!--Theme Styles-->
-    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/style.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/da-theme/css/theme.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/da-theme/css/style.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/da-theme/css/theme.css') ?>">
     
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
 
     <!--[if lt IE 9]>
-        <script src="<?= base_url('/public/assets/theme/da-theme/js/html5shiv.min.js') ?>"></script>
-        <script src="<?= base_url('/public/assets/theme/da-theme/js/respond.min.js') ?>"></script>
+        <script src="<?= base_url('assets/theme/da-theme/js/html5shiv.min.js') ?>"></script>
+        <script src="<?= base_url('assets/theme/da-theme/js/respond.min.js') ?>"></script>
     <![endif]-->
 
     <!-- Custom CSS Section -->
@@ -83,37 +83,37 @@ if (!isset($Pengaturan)) {
     <?= $this->include('da-theme/layout/footer') ?>
 
     <!--Theme Scripts-->
-    <script src="<?= base_url('/public/assets/theme/da-theme/js/jquery-2.1.4.min.js') ?>"></script>
-    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/jquery-ui/jquery-ui.min.js') ?>"></script>
-    <script src="<?= base_url('/public/assets/theme/da-theme/js/bootstrap.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/js/jquery-2.1.4.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/vendors/jquery-ui/jquery-ui.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/js/bootstrap.min.js') ?>"></script>
 
     <!--Magnific Popup-->
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/magnific-popup/jquery.magnific-popup.min.js') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/magnific-popup/jquery.magnific-popup.min.js') ?>"></script>
     <!--Owl Carousel-->
-    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/owl.carousel/owl.carousel.min.js') ?>"></script>
-    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/bootstrap-select/js/bootstrap-select.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/vendors/owl.carousel/owl.carousel.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/vendors/bootstrap-select/js/bootstrap-select.min.js') ?>"></script>
     <!--CounterUp-->
-    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/couterup/jquery.counterup.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/vendors/couterup/jquery.counterup.min.js') ?>"></script>
     <!--WayPoints-->
-    <script src="<?= base_url('/public/assets/theme/da-theme/vendors/waypoint/waypoints.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/vendors/waypoint/waypoints.min.js') ?>"></script>
     <!-- RS5.0 Core JS Files -->
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/js/jquery.themepunch.tools.min.js?rev=5.0') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/revolution/js/jquery.themepunch.tools.min.js?rev=5.0') ?>"></script>
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/js/jquery.themepunch.revolution.min.js?rev=5.0') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/revolution/js/jquery.themepunch.revolution.min.js?rev=5.0') ?>"></script>
     <!--RS5.0 Extensions-->
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.video.min.js') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.video.min.js') ?>"></script>
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.slideanims.min.js') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.slideanims.min.js') ?>"></script>
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.layeranimation.min.js') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.layeranimation.min.js') ?>"></script>
     <script
-        src="<?= base_url('/public/assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.navigation.min.js') ?>"></script>
+        src="<?= base_url('assets/theme/da-theme/vendors/revolution/js/extensions/revolution.extension.navigation.min.js') ?>"></script>
 
     <!--Theme Script-->
-    <script src="<?= base_url('/public/assets/theme/da-theme/js/theme.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/da-theme/js/theme.js') ?>"></script>
 
     <!-- Toastr JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
