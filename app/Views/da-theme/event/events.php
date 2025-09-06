@@ -10,6 +10,13 @@
 echo $this->extend('da-theme/layout/main');
 echo $this->section('content');
 ?>
+<section class="row page-cover" data-bgimage="<?= base_url('assets/theme/da-theme/images/page-cover/1.jpg') ?>">
+<div class="row m0">
+    <div class="container">
+        <h2 class="page-title"></h2>
+    </div>
+</div>
+</section>
 <!--Events Content-->
 <section class="row">
     <div class="container">

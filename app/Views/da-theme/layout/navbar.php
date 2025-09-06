@@ -33,9 +33,6 @@
                     <li class="<?= strpos(current_url(), 'event') !== false ? 'active' : '' ?>">
                         <a href="<?= base_url('events') ?>">Event</a>
                     </li>
-                    <li class="<?= strpos(current_url(), 'contact') !== false ? 'active' : '' ?>">
-                        <a href="<?= base_url('contact') ?>">Contact</a>
-                    </li>
                     <li class="<?= strpos(current_url(), 'cart') !== false ? 'active' : '' ?>">
                         <a href="<?= base_url('cart') ?>" class="cart-link" style="position: relative;">
                             <i class="fa fa-shopping-cart"></i> Cart

@@ -12,10 +12,10 @@ echo $this->section('content');
 ?>
 <!--Page Cover-->
 <section class="row page-cover"
-    data-bgimage="<?php base_url('assets/theme/da-theme/images/page-cover/5.jpg') ?>">
+    data-bgimage="<?php echo base_url('assets/theme/da-theme/images/page-cover/2.jpg') ?>">
     <div class="row m0">
         <div class="container">
-            <h2 class="page-title"><?= $title_header ?></h2>
+            <h2 class="page-title"></h2>
         </div>
     </div>
 </section>

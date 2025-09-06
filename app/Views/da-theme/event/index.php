@@ -108,7 +108,7 @@ echo $this->section('content');
                             <?php if (!empty($event->foto)): ?>
                                 <img src="<?= base_url($event->foto) ?>" alt="<?= esc($event->event) ?>" class="event-img">
                             <?php else: ?>
-                                <img src="<?= base_url('/public/assets/theme/da-theme/images/events/default-event.jpg') ?>" alt="<?= esc($event->event) ?>" class="event-img">
+                                <img src="<?= base_url('assets/theme/da-theme/images/events/default-event.jpg') ?>" alt="<?= esc($event->event) ?>" class="event-img">
                             <?php endif; ?>
                             
                                                          <?php 

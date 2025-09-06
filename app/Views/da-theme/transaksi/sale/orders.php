@@ -16,7 +16,7 @@ echo $this->section('content');
 <section class="row page-cover" data-bgimage="<?= base_url('assets/theme/da-theme/images/page-cover/5.jpg') ?>">
     <div class="row m0">
         <div class="container">
-            <h2 class="page-title">Pesanan Saya</h2>
+            <h2 class="page-title"></h2>
         </div>
     </div>
 </section>
