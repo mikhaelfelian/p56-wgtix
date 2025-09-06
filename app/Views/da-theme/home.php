@@ -19,25 +19,6 @@ echo $this->section('content');
                 <img src="<?= base_url('/public/assets/theme/da-theme/images/slide.jpg') ?>" alt=""
                     data-bgposition="center center" data-bgfit="cover" data-bgrepeat="no-repeat" class="rev-slidebg"
                     data-no-retina>
-
-                <div class="tp-caption welcome-Title welcome-Title2 color-fff tp-resizeme"
-                    data-x="['left','left','center']" data-hoffset="0" data-y="center"
-                    data-voffset="['-50','-50','-50','-50','-50','-50']" data-fontsize="['28','28','24','22','22','18']"
-                    data-lineheight="['36','36','32','30','30','24']" data-width="none" data-height="none"
-                    data-whitespace="nowrap" data-transform_idle="o:1;"
-                    data-transform_in="x:-50px;opacity:0;s:1000;e:Power2.easeOut;"
-                    data-transform_out="opacity:0;s:1500;e:Power4.easeIn;" data-start="1000" data-splitin="none"
-                    data-splitout="none" data-responsive_offset="on">
-                    Tiket konser, wisata, & event mudah dan aman di WGPTIX.com
-                </div>
-                <a href="#" class="tp-caption welcome-Link btn btn-primary tp-resizeme"
-                    data-x="['left','left','center']" data-hoffset="['0','0','0','0']" data-y="center"
-                    data-voffset="['80','80','80','80','80','50']" data-fontsize="16" data-lineheight="48"
-                    data-width="none" data-height="none" data-whitespace="nowrap" data-transform_idle="o:1;"
-                    data-transform_in="x:-50px;opacity:0;s:1000;e:Power2.easeOut;"
-                    data-transform_out="opacity:0;s:1500;e:Power4.easeIn;" data-start="1500" data-splitin="none"
-                    data-splitout="none" data-responsive_offset="on">free analysis
-                </a>
             </li>
         </ul>
     </div>
