@@ -1,7 +1,6 @@
 #-------------------------
 # Operating Specific Junk Files
 #-------------------------
-.htaccess
 
 # OS X
 .DS_Store
@@ -113,4 +112,5 @@ phpunit
 .vscode/
 
 /public/file
-.htaccess
+/.htaccess
+
