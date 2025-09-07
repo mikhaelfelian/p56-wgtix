@@ -128,8 +128,8 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-6">
-                        <a href="<?= base_url('admin/peserta/create') ?>" class="btn btn-success btn-block mb-2">
-                            <i class="fas fa-user-plus mr-2"></i> Tambah Peserta
+                        <a href="<?= base_url('admin/peserta/daftar') ?>" class="btn btn-success btn-block mb-2">
+                            <i class="fas fa-eye mr-2"></i> Daftar Peserta
                         </a>
                         <a href="<?= base_url('admin/racepack/create') ?>" class="btn btn-info btn-block mb-2">
                             <i class="fas fa-tshirt mr-2"></i> Tambah Racepack
@@ -155,80 +155,6 @@
     </div>
     
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-chart-line mr-2"></i>
-                    Data Terbaru
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6">
-                        <h6><i class="fas fa-users mr-1"></i> Peserta Terbaru</h6>
-                        <ul class="list-unstyled">
-                            <?php if (!empty($recentData['recent_peserta'])): ?>
-                                <?php foreach (array_slice($recentData['recent_peserta'], 0, 3) as $peserta): ?>
-                                    <li class="mb-1">
-                                        <small class="text-muted"><?= $peserta->nama_lengkap ?? 'N/A' ?></small>
-                                    </li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li><small class="text-muted">Belum ada data</small></li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                    <div class="col-6">
-                        <h6><i class="fas fa-tshirt mr-1"></i> Racepack Terbaru</h6>
-                        <ul class="list-unstyled">
-                            <?php if (!empty($recentData['recent_racepack'])): ?>
-                                <?php foreach (array_slice($recentData['recent_racepack'], 0, 3) as $racepack): ?>
-                                    <li class="mb-1">
-                                        <small class="text-muted"><?= $racepack->nama_racepack ?? 'N/A' ?></small>
-                                    </li>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <li><small class="text-muted">Belum ada data</small></li>
-                            <?php endif; ?>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- System Information -->
-<div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Informasi Sistem
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <ul class="list-unstyled">
-                            <li><strong>Versi CodeIgniter:</strong> 4.x</li>
-                            <li><strong>Framework:</strong> AdminLTE 3</li>
-                            <li><strong>Status:</strong> <span class="badge badge-success">Aktif</span></li>
-                            <li><strong>User:</strong> <?= $user->username ?? 'Admin' ?></li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <ul class="list-unstyled">
-                            <li><strong>Total Kategori Racepack:</strong> <?= number_format($stats['total_kategori_racepack']) ?></li>
-                            <li><strong>Total Pendaftaran:</strong> <?= number_format($stats['total_pendaftaran']) ?></li>
-                            <li><strong>Stok Menipis:</strong> <span class="badge badge-warning"><?= count($stats['low_stock_items']) ?> item</span></li>
-                            <li><strong>Peserta Aktif:</strong> <span class="badge badge-success"><?= number_format($stats['active_peserta']) ?></span></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 <?= $this->endSection() ?>

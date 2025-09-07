@@ -68,7 +68,7 @@
                                         <div class="col-md-4 col-sm-6 mb-3">
                                             <div class="card gallery-item" data-id="<?= $image->id ?>">
                                                 <div class="card-img-top position-relative">
-                                                    <img src="<?= base_url('public/uploads/berita/gallery/' . $image->path) ?>" 
+                                                    <img src="<?= base_url('public/' . $image->path) ?>" 
                                                          class="card-img-top" alt="<?= esc($image->alt_text ?: $image->caption) ?>"
                                                          style="height: 200px; object-fit: cover;">
                                                     

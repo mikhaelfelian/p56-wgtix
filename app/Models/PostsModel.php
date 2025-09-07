@@ -33,11 +33,7 @@ class PostsModel extends Model
     protected $updatedField     = 'updated_at';
     protected $deletedField     = 'deleted_at';
 
-    protected $validationRules  = [
-        'judul' => 'required|min_length[3]|max_length[240]',
-        'slug'  => 'required|is_unique[tbl_posts.slug,id,{id}]',
-        'status'=> 'in_list[draft,scheduled,published,archived]'
-    ];
+    protected $validationRules  = [];
 
     /**
      * Get posts with filters, pagination, and search
@@ -71,13 +67,16 @@ class PostsModel extends Model
         $builder->orderBy('created_at', 'DESC');
         
         // Apply pagination
-        return $this->paginate($perPage, 'default', $page);
+        $pager = $this->paginate($perPage, 'default', $page);
+        
+        // Return the posts data directly
+        return $pager;
     }
 
     /**
      * Get total posts count with filters
      */
-    public function getTotalPosts($keyword = '', $kategori = '')
+    public function getTotalPosts($keyword = '', $kategori = '', $status = null, $activeOnly = false)
     {
         $builder = $this->builder();
         
@@ -92,6 +91,14 @@ class PostsModel extends Model
         
         if (!empty($kategori)) {
             $builder->where('id_category', $kategori);
+        }
+        
+        if ($status !== null) {
+            $builder->where('status', $status);
+        }
+        
+        if ($activeOnly) {
+            $builder->where('status', 'published');
         }
         
         return $builder->countAllResults();

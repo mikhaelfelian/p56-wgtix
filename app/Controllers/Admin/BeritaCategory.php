@@ -15,21 +15,27 @@ use App\Models\PostsCategoryModel;
 class BeritaCategory extends BaseController
 {
     protected $categoryModel;
+    protected $pengaturan;
+    protected $ionAuth;
 
     public function __construct()
     {
+        parent::__construct();
         $this->categoryModel = new PostsCategoryModel();
+        $this->pengaturan = $this->getPengaturan();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
     public function index()
     {
         $page = $this->request->getGet('page') ?? 1;
         $keyword = $this->request->getGet('keyword') ?? '';
-        $perPage = $this->pengaturan->pagination_limit; // Items per page
+        $perPage = $this->pengaturan->pagination_limit ?? 10;
 
         // Get categories with pagination and search
-        $categories = $this->categoryModel->getCategoriesWithFilters($perPage, $keyword, $page);
-        $total = $this->categoryModel->getTotalCategories($keyword);
+        $result = $this->categoryModel->getCategoriesWithFilters($perPage, $keyword, $page);
+        $categories = $result['categories'];
+        $total = $result['total'];
 
         // Create pager
         $pager = service('pager');
@@ -37,13 +43,15 @@ class BeritaCategory extends BaseController
         $pager->makeLinks($total, $perPage, $page, 'adminlte_pagination');
 
         $data = [
-            'title' => 'Kelola Kategori Berita',
-            'categories' => $categories,
-            'pager' => $pager,
-            'currentPage' => $page,
-            'perPage' => $perPage,
-            'keyword' => $keyword,
-            'total' => $total
+            'title'        => 'Kelola Kategori Berita',
+            'categories'   => $categories,
+            'pager'        => $pager,
+            'currentPage'  => $page,
+            'perPage'      => $perPage,
+            'keyword'      => $keyword,
+            'total'        => $total,
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
         ];
 
         return $this->view($this->theme->getThemePath() . '/admin/berita-category/index', $data);
@@ -53,10 +61,11 @@ class BeritaCategory extends BaseController
     {
         $data = [
             'title' => 'Tambah Kategori Baru',
-            'Pengaturan' => $this->getPengaturan()
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
         ];
 
-        return view('admin-lte-3/admin/berita-category/create', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/berita-category/create', $data);
     }
 
     public function store()
@@ -107,7 +116,7 @@ class BeritaCategory extends BaseController
             'Pengaturan' => $this->getPengaturan()
         ];
 
-        return view('admin-lte-3/admin/berita-category/edit', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/berita-category/edit', $data);
     }
 
     public function update($id)

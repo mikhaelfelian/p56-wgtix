@@ -115,4 +115,16 @@ class PesertaModel extends Model
 
         return $builder->paginate($perPage, 'peserta', $page);
     }
+
+    /**
+     * Get peserta with group and kategori info using query builder.
+     * 
+     * @return \CodeIgniter\Database\BaseBuilder
+     */
+    public function getPesertaWithGroupQuery()
+    {
+        return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
+            ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left');
+    }
 }

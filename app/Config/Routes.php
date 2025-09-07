@@ -70,6 +70,11 @@ $routes->group('sale', ['namespace' => 'App\Controllers', 'filter' => 'authUser'
 
     // Tripay routes
     $routes->get('tripay/(:num)', 'Sale::pg_tripay/$1');
+    
+    // Participant registration
+    $routes->get('register-participant/(:num)', 'Sale::registerParticipant/$1');
+    $routes->post('store-participant', 'Sale::storeParticipant');
+    $routes->get('debug-orders', 'Sale::debugOrders');
 });
 
 // Tripay payment gateway callback route (no CSRF protection needed for external callbacks)
@@ -261,7 +266,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('create', 'Berita::create');
         $routes->post('store', 'Berita::store');
         $routes->get('edit/(:num)', 'Berita::edit/$1');
-        $routes->post('update/(:num)', 'Berita::update/$1');
+        $routes->post('update/(:num)', 'Berita::store');
         $routes->get('delete/(:num)', 'Berita::delete/$1');
         $routes->get('gallery/(:num)', 'Berita::gallery/$1');
         $routes->post('upload-gallery/(:num)', 'Berita::uploadGallery/$1');
@@ -288,6 +293,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
     $routes->group('berita-gallery', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
         $routes->get('/', 'BeritaGallery::index');
         $routes->get('upload', 'BeritaGallery::upload');
+        $routes->post('upload', 'BeritaGallery::store');
         $routes->post('store', 'BeritaGallery::store');
         $routes->get('edit/(:num)', 'BeritaGallery::edit/$1');
         $routes->post('update/(:num)', 'BeritaGallery::update/$1');

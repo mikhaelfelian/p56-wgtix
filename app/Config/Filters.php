@@ -87,6 +87,7 @@ class Filters extends BaseFilters
                 'transaksi/retur/jual/test',
                 'admin/event-gallery/upload',
                 'admin/event-gallery/update-description',
+                'admin/berita-gallery/upload',
                 'cart/getItems',
                 'cart/getCount',
                 'cart/getPlatforms',

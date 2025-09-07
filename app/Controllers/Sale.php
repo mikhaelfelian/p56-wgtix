@@ -16,6 +16,8 @@ use App\Models\TransJualPlatModel;
 use App\Models\PlatformModel;
 use App\Models\CartModel;
 use App\Models\PesertaModel;
+use App\Models\KategoriModel;
+use App\Models\KelompokPesertaModel;
 use App\Libraries\InvoicePdf;
 use App\Libraries\TicketPdf;
 use App\Libraries\DotMatrixInvoicePdf;
@@ -27,6 +29,8 @@ class Sale extends BaseController{
     protected $platformModel;
     protected $cartModel;
     protected $pesertaModel;
+    protected $kategoriModel;
+    protected $kelompokModel;
     protected $ionAuth;
     protected $db;
 
@@ -39,6 +43,8 @@ class Sale extends BaseController{
         $this->platformModel = new PlatformModel();
         $this->cartModel = new CartModel();
         $this->pesertaModel = new PesertaModel();
+        $this->kategoriModel = new KategoriModel();
+        $this->kelompokModel = new KelompokPesertaModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
         $this->db = \Config\Database::connect();
     }
@@ -62,8 +68,10 @@ class Sale extends BaseController{
         ])->first();
 
         if (!$order) {
-            session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Order not found or access denied'
+            ]);
         }
 
         // Get order items
@@ -108,8 +116,10 @@ class Sale extends BaseController{
         $uploadedFiles = $this->request->getPost('uploaded_files');
 
         if (!$orderId) {
-            session()->setFlashdata('error', 'Invalid order ID');
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Invalid order ID'
+            ]);
         }
 
         $user = $this->ionAuth->user()->row();
@@ -121,8 +131,10 @@ class Sale extends BaseController{
         ])->first();
 
         if (!$order) {
-            session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Order not found or access denied'
+            ]);
         }
 
         // Update order with payment confirmation details
@@ -133,12 +145,16 @@ class Sale extends BaseController{
         ];
 
         if ($this->transJualModel->update($orderId, $updateData)) {
-            session()->setFlashdata('success', 'Payment confirmation submitted successfully. Please wait for admin approval.');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'success', 
+                'message' => 'Payment confirmation submitted successfully. Please wait for admin approval.'
+            ]);
         } else {
-            session()->setFlashdata('error', 'Failed to submit payment confirmation');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Failed to submit payment confirmation'
+            ]);
         }
-
-        return redirect()->to('sale/orders');
     }
 
     /**
@@ -477,7 +493,10 @@ class Sale extends BaseController{
                 'transaction_status' => 'FAILED'
             ];
             
-            return redirect()->to(base_url('sale/orders'))->with('error', $e->getMessage());
+            return redirect()->to(base_url('sale/orders'))->with('toastr', [
+                'type' => 'error', 
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
@@ -500,8 +519,10 @@ class Sale extends BaseController{
         ])->first();
 
         if (!$order) {
-            session()->setFlashdata('error', 'Order not found or access denied');
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Order not found or access denied'
+            ]);
         }
 
         // Get order details
@@ -619,9 +640,10 @@ class Sale extends BaseController{
                 
         } catch (\Exception $e) {
             log_message('error', 'Dot matrix PDF generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
-            session()->setFlashdata('error', 'Failed to generate dot matrix invoice: ' . $e->getMessage());
-            echo $e->getMessage();
-            // return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Failed to generate dot matrix invoice: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -727,8 +749,10 @@ class Sale extends BaseController{
         ])->orderBy('invoice_date', 'DESC')->findAll();
 
         if (empty($orders)) {
-            session()->setFlashdata('error', 'No paid orders found');
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'No paid orders found'
+            ]);
         }
 
         try {
@@ -783,8 +807,10 @@ class Sale extends BaseController{
                 
         } catch (\Exception $e) {
             log_message('error', 'All user tickets generation failed: ' . $e->getMessage());
-            session()->setFlashdata('error', 'Failed to generate all tickets: ' . $e->getMessage());
-            return redirect()->to('sale/orders');
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Failed to generate all tickets: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -1234,5 +1260,229 @@ class Sale extends BaseController{
             'method' => $this->request->getMethod(),
             'time' => date('Y-m-d H:i:s')
         ]);
+    }
+
+    /**
+     * Show participant registration form
+     */
+    public function registerParticipant($orderId = null)
+    {
+        if (!$orderId) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Order ID tidak valid'
+            ]);
+        }
+
+        // Get order details
+        $order = $this->transJualModel->find($orderId);
+        if (!$order) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Order tidak ditemukan'
+            ]);
+        }
+
+        // Check if user owns this order
+        $currentUserId = $this->ionAuth->user()->row()->id;
+        if ($currentUserId != $order->user_id) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Akses ditolak. User ID tidak cocok.'
+            ]);
+        }
+
+        // Get order details with event info
+        $orderDetails = $this->transJualDetModel->where('id_penjualan', $orderId)->findAll();
+        if (empty($orderDetails)) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Detail order tidak ditemukan'
+            ]);
+        }
+
+        // Get event ID from first order detail
+        $eventId = $orderDetails[0]->event_id ?? null;
+        if (!$eventId) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Event tidak ditemukan'
+            ]);
+        }
+
+        // Get categories and groups for dropdowns
+        $kategoriOptions = $this->kategoriModel->where('status', '1')->findAll();
+        $kelompokOptions = $this->kelompokModel->where('status', '1')->findAll();
+
+        // Get participants for this event
+        $participants = $this->pesertaModel->where('id_event', $eventId)->orderBy('created_at', 'DESC')->findAll();
+
+        $data = [
+            'title'           => 'Registrasi Peserta',
+            'Pengaturan'      => $this->pengaturan,
+            'order'           => $order,
+            'orderDetails'    => $orderDetails,
+            'eventId'         => $eventId,
+            'kategoriOptions' => $kategoriOptions,
+            'kelompokOptions' => $kelompokOptions,
+            'participants'    => $participants,
+            // Add this data to every view (follow @file_context_0)
+            // 'footer_text'     => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
+        ];
+
+        return $this->view('da-theme/transaksi/sale/register_participant', $data);
+    }
+
+    /**
+     * Store participant registration
+     */
+    public function storeParticipant()
+    {
+        $orderId = $this->request->getPost('order_id');
+        $eventId = $this->request->getPost('event_id');
+        $participantId = $this->request->getPost('participant_id');
+
+        if (!$orderId || !$eventId) {
+            return redirect()->back()->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Data tidak valid'
+            ]);
+        }
+
+        // Get order details
+        $order = $this->transJualModel->find($orderId);
+        if (!$order) {
+            return redirect()->back()->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Order tidak ditemukan'
+            ]);
+        }
+
+        // Check if user owns this order
+        if ($this->ionAuth->getUserId() != $order->user_id) {
+            return redirect()->back()->with('toastr', [
+                'type' => 'error', 
+                'message' => 'Akses ditolak'
+            ]);
+        }
+
+        // Validation rules
+        $rules = [
+            'nama'        => 'required|max_length[100]',
+            'email'       => 'required|valid_email|max_length[100]',
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()->with('toastr', [
+                'type'      => 'error', 
+                'message'   => implode('<br>', $this->validator->getErrors())
+            ])->withInput();
+        }
+
+        try {
+            // Prepare participant data
+            $participantData = [
+                'nama'        => trim($this->request->getPost('nama')),
+                'email'       => strtolower(trim($this->request->getPost('email'))),
+                'no_hp'       => trim($this->request->getPost('no_hp')),
+                'jns_klm'     => $this->request->getPost('jns_klm'),
+                'id_kategori' => $this->request->getPost('id_kategori') !== '' ? (int)$this->request->getPost('id_kategori') : null,
+                'id_kelompok' => $this->request->getPost('id_kelompok') !== '' ? (int)$this->request->getPost('id_kelompok') : null,
+                'tmp_lahir'   => $this->request->getPost('tmp_lahir') !== '' ? trim($this->request->getPost('tmp_lahir')) : null,
+                'tgl_lahir'   => $this->request->getPost('tgl_lahir') !== '' ? $this->request->getPost('tgl_lahir') : null,
+                'alamat'      => $this->request->getPost('alamat') !== '' ? trim($this->request->getPost('alamat')) : null,
+            ];
+
+            if ($participantId) {
+                // Update existing participant
+                $existingParticipant = $this->pesertaModel->find($participantId);
+                if (!$existingParticipant) {
+                    return redirect()->back()->with('toastr', [
+                        'type' => 'error', 
+                        'message' => 'Peserta tidak ditemukan'
+                    ]);
+                }
+
+                // Check if participant belongs to this event and order
+                if ($existingParticipant->id_event != $eventId || $existingParticipant->id_penjualan != $orderId) {
+                    return redirect()->back()->with('toastr', [
+                        'type' => 'error', 
+                        'message' => 'Akses ditolak'
+                    ]);
+                }
+
+                // Update participant
+                if ($this->pesertaModel->update($participantId, $participantData)) {
+                    return redirect()->to('sale/register-participant/' . $orderId)
+                        ->with('toastr', [
+                            'type' => 'success', 
+                            'message' => 'Data peserta berhasil diperbarui'
+                        ]);
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('toastr', [
+                            'type' => 'error', 
+                            'message' => 'Gagal memperbarui data peserta'
+                        ]);
+                }
+            } else {
+                // Create new participant
+                $kode = $this->pesertaModel->generateKode($eventId);
+
+                // Add additional fields for new participant
+                $participantData['id_user']        = $this->ionAuth->getUserId();
+                $participantData['id_event']       = $eventId;
+                $participantData['id_penjualan']   = $orderId;
+                $participantData['kode']           = $kode;
+                $participantData['status']         = 1;
+                $participantData['status_hadir']   = 0;
+
+                // Generate QR code
+                $qrData = json_encode([
+                    'participant_id' => null, // Will be set after insert
+                    'event_id'       => $eventId,
+                    'order_id'       => $orderId,
+                    'kode'           => $kode
+                ]);
+                
+                $participantData['qr_code'] = $qrData;
+
+                // Insert participant
+                if ($this->pesertaModel->insert($participantData)) {
+                    $newParticipantId = $this->pesertaModel->insertID();
+                    
+                    // Update QR code with actual participant ID
+                    $updatedQrData = json_encode([
+                        'participant_id'    => $newParticipantId,
+                        'event_id'          => $eventId,
+                        'order_id'          => $orderId,
+                        'kode'              => $kode
+                    ]);
+                    
+                    $this->pesertaModel->update($newParticipantId, ['qr_code' => $updatedQrData]);
+
+                    return redirect()->to('sale/register-participant/' . $orderId)
+                        ->with('toastr', [
+                            'type' => 'success', 
+                            'message' => 'Peserta berhasil didaftarkan dengan kode: ' . $kode
+                        ]);
+                } else {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('toastr', [
+                            'type' => 'error', 
+                            'message' => 'Gagal menyimpan data peserta'
+                        ]);
+                }
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('toastr', [
+                    'type' => 'error', 
+                    'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+                ]);
+        }
     }
 }

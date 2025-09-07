@@ -3,24 +3,11 @@
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
-
-        <div class="card">
+        <div class="card rounded-0">
             <div class="card-header">
                 <h3 class="card-title">Form Tambah Racepack</h3>
             </div>
             <div class="card-body">
-                <?php if (session()->getFlashdata('errors')): ?>
-                    <div class="alert alert-danger alert-dismissible">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                        <h5><i class="icon fas fa-ban"></i> Error!</h5>
-                        <ul class="mb-0">
-                            <?php foreach (session()->getFlashdata('errors') as $error): ?>
-                                <li><?= $error ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-
                 <?= form_open_multipart('admin/racepack/store') ?>
                 <div class="form-group">
                     <label for="kode_racepack">Kode Racepack <span class="text-danger">*</span></label>
@@ -105,19 +92,19 @@
                         '0' => 'Nonaktif'
                     ], old('status') ?? '1') ?>
                 </div>
-
-                <div class="form-group">
-                    <a href="<?= base_url('admin/racepack') ?>" class="btn btn-secondary">
+                <?= form_close() ?>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="<?= base_url('admin/racepack') ?>" class="btn btn-secondary rounded-0">
                         <i class="fas fa-arrow-left"></i> Kembali
                     </a>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary rounded-0">
                         <i class="fas fa-save"></i> Simpan
                     </button>
                 </div>
-                <?= form_close() ?>
             </div>
         </div>
     </div>
 </div>
-
 <?= $this->endSection() ?>

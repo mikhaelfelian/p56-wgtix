@@ -47,13 +47,13 @@
 <!-- Quick Actions -->
 <div class="quick-actions mb-4">
     <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
+<div class="row">
+    <div class="col-12">
                 <div class="action-card">
                     <div class="action-buttons">
                         <a href="<?= base_url('admin/events') ?>" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left"></i> Kembali
-                        </a>
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </a>
                         <a href="<?= base_url('admin/events/edit/' . $event->id) ?>" class="btn btn-primary">
                             <i class="fas fa-edit"></i> Edit Event
                         </a>
@@ -62,9 +62,9 @@
                         </a>
                         <a href="<?= base_url('admin/events/print/' . $event->id) ?>" class="btn btn-info" target="_blank">
                             <i class="fas fa-print"></i> Cetak Peserta
-                        </a>
-                    </div>
+                    </a>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -130,10 +130,10 @@
                                     <i class="fas fa-clock"></i> Waktu
                                 </div>
                                 <div class="info-value"><?= $event->wkt_masuk ?> - <?= $event->wkt_keluar ?></div>
-                            </div>
-                        </div>
                     </div>
-
+                    </div>
+                </div>
+                
                     <div class="info-section">
                         <h6 class="section-title">Kapasitas & Peserta</h6>
                         <div class="info-items">
@@ -161,14 +161,14 @@
                                 </div>
                                 <div class="info-value">
                                     <?php if ($available_capacity === 'Unlimited'): ?>
-                                        Tidak terbatas
-                                    <?php else: ?>
+                                            Tidak terbatas
+                                        <?php else: ?>
                                         <?= $available_capacity ?> peserta
-                                    <?php endif; ?>
+                                        <?php endif; ?>
                                 </div>
-                            </div>
-                        </div>
                     </div>
+                    </div>
+                </div>
 
                     <div class="info-section">
                         <h6 class="section-title">Informasi Sistem</h6>
@@ -262,12 +262,12 @@
                             <button class="btn btn-outline-primary" id="load-more-btn">
                                 <i class="fas fa-plus"></i> Muat Lebih Banyak
                             </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Sidebar -->
     <div class="col-lg-4">
@@ -317,8 +317,8 @@
                                     ∞
                                 <?php else: ?>
                                     <?= $available_capacity ?>
-                                <?php endif; ?>
-                            </div>
+                <?php endif; ?>
+            </div>
                             <div class="stat-label">Sisa Kuota</div>
                         </div>
                     </div>

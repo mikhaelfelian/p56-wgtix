@@ -54,37 +54,51 @@ class BeritaGallery extends BaseController
 
     public function store()
     {
-        // Validation rules
+        // Disable CSRF for this endpoint since it's used by Dropzone
+        $this->request->setGlobal('post', $this->request->getPost());
+        
+        // Validation rules - handle both parameter names
         $rules = [
-            'id_post' => 'required|integer',
-            'images' => 'required',
-            'images.*' => 'uploaded[images]|max_size[images,2048]|is_image[images]'
+            'id_post' => 'permit_empty|integer',
+            'berita_id' => 'permit_empty|integer',
+            'images' => 'permit_empty',
+            'gallery' => 'permit_empty',
+            'images.*' => 'uploaded[images]|max_size[images,2048]|is_image[images]',
+            'gallery.*' => 'uploaded[gallery]|max_size[gallery,2048]|is_image[gallery]'
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return $this->response->setJSON(['success' => false, 'error' => $this->validator->getErrors()]);
         }
 
-        $postId = $this->request->getPost('id_post');
+        // Get post ID from either parameter
+        $postId = $this->request->getPost('id_post') ?: $this->request->getPost('berita_id');
         $post = $this->postsModel->find($postId);
         
         if (!$post) {
-            return redirect()->back()->withInput()->with('error', 'Berita tidak ditemukan');
+            return $this->response->setJSON(['success' => false, 'error' => 'Berita tidak ditemukan']);
         }
 
-        $images = $this->request->getFileMultiple('images');
+        // Get images from either parameter
+        $images = $this->request->getFileMultiple('images') ?: $this->request->getFileMultiple('gallery');
         $uploaded = 0;
         $failed = 0;
 
         if ($images) {
+            // Create directory structure for this post
+            $uploadPath = FCPATH . '/file/posts/gallery/' . $postId;
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
             foreach ($images as $image) {
                 if ($image->isValid() && !$image->hasMoved()) {
                     $imageName = $image->getRandomName();
                     
-                    if ($image->move(ROOTPATH . 'public/uploads/berita/gallery', $imageName)) {
+                    if ($image->move($uploadPath, $imageName)) {
                         $galeriData = [
                             'id_post' => $postId,
-                            'path' => $imageName,
+                            'path' => 'file/posts/' . $postId . '/' . $imageName,
                             'caption' => $this->request->getPost('caption'),
                             'alt_text' => $this->request->getPost('alt_text'),
                             'is_primary' => 0,
@@ -108,7 +122,7 @@ class BeritaGallery extends BaseController
             $message .= ", {$failed} gambar gagal diupload";
         }
 
-        return redirect()->to('admin/berita-gallery')->with('success', $message);
+        return $this->response->setJSON(['success' => true, 'message' => $message]);
     }
 
     public function edit($id)
@@ -172,8 +186,8 @@ class BeritaGallery extends BaseController
         }
 
         // Delete file
-        if (file_exists(ROOTPATH . 'public/uploads/berita/gallery/' . $image->path)) {
-            unlink(ROOTPATH . 'public/uploads/berita/gallery/' . $image->path);
+        if (file_exists(ROOTPATH . 'public/' . $image->path)) {
+            unlink(ROOTPATH . 'public/' . $image->path);
         }
 
         // Delete record (soft delete)
@@ -200,8 +214,8 @@ class BeritaGallery extends BaseController
             
             if ($image) {
                 // Delete file
-                if (file_exists(ROOTPATH . 'public/uploads/berita/gallery/' . $image->path)) {
-                    unlink(ROOTPATH . 'public/uploads/berita/gallery/' . $image->path);
+                if (file_exists(ROOTPATH . 'public/' . $image->path)) {
+                    unlink(ROOTPATH . 'public/' . $image->path);
                 }
 
                 // Delete record

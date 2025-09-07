@@ -105,8 +105,10 @@ echo $this->section('content');
                                             <?php if ($detail->item_data): ?>
                                                 <?php $itemData = json_decode($detail->item_data, true); ?>
                                                 <?php if (isset($itemData['participant_name'])): ?>
-                                                    <br><small class="text-muted">Peserta:
-                                                        <?= esc($itemData['participant_name']) ?></small>
+                                                    <br>
+                                                    <small class="text-muted">Peserta:
+                                                        <?= esc($itemData['participant_name']) ?>
+                                                    </small>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </td>
@@ -238,15 +240,30 @@ echo $this->section('content');
                             <i class="fa fa-arrow-left"></i> Semua Invoice
                         </a>
                     </div>
-                    <div class="col-md-6 text-right">
-                        <a href="<?= base_url('sale/print-dotmatrix/' . $order->id) ?>" class="btn btn-warning">
-                            <i class="fa fa-print"></i> Invoice
-                        </a>
-                        <?php if ($order->payment_status == 'paid'): ?>
-                            <a href="<?= base_url('sale/print-ticket/' . $order->id) ?>" class="btn btn-info">
-                                <i class="fa fa-ticket"></i> Cetak Tiket
-                            </a>
-                        <?php endif; ?>
+                    <div class="col-md-6">
+                        <table style="width:100%; border:none; border-spacing:0.5px;">
+                            <tr>
+                                <td style="border:none; text-align:right;">
+                                    <a href="<?= base_url('sale/print-dotmatrix/' . $order->id) ?>" class="btn btn-warning ml-2 mb-2">
+                                        <i class="fa fa-print"></i> Invoice
+                                    </a>
+                                </td>
+                                <td style="border:none; text-align:right;">
+                                    <?php if ($order->payment_status == 'paid'): ?>
+                                        <a href="<?= base_url('sale/print-ticket/' . $order->id) ?>" class="btn btn-info ml-2 mb-2">
+                                            <i class="fa fa-ticket"></i> Cetak Tiket
+                                        </a>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="border:none; text-align:right;">
+                                    <?php if ($order->payment_status == 'paid'): ?>
+                                        <a href="<?= base_url('sale/register-participant/' . $order->id) ?>" class="btn btn-success ml-2 mb-2">
+                                            <i class="fa fa-user-plus"></i> Daftar Peserta
+                                        </a>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>

@@ -30,198 +30,197 @@ class Berita extends BaseController
 
     public function index()
     {
-        $perPage = 10;
         $page = $this->request->getGet('page') ?? 1;
         $keyword = $this->request->getGet('keyword') ?? '';
         $kategori = $this->request->getGet('kategori') ?? '';
-        
-        // Get posts with pagination
-        $posts = $this->postsModel->getPostsWithFilters($perPage, $keyword, $page, $kategori);
-        
-        // Get pagination
-        $pager = $this->postsModel->pager;
-        
-        // Get total count
-        $total = $this->postsModel->getTotalPosts($keyword, $kategori);
-        
+        $perPage = $this->pengaturan->pagination_limit ?? 10;
+
+        // Get posts with pagination and search (for admin, show all statuses)
+        $posts = $this->postsModel->getPostsWithFilters($perPage, $keyword, $page, $kategori, null, false);
+        $total = $this->postsModel->getTotalPosts($keyword, $kategori, null, false);
+
+        // Debug: Log the data
+        log_message('debug', 'Posts count: ' . count($posts));
+        log_message('debug', 'Total posts: ' . $total);
+        log_message('debug', 'Page: ' . $page . ', PerPage: ' . $perPage);
+
+        // Create pager
+        $pager = service('pager');
+        $pager->setPath('admin/berita');
+        $pager->makeLinks($total, $perPage, $page, 'adminlte_pagination');
+
         // Get categories for filter
         $categories = $this->categoryModel->where('is_active', 1)->findAll();
-        
+
         $data = [
-            'title' => 'Data Berita',
-            'posts' => $posts,
-            'categories' => $categories,
-            'pager' => $pager,
-            'currentPage' => $page,
-            'perPage' => $perPage,
-            'keyword' => $keyword,
-            'total' => $total,
-            'Pengaturan' => $this->getPengaturan()
+            'title'        => 'Data Berita',
+            'posts'        => $posts,
+            'categories'   => $categories,
+            'pager'        => $pager,
+            'currentPage'  => $page,
+            'perPage'      => $perPage,
+            'keyword'      => $keyword,
+            'kategori'     => $kategori,
+            'total'        => $total,
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
         ];
 
-        return view('admin-lte-3/admin/berita/index', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/berita/index', $data);
     }
 
     public function create()
     {
+        // Get categories and format for dropdown
+        $categories = $this->categoryModel->where('is_active', '1')->findAll();
+        $categoryOptions = ['' => 'Pilih Kategori'];
+        foreach ($categories as $category) {
+            $categoryOptions[$category->id] = $category->nama;
+        }
+
         $data = [
-            'title' => 'Tambah Berita Baru',
-            'categories' => $this->categoryModel->where('is_active', 1)->findAll(),
-            'Pengaturan' => $this->getPengaturan()
+            'title'           => 'Tambah Berita Baru',
+            'categories'      => $categories,
+            'categoryOptions' => $categoryOptions,
+            'Pengaturan'      => $this->pengaturan,
+            'user'            => $this->ionAuth->user()->row(),
         ];
 
-        return view('admin-lte-3/admin/berita/create', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/berita/create', $data);
     }
 
     public function store()
     {
+        // Get post ID for edit mode
+        $postId = $this->request->getPost('id');
+        $isEdit = !empty($postId);
+
         // Validation rules
         $rules = [
-            'judul' => 'required|min_length[3]|max_length[240]',
-            'slug' => 'required|is_unique[tbl_posts.slug,id,{id}]',
-            'konten' => 'required',
-            'id_category' => 'required|integer',
-            'status' => 'required|in_list[draft,scheduled,published,archived]',
-            'cover_image' => 'uploaded[cover_image]|max_size[cover_image,2048]|is_image[cover_image]'
+            'judul'        => 'required|min_length[3]|max_length[240]',
+            'konten'       => 'required',
+            'status'       => 'required',
         ];
 
+        // Add 'id' rule for edit mode to avoid LogicException
+        if ($isEdit) {
+            $rules['id'] = 'required|integer|is_natural_no_zero';
+        }
+
+        // // Add unique validation for slug and cover image based on mode
+        // if (!$isEdit) {
+        //     $rules['slug'] .= '|is_unique[tbl_posts.slug]';
+        //     $rules['cover_image'] = 'uploaded[cover_image]|max_size[cover_image,2048]|is_image[cover_image]';
+        // } else {
+        //     // For edit mode, use the actual post ID in the is_unique rule
+        //     $rules['slug'] .= '|is_unique[tbl_posts.slug,id,' . $postId . ']';
+        //     $rules['cover_image'] = 'permit_empty|max_size[cover_image,2048]|is_image[cover_image]';
+        // }
+
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to('admin/berita/edit/'.$postId)->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        // Use variables for each input
+        $id_user         = $this->ionAuth->user()->row()->id ?? 1; // Default user ID
+        $id_category     = $this->request->getPost('id_category');
+        $judul           = $this->request->getPost('judul');
+        $slug            = $this->request->getPost('slug');
+        $excerpt         = $this->request->getPost('excerpt');
+        $konten          = $this->request->getPost('konten');
+        $status          = $this->request->getPost('status');
+        $meta_title      = $this->request->getPost('meta_title');
+        $meta_description= $this->request->getPost('meta_description');
+        $meta_keywords   = $this->request->getPost('meta_keywords');
+        $published_at    = $status === 'published' ? date('Y-m-d H:i:s') : null;
+
+        // Prepare post data
+        $postData = [
+            'id_user'         => $id_user,
+            'id_category'     => $id_category,
+            'judul'           => $judul,
+            'slug'            => $slug,
+            'excerpt'         => $excerpt,
+            'konten'          => $konten,
+            'status'          => $status,
+            'published_at'    => $published_at,
+            'meta_title'      => $meta_title,
+            'meta_description'=> $meta_description,
+            'meta_keywords'   => $meta_keywords
+        ];
+
+        // Add ID for edit mode
+        if ($isEdit) {
+            $postData['id'] = $postId;
         }
 
         // Handle cover image upload
         $coverImage = $this->request->getFile('cover_image');
-        $coverImageName = null;
+        if ($coverImage && $coverImage->isValid() && !$coverImage->hasMoved()) {
+            $coverImageName = 'cover_' . $coverImage->getRandomName();
+            $coverImagePath = FCPATH . '/file/posts/' . ($isEdit ? $postId : 'temp') . '/';
+            
+            if (!is_dir($coverImagePath)) {
+                mkdir($coverImagePath, 0755, true);
+            }
 
-        if ($coverImage->isValid() && !$coverImage->hasMoved()) {
-            $coverImageName = $coverImage->getRandomName();
-            $coverImage->move(ROOTPATH . 'public/uploads/berita/cover', $coverImageName);
+            if ($coverImage->move($coverImagePath, $coverImageName)) {
+                $postData['cover_image'] = $coverImageName;
+            }
         }
 
-        // Prepare post data
-        $postData = [
-            'id_user' => session()->get('user_id') ?? 1, // Default user ID
-            'id_category' => $this->request->getPost('id_category'),
-            'judul' => $this->request->getPost('judul'),
-            'slug' => $this->request->getPost('slug'),
-            'excerpt' => $this->request->getPost('excerpt'),
-            'konten' => $this->request->getPost('konten'),
-            'cover_image' => $coverImageName,
-            'status' => $this->request->getPost('status'),
-            'published_at' => $this->request->getPost('status') === 'published' ? date('Y-m-d H:i:s') : null,
-            'meta_title' => $this->request->getPost('meta_title'),
-            'meta_description' => $this->request->getPost('meta_description'),
-            'meta_keywords' => $this->request->getPost('meta_keywords')
-        ];
-
-        // Save post
-        $postId = $this->postsModel->insert($postData);
-
-        if ($postId) {
-            // Handle gallery images
-            $galleryImages = $this->request->getFileMultiple('gallery_images');
+        // Save post using save() method
+        if ($this->postsModel->save($postData)) {
+            $savedPostId = $isEdit ? $postId : $this->postsModel->getInsertID();
             
-            if ($galleryImages) {
-                foreach ($galleryImages as $image) {
-                    if ($image->isValid() && !$image->hasMoved()) {
-                        $imageName = $image->getRandomName();
-                        $image->move(ROOTPATH . 'public/uploads/berita/gallery', $imageName);
-
-                        $galeriData = [
-                            'id_post' => $postId,
-                            'path' => $imageName,
-                            'caption' => $this->request->getPost('image_caption_' . $image->getClientName()),
-                            'alt_text' => $this->request->getPost('image_alt_' . $image->getClientName()),
-                            'is_primary' => 0,
-                            'urutan' => 0
-                        ];
-
-                        $this->galeriModel->insert($galeriData);
-                    }
+            // If it's a new post and we have a cover image, move it to the correct directory
+            if (!$isEdit && isset($postData['cover_image'])) {
+                $tempPath = FCPATH . '/file/posts/temp/' . $postData['cover_image'];
+                $finalPath = FCPATH . '/file/posts/' . $savedPostId . '/';
+                
+                if (!is_dir($finalPath)) {
+                    mkdir($finalPath, 0755, true);
+                }
+                
+                if (file_exists($tempPath)) {
+                    rename($tempPath, $finalPath . $postData['cover_image']);
+                    rmdir(FCPATH . '/file/posts/temp');
                 }
             }
 
-            return redirect()->to('admin/berita')->with('success', 'Berita berhasil ditambahkan');
+            $message = $isEdit ? 'Berita berhasil diupdate' : 'Berita berhasil ditambahkan';
+            return redirect()->to('admin/berita')->with('success', $message);
         }
 
-        return redirect()->back()->withInput()->with('error', 'Gagal menambahkan berita');
+        $message = $isEdit ? 'Gagal mengupdate berita' : 'Gagal menambahkan berita';
+        return redirect()->back()->withInput()->with('error', $message);
     }
 
     public function edit($id)
     {
         $post = $this->postsModel->find($id);
-        
+
         if (!$post) {
             return redirect()->to('admin/berita')->with('error', 'Berita tidak ditemukan');
+        }
+
+        // Get categories and format for dropdown
+        $categories = $this->categoryModel->where('is_active', '1')->findAll();
+        $categoryOptions = ['' => 'Pilih Kategori'];
+        foreach ($categories as $category) {
+            $categoryOptions[$category->id] = $category->nama;
         }
 
         $data = [
-            'title' => 'Edit Berita',
-            'post' => $post,
-            'categories' => $this->categoryModel->where('is_active', 1)->findAll(),
-            'gallery' => $this->galeriModel->where('id_post', $id)->findAll(),
-            'Pengaturan' => $this->getPengaturan()
+            'title'           => 'Edit Berita',
+            'post'            => $post,
+            'categories'      => $categories,
+            'categoryOptions' => $categoryOptions,
+            'Pengaturan'      => $this->pengaturan,
+            'user'            => $this->ionAuth->user()->row(),
         ];
 
-        return view('admin-lte-3/admin/berita/edit', $data);
-    }
-
-    public function update($id)
-    {
-        $post = $this->postsModel->find($id);
-        
-        if (!$post) {
-            return redirect()->to('admin/berita')->with('error', 'Berita tidak ditemukan');
-        }
-
-        // Validation rules
-        $rules = [
-            'judul' => 'required|min_length[3]|max_length[240]',
-            'slug' => "required|is_unique[tbl_posts.slug,id,{$id}]",
-            'konten' => 'required',
-            'id_category' => 'required|integer',
-            'status' => 'required|in_list[draft,scheduled,published,archived]'
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
-
-        // Handle cover image upload
-        $coverImage = $this->request->getFile('cover_image');
-        $coverImageName = $post->cover_image; // Keep existing if no new upload
-
-        if ($coverImage->isValid() && !$coverImage->hasMoved()) {
-            // Delete old cover image
-            if ($post->cover_image && file_exists(ROOTPATH . 'public/uploads/berita/cover/' . $post->cover_image)) {
-                unlink(ROOTPATH . 'public/uploads/berita/cover/' . $post->cover_image);
-            }
-
-            $coverImageName = $coverImage->getRandomName();
-            $coverImage->move(ROOTPATH . 'public/uploads/berita/cover', $coverImageName);
-        }
-
-        // Prepare post data
-        $postData = [
-            'id_category' => $this->request->getPost('id_category'),
-            'judul' => $this->request->getPost('judul'),
-            'slug' => $this->request->getPost('slug'),
-            'excerpt' => $this->request->getPost('excerpt'),
-            'konten' => $this->request->getPost('konten'),
-            'cover_image' => $coverImageName,
-            'status' => $this->request->getPost('status'),
-            'published_at' => $this->request->getPost('status') === 'published' ? date('Y-m-d H:i:s') : null,
-            'meta_title' => $this->request->getPost('meta_title'),
-            'meta_description' => $this->request->getPost('meta_description'),
-            'meta_keywords' => $this->request->getPost('meta_keywords')
-        ];
-
-        // Update post
-        if ($this->postsModel->update($id, $postData)) {
-            return redirect()->to('admin/berita')->with('success', 'Berita berhasil diupdate');
-        }
-
-        return redirect()->back()->withInput()->with('error', 'Gagal mengupdate berita');
+        return $this->view($this->theme->getThemePath() . '/admin/berita/create', $data);
     }
 
     public function delete($id)
@@ -233,15 +232,16 @@ class Berita extends BaseController
         }
 
         // Delete cover image
-        if ($post->cover_image && file_exists(ROOTPATH . 'public/uploads/berita/cover/' . $post->cover_image)) {
-            unlink(ROOTPATH . 'public/uploads/berita/cover/' . $post->cover_image);
+        if ($post->cover_image && file_exists(FCPATH . '/file/posts/' . $id . '/' . $post->cover_image)) {
+            unlink(FCPATH . '/file/posts/' . $id . '/' . $post->cover_image);
         }
 
-        // Delete gallery images
+        // Delete gallery images (gallery is in the same folder as posts)
         $gallery = $this->galeriModel->where('id_post', $id)->findAll();
         foreach ($gallery as $image) {
-            if (file_exists(ROOTPATH . 'public/uploads/berita/gallery/' . $image->path)) {
-                unlink(ROOTPATH . 'public/uploads/berita/gallery/' . $image->path);
+            $galleryImagePath = FCPATH . '/file/posts/gallery/' . $id . '/' . $image->filename;
+            if (file_exists($galleryImagePath)) {
+                unlink($galleryImagePath);
             }
         }
 
@@ -255,20 +255,26 @@ class Berita extends BaseController
 
     public function gallery($id)
     {
-        $post = $this->postsModel->find($id);
-        
-        if (!$post) {
+        $berita = $this->postsModel->find($id);
+
+        if (!$berita) {
             return redirect()->to('admin/berita')->with('error', 'Berita tidak ditemukan');
         }
 
+        $galleries = $this->galeriModel
+            ->where('id_post', $id)
+            ->orderBy('urutan', 'ASC')
+            ->findAll();
+
         $data = [
-            'title' => 'Galeri Berita: ' . $post->judul,
-            'post' => $post,
-            'gallery' => $this->galeriModel->where('id_post', $id)->orderBy('urutan', 'ASC')->findAll(),
-            'Pengaturan' => $this->getPengaturan()
+            'title'        => 'Galeri Berita: ' . $berita->judul,
+            'berita'       => $berita,
+            'galleries'    => $galleries,
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
         ];
 
-        return view('admin-lte-3/admin/berita/gallery', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/berita/gallery', $data);
     }
 
     public function uploadGallery($id)
@@ -283,14 +289,20 @@ class Berita extends BaseController
         $uploaded = 0;
 
         if ($images) {
+            // Create directory structure for this post
+            $uploadPath = FCPATH . '/file/posts/gallery/' . $id;
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
             foreach ($images as $image) {
                 if ($image->isValid() && !$image->hasMoved()) {
                     $imageName = $image->getRandomName();
-                    $image->move(ROOTPATH . 'public/uploads/berita/gallery', $imageName);
+                    $image->move($uploadPath, $imageName);
 
                     $galeriData = [
                         'id_post' => $id,
-                        'path' => $imageName,
+                        'path' => 'file/posts/gallery/' . $id . '/' . $imageName,
                         'caption' => $this->request->getPost('caption'),
                         'alt_text' => $this->request->getPost('alt_text'),
                         'is_primary' => 0,
