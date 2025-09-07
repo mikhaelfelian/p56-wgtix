@@ -123,7 +123,7 @@ class KamupediaWA
         
         // Add order details if provided
         if ($orderDetails && is_array($orderDetails) && count($orderDetails) > 0) {
-            $message .= "Tiket *".$orderDetails[0]->event_name."*\n";
+            $message .= "Tiket *".$orderDetails[0]->event_title."*\n";
             $message .= "Detail Pesanan:\n";
             $first = true;
             foreach ($orderDetails as $detail) {
