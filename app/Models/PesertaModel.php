@@ -64,9 +64,20 @@ class PesertaModel extends Model
 
     public function generateKode()
     {
-        $lastPeserta = $this->orderBy('kode', 'DESC')->first();
-        $lastNumber = $lastPeserta ? (int)substr($lastPeserta->kode, 3) : 0;
-        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        // Ambil kode terakhir, urutkan numerik dari kanan (3 digit terakhir)
+        $lastPeserta = $this->orderBy('CAST(SUBSTRING(kode, -3) AS UNSIGNED)', 'DESC')->first();
+        if ($lastPeserta && preg_match('/(\d{3})$/', $lastPeserta->kode, $matches)) {
+            $lastNumber = (int)$matches[1];
+        } else {
+            $lastNumber = 0;
+        }
+        $newNumber = $lastNumber + 1;
+        // Jika ada prefix (misal "PES"), ambil prefix dari kode terakhir, jika tidak, default kosong
+        $prefix = '';
+        if ($lastPeserta && preg_match('/^([A-Za-z]*)\d{3}$/', $lastPeserta->kode, $matchesPrefix)) {
+            $prefix = $matchesPrefix[1];
+        }
+        return str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
 
     /**
