@@ -175,7 +175,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->post('store', 'EventGallery::store');
         $routes->get('edit/(:num)', 'EventGallery::edit/$1');
         $routes->post('update/(:num)', 'EventGallery::update/$1');
-        $routes->get('delete/(:num)', 'EventGallery::delete/$1');
+        $routes->post('delete/(:num)', 'EventGallery::delete/$1');
         $routes->get('by-event/(:num)', 'EventGallery::getByEvent/$1');
         $routes->get('manage/(:num)', 'EventGallery::manage/$1');
         $routes->get('set-cover/(:num)', 'EventGallery::setCover/$1');

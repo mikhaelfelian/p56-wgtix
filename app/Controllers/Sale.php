@@ -1104,19 +1104,14 @@ class Sale extends BaseController{
         
         // Only accept POST requests
         if (!$this->request->is('post')) {
-            log_message('error', 'Tripay Callback: Non-POST request received');
             return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
         }
 
         // Read raw POST body (JSON)
         $json = file_get_contents('php://input');
         
-        // Log callback for debugging
-        log_message('info', 'Tripay Callback received: ' . $json);
-        
         // Check if we have any data
         if (empty($json)) {
-            log_message('error', 'Tripay Callback: Empty request body');
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Empty request body']);
         }
         
@@ -1124,7 +1119,6 @@ class Sale extends BaseController{
         
         // Check JSON decode error
         if (json_last_error() !== JSON_ERROR_NONE) {
-            log_message('error', 'Tripay Callback: JSON decode error - ' . json_last_error_msg());
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid JSON']);
         }
 
@@ -1137,14 +1131,12 @@ class Sale extends BaseController{
             !isset($data['payment_method_code']) ||
             !isset($data['total_amount'])
         ) {
-            log_message('error', 'Tripay Callback: Invalid callback data - ' . json_encode($data));
             return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid callback data']);
         }
 
         // Find order by merchant_ref (invoice_no)
         $order = $this->transJualModel->where('invoice_no', $data['merchant_ref'])->first();
         if (!$order) {
-            log_message('error', 'Tripay Callback: Order not found for merchant_ref: ' . $data['merchant_ref']);
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Order not found']);
         }
 
@@ -1189,7 +1181,6 @@ class Sale extends BaseController{
 
         try {
             $this->transJualModel->update($order->id, $update);
-            log_message('info', 'Tripay Callback: Order ' . $order->id . ' status updated to ' . $status);
 
             // Optionally, record payment to trans_jual_plat if paid and not already recorded
             if (strtoupper($status) === 'PAID') {
@@ -1228,7 +1219,6 @@ class Sale extends BaseController{
             return $this->response->setJSON(['success' => true]);
             
         } catch (\Exception $e) {
-            log_message('error', 'Tripay Callback: Database error - ' . $e->getMessage());
             return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Database error']);
         }
     }

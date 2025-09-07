@@ -99,12 +99,13 @@
                                                                 <i class="fas fa-star"></i>
                                                             </a>
                                                         <?php endif ?>
-                                                        <a href="<?= base_url("admin/event-gallery/delete/$gallery->id") ?>" 
-                                                           class="btn btn-sm btn-danger" 
-                                                           title="Hapus"
-                                                           onclick="return confirm('Apakah anda yakin ingin menghapus gambar ini?')">
+                                                        <button type="button" 
+                                                                class="btn btn-sm btn-danger delete-gallery" 
+                                                                title="Hapus"
+                                                                data-id="<?= $gallery->id ?>"
+                                                                data-file="<?= $gallery->file ?>">
                                                             <i class="fas fa-trash"></i>
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -478,6 +479,79 @@ $(document).ready(function() {
                 alert('Terjadi kesalahan saat menyimpan deskripsi');
             }
         });
+    });
+
+    // Handle gallery delete with AJAX
+    $(document).on('click', '.delete-gallery', function(e) {
+        e.preventDefault();
+        
+        var galleryId = $(this).data('id');
+        var fileName = $(this).data('file');
+        var button = $(this);
+        var galleryCard = button.closest('.col-md-3');
+        
+        console.log('Delete clicked for gallery ID:', galleryId);
+        console.log('File name:', fileName);
+        console.log('CSRF Token:', '<?= csrf_hash() ?>');
+        console.log('CSRF Header:', '<?= csrf_header() ?>');
+        console.log('Delete URL:', '<?= base_url('admin/event-gallery/delete') ?>/' + galleryId);
+        
+        if (confirm('Apakah anda yakin ingin menghapus gambar ini?')) {
+            // Disable button and show loading
+            button.prop('disabled', true);
+            button.html('<i class="fas fa-spinner fa-spin"></i>');
+            
+            $.ajax({
+                url: '<?= base_url('admin/event-gallery/delete') ?>/' + galleryId,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Show success message
+                        toastr.success(response.message || 'Galeri berhasil dihapus');
+                        
+                        // Fade out and remove the gallery card
+                        galleryCard.fadeOut(300, function() {
+                            $(this).remove();
+                        });
+                    } else {
+                        // Show error message
+                        toastr.error(response.error || 'Gagal menghapus galeri');
+                        
+                        // Re-enable button
+                        button.prop('disabled', false);
+                        button.html('<i class="fas fa-trash"></i>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Delete error:', error);
+                    console.error('Status:', status);
+                    console.error('Response:', xhr.responseText);
+                    console.error('Status Code:', xhr.status);
+                    
+                    var errorMessage = 'Terjadi kesalahan saat menghapus galeri';
+                    if (xhr.status === 404) {
+                        errorMessage = 'Halaman tidak ditemukan (404). Periksa URL atau route.';
+                    } else if (xhr.status === 403) {
+                        errorMessage = 'Akses ditolak (403). Periksa izin atau CSRF token.';
+                    } else if (xhr.status === 500) {
+                        errorMessage = 'Server error (500). Periksa log server.';
+                    }
+                    
+                    toastr.error(errorMessage);
+                    
+                    // Re-enable button
+                    button.prop('disabled', false);
+                    button.html('<i class="fas fa-trash"></i>');
+                }
+            });
+        }
     });
 });
 </script>
