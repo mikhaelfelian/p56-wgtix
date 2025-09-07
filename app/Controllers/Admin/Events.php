@@ -16,6 +16,8 @@ use App\Models\EventsModel;
 use App\Models\EventsHargaModel;
 use App\Models\EventGaleriModel;
 use App\Models\KategoriModel;
+use App\Models\PesertaModel;
+use App\Libraries\EventParticipantPdf;
 
 class Events extends BaseController
 {
@@ -23,6 +25,7 @@ class Events extends BaseController
     protected $eventsHargaModel;
     protected $eventGaleriModel;
     protected $kategoriModel;
+    protected $pesertaModel;
 
     public function __construct()
     {
@@ -31,6 +34,7 @@ class Events extends BaseController
         $this->eventsHargaModel = new EventsHargaModel();
         $this->eventGaleriModel = new EventGaleriModel();
         $this->kategoriModel = new KategoriModel();
+        $this->pesertaModel = new PesertaModel();
     }
 
     /**
@@ -211,15 +215,91 @@ class Events extends BaseController
                 ->with('error', 'Event tidak ditemukan');
         }
 
+        // Get category information
+        $kategori = $this->kategoriModel->find($event->id_kategori);
+        
+        // Get participants for this event (limit to 10 for preview)
+        $participants = $this->pesertaModel->where('id_event', $id)
+                                         ->where('status !=', -1)
+                                         ->orderBy('created_at', 'DESC')
+                                         ->limit(10)
+                                         ->findAll();
+
+        // Get total participant count from tbl_peserta.id_event
+        $totalParticipants = $this->pesertaModel->where('id_event', $id)
+                                              ->where('status !=', -1)
+                                              ->countAllResults();
+
+        // Calculate available capacity
+        $availableCapacity = 'Unlimited';
+        if ($event->jml > 0) {
+            $availableCapacity = max(0, $event->jml - $totalParticipants);
+        }
+
         $data = [
             'title' => 'Detail Event',
             'event' => $event,
+            'kategori' => $kategori,
             'pricing' => $this->eventsHargaModel->getEventPricings($id),
-            'gallery' => $this->eventGaleriModel->getGalleryByEvent($id),
-            'capacity_info' => $this->eventsModel->getEventCapacityInfo($id)
+            'participants' => $participants,
+            'total_participants' => $totalParticipants,
+            'available_capacity' => $availableCapacity
         ];
 
         return $this->view($this->theme->getThemePath() . '/admin/events/show', $data);
+    }
+
+    /**
+     * View event details (alias for show)
+     */
+    public function viewEvent($id = null)
+    {
+        return $this->show($id);
+    }
+
+    /**
+     * Print participant list as PDF
+     */
+    public function print($id = null)
+    {
+        $event = $this->eventsModel->find($id);
+
+        if (!$event) {
+            return redirect()->to('/admin/events')
+                ->with('error', 'Event tidak ditemukan');
+        }
+
+        // Get category information
+        $kategori = $this->kategoriModel->find($event->id_kategori);
+        
+        // Get all participants for this event
+        $participants = $this->pesertaModel->where('id_event', $id)
+                                         ->where('status !=', -1)
+                                         ->orderBy('nama', 'ASC')
+                                         ->findAll();
+
+        try {
+            // Create PDF instance
+            $pdf = new EventParticipantPdf($event, $participants, $kategori, $this->pengaturan);
+            
+            // Generate PDF content
+            $pdfContent = $pdf->generateParticipantList();
+            
+            // Set headers for PDF download
+            $filename = 'Daftar_Peserta_' . $event->event . '_' . date('Y-m-d') . '.pdf';
+            
+            return $this->response
+                ->setHeader('Content-Type', 'application/pdf')
+                ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->setHeader('Cache-Control', 'private, max-age=0, must-revalidate')
+                ->setHeader('Pragma', 'public')
+                ->setBody($pdfContent);
+                
+        } catch (\Exception $e) {
+            log_message('error', 'PDF generation failed for event ' . $id . ': ' . $e->getMessage());
+            session()->setFlashdata('error', 'Gagal mencetak daftar peserta: ' . $e->getMessage());
+            return redirect()->to('admin/events/view/' . $id);
+        }
     }
 
     /**

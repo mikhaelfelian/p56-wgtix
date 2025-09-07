@@ -154,13 +154,11 @@ class Sale extends BaseController
                     'id_platform'   => 0,
                     'id_kelompok'   => 0,
                     'id_event'      => $s->event_id,
-                    'kode'          => $this->pesertaModel->generateKode(),
+                    'kode'          => $this->pesertaModel->generateKode($s->event_id),
                     'nama'          => $ps->participant_name,
                 ];
 
                 $this->pesertaModel->insert($data);
-
-                // pre($data); // Remove or comment out debug
             }
         } elseif ($newPaymentStatus === 'pending') {
             // Delete peserta with this invoiceId

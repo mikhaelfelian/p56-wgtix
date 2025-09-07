@@ -10,13 +10,35 @@
                     <a href="<?= base_url('admin/events') ?>" class="btn btn-sm btn-secondary rounded-0">
                         <i class="fas fa-arrow-left"></i> Kembali
                     </a>
-                    <a href="<?= base_url('admin/events/edit/' . $event->id) ?>" class="btn btn-sm btn-primary rounded-0">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
+                     <a href="<?= base_url('admin/events/edit/' . $event->id) ?>" class="btn btn-sm btn-primary rounded-0">
+                         <i class="fas fa-edit"></i> Edit
+                     </a>
+                     <a href="<?= base_url('admin/events/print/' . $event->id) ?>" class="btn btn-sm btn-success rounded-0" target="_blank">
+                         <i class="fas fa-print"></i> Cetak
+                     </a>
                 </div>
             </div>
             <!-- /.card-header -->
             <div class="card-body">
+                <!-- Event Header -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="mb-1"><?= $event->event ?></h4>
+                                <p class="text-muted mb-0"><?= $event->kode ?: 'Tidak ada kode' ?></p>
+                            </div>
+                            <div>
+                                <?php if ($event->status == 1): ?>
+                                    <span class="badge badge-success badge-lg">Aktif</span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary badge-lg">Tidak Aktif</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-md-6">
                         <table class="table table-borderless">
@@ -31,10 +53,7 @@
                             <tr>
                                 <td><strong>Kategori:</strong></td>
                                 <td>
-                                    <?php 
-                                    $kategori = $this->kategoriModel->find($event->id_kategori);
-                                    echo $kategori ? $kategori->kategori : 'Tidak ada kategori';
-                                    ?>
+                                    <?= $kategori ? $kategori->kategori : 'Tidak ada kategori' ?>
                                 </td>
                             </tr>
                             <tr>
@@ -91,24 +110,16 @@
                             <tr>
                                 <td><strong>Peserta Terdaftar:</strong></td>
                                 <td>
-                                    <?php if (isset($capacity_info)): ?>
-                                        <?= $capacity_info['registered_count'] ?> peserta
-                                    <?php else: ?>
-                                        -
-                                    <?php endif; ?>
+                                    <?= $total_participants ?> peserta
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>Sisa Kapasitas:</strong></td>
                                 <td>
-                                    <?php if (isset($capacity_info)): ?>
-                                        <?php if ($capacity_info['available_capacity'] === 'Unlimited'): ?>
-                                            Tidak terbatas
-                                        <?php else: ?>
-                                            <?= $capacity_info['available_capacity'] ?> peserta
-                                        <?php endif; ?>
+                                    <?php if ($available_capacity === 'Unlimited'): ?>
+                                        Tidak terbatas
                                     <?php else: ?>
-                                        -
+                                        <?= $available_capacity ?> peserta
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -132,31 +143,40 @@
                     </div>
                 </div>
 
-                <?php if (isset($pricing) && $pricing): ?>
+                <?php if (isset($participants) && $participants): ?>
                 <div class="row mt-4">
                     <div class="col-12">
-                        <h5><i class="fas fa-tags"></i> Informasi Harga</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5><i class="fas fa-users"></i> Daftar Peserta</h5>
+                            <a href="<?= base_url('admin/peserta/daftar?event_id=' . $event->id) ?>" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-list"></i> Lihat Semua
+                            </a>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
+                            <table class="table table-bordered table-striped">
+                                <thead class="thead-light">
                                     <tr>
-                                        <th>Harga</th>
-                                        <th>Status</th>
-                                        <th>Dibuat</th>
+                                        <th>No</th>
+                                        <th>Nama</th>
+                                        <th>Email</th>
+                                        <th>Telepon</th>
+                                        <th>Tanggal Daftar</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($pricing as $price): ?>
+                                    <?php $no = 1; foreach ($participants as $participant): ?>
                                     <tr>
-                                        <td>Rp <?= number_format($price->harga, 0, ',', '.') ?></td>
+                                        <td><?= $no++ ?></td>
                                         <td>
-                                            <?php if ($price->status == '1'): ?>
-                                                <span class="badge badge-success">Aktif</span>
-                                            <?php else: ?>
-                                                <span class="badge badge-secondary">Tidak Aktif</span>
+                                            <strong><?= $participant->nama ?></strong>
+                                            <?php if ($participant->status_hadir == '1'): ?>
+                                                <span class="badge badge-success badge-sm ml-1">Hadir</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><?= date('d/m/Y H:i', strtotime($price->created_at)) ?></td>
+                                        <td><?= $participant->email ?></td>
+                                        <td><?= $participant->no_hp ?: '-' ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($participant->created_at)) ?></td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -164,29 +184,17 @@
                         </div>
                     </div>
                 </div>
-                <?php endif; ?>
-
-                <?php if (isset($gallery) && $gallery): ?>
+                <?php else: ?>
                 <div class="row mt-4">
                     <div class="col-12">
-                        <h5><i class="fas fa-images"></i> Galeri Event</h5>
-                        <div class="row">
-                            <?php foreach ($gallery as $item): ?>
-                            <div class="col-md-3 mb-3">
-                                <div class="card">
-                                    <img src="<?= base_url('uploads/events/' . $item->file) ?>" 
-                                         class="card-img-top" 
-                                         alt="<?= $item->deskripsi ?: 'Event Image' ?>"
-                                         style="height: 150px; object-fit: cover;">
-                                    <div class="card-body p-2">
-                                        <p class="card-text small mb-1"><?= $item->deskripsi ?: 'Tidak ada deskripsi' ?></p>
-                                        <?php if ($item->is_cover): ?>
-                                            <span class="badge badge-primary">Cover</span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Belum ada peserta</h5>
+                            <p class="text-muted">Event ini belum memiliki peserta yang terdaftar.</p>
+                            <a href="<?= base_url('admin/peserta/daftar?event_id=' . $event->id) ?>" 
+                               class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Lihat Peserta
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -199,4 +207,76 @@
     <!-- /.col -->
 </div>
 <!-- /.row -->
+
+<!-- Action Buttons Card -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Aksi Cepat</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="<?= base_url('admin/events/edit/' . $event->id) ?>" 
+                           class="btn btn-warning btn-block">
+                            <i class="fas fa-edit"></i> Edit Event
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="<?= base_url('admin/event-gallery/manage/' . $event->id) ?>" 
+                           class="btn btn-info btn-block">
+                            <i class="fas fa-images"></i> Kelola Galeri
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="<?= base_url('admin/events/pricing/' . $event->id) ?>" 
+                           class="btn btn-success btn-block">
+                            <i class="fas fa-tags"></i> Kelola Harga
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="<?= base_url('admin/peserta/daftar?event_id=' . $event->id) ?>" 
+                           class="btn btn-primary btn-block">
+                            <i class="fas fa-users"></i> Lihat Peserta
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<script>
+function openImageModal(imageSrc, description) {
+    document.getElementById('modalImage').src = imageSrc;
+    document.getElementById('modalDescription').textContent = description;
+    $('#imageModal').modal('show');
+}
+
+// Add some interactive features
+$(document).ready(function() {
+    // Add hover effects to gallery images
+    $('.card-img-top').hover(
+        function() {
+            $(this).css('transform', 'scale(1.05)');
+            $(this).css('transition', 'transform 0.3s ease');
+        },
+        function() {
+            $(this).css('transform', 'scale(1)');
+        }
+    );
+    
+    // Add click to copy functionality for event code
+    $('[data-copy]').click(function() {
+        var text = $(this).text();
+        navigator.clipboard.writeText(text).then(function() {
+            toastr.success('Kode event berhasil disalin!');
+        });
+    });
+});
+</script>
 <?= $this->endSection() ?>

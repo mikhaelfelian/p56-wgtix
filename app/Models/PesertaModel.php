@@ -62,185 +62,57 @@ class PesertaModel extends Model
 
     // Custom methods
 
-    public function generateKode()
+    public function generateKode($id_event = null)
     {
-        // Ambil kode terakhir, urutkan numerik dari kanan (3 digit terakhir)
-        $lastPeserta = $this->orderBy('CAST(SUBSTRING(kode, -3) AS UNSIGNED)', 'DESC')->first();
-        if ($lastPeserta && preg_match('/(\d{3})$/', $lastPeserta->kode, $matches)) {
-            $lastNumber = (int)$matches[1];
+        // Ambil kode terbesar (urutkan sebagai string, bukan numerik)
+        $builder = $this->orderBy('CAST(kode AS UNSIGNED)', 'DESC');
+        if ($id_event !== null) {
+            $builder = $builder->where('id_event', $id_event);
+        }
+        $lastPeserta = $builder->first();
+        if ($lastPeserta && is_numeric($lastPeserta->kode)) {
+            $lastNumber = (int)$lastPeserta->kode;
         } else {
             $lastNumber = 0;
         }
         $newNumber = $lastNumber + 1;
-        // Jika ada prefix (misal "PES"), ambil prefix dari kode terakhir, jika tidak, default kosong
-        $prefix = '';
-        if ($lastPeserta && preg_match('/^([A-Za-z]*)\d{3}$/', $lastPeserta->kode, $matchesPrefix)) {
-            $prefix = $matchesPrefix[1];
-        }
         return str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
 
     /**
-     * Get active participants
+     * Get peserta with group and kategori info, with optional search and pagination.
      * 
+     * @param int $perPage
+     * @param int $page
+     * @param string|null $keyword
+     * @param int|null $idKelompok
+     * @param int|null $status
      * @return array
      */
-    public function getActivePeserta()
+    public function getPesertaWithFilters($perPage = 10, $page = 1, $keyword = null, $idKelompok = null, $status = null)
     {
-        return $this->where('status', '1')
-                    ->orderBy('nama', 'ASC')
-                    ->findAll();
-    }
+        $builder = $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
+            ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
+            ->orderBy('tbl_peserta.nama', 'ASC');
 
-    /**
-     * Get participant by code
-     * 
-     * @param string $kode
-     * @return object|null
-     */
-    public function getPesertaByCode($kode)
-    {
-        return $this->where('kode', $kode)->first();
-    }
-
-    /**
-     * Get participants with group and kategori info
-     * 
-     * @return array
-     */
-    public function getPesertaWithGroup()
-    {
-        return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
-                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
-                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                    ->orderBy('tbl_peserta.nama', 'ASC')
-                    ->findAll();
-    }
-
-    /**
-     * Get participants with group and kategori info (for pagination)
-     * 
-     * @return $this
-     */
-    public function getPesertaWithGroupQuery()
-    {
-        return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
-                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
-                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                    ->orderBy('tbl_peserta.nama', 'ASC');
-    }
-
-    /**
-     * Get participants by group
-     * 
-     * @param int $idKelompok
-     * @return array
-     */
-    public function getPesertaByKelompok($idKelompok)
-    {
-        return $this->where('id_kelompok', $idKelompok)
-                    ->where('status', 1)
-                    ->orderBy('nama', 'ASC')
-                    ->findAll();
-    }
-
-    /**
-     * Check if participant code exists (for validation)
-     * 
-     * @param string $kode
-     * @param int|null $excludeId
-     * @return bool
-     */
-    public function isCodeExists($kode, $excludeId = null)
-    {
-        if (empty($kode)) {
-            return false;
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_peserta.nama', $keyword)
+                ->orLike('tbl_peserta.kode', $keyword)
+                ->orLike('tbl_peserta.no_hp', $keyword)
+                ->orLike('tbl_peserta.email', $keyword)
+                ->groupEnd();
         }
 
-        $builder = $this->where('kode', $kode);
-
-        if ($excludeId) {
-            $builder->where('id !=', $excludeId);
+        if ($idKelompok) {
+            $builder->where('tbl_peserta.id_kelompok', $idKelompok);
         }
 
-        return $builder->countAllResults() > 0;
-    }
-
-    /**
-     * Get participant statistics
-     * 
-     * @return object
-     */
-    public function getPesertaStats()
-    {
-        $total = $this->countAll();
-        $active = $this->where('status', 1)->countAllResults();
-        $inactive = $this->where('status', 0)->countAllResults();
-        $male = $this->where('jns_klm', 'L')->where('status', 1)->countAllResults();
-        $female = $this->where('jns_klm', 'P')->where('status', 1)->countAllResults();
-
-        return (object) [
-            'total' => $total,
-            'active' => $active,
-            'inactive' => $inactive,
-            'male' => $male,
-            'female' => $female
-        ];
-    }
-
-    /**
-     * Search participants
-     * 
-     * @param string $keyword
-     * @return array
-     */
-    public function searchPeserta($keyword)
-    {
-        return $this->groupStart()
-                    ->like('nama', $keyword)
-                    ->orLike('kode', $keyword)
-                    ->orLike('no_hp', $keyword)
-                    ->orLike('email', $keyword)
-                    ->groupEnd()
-                    ->orderBy('nama', 'ASC')
-                    ->findAll();
-    }
-
-    /**
-     * Search participants (for pagination)
-     * 
-     * @param string $keyword
-     * @return $this
-     */
-    public function searchPesertaQuery($keyword)
-    {
-        return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
-                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
-                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                    ->groupStart()
-                    ->like('tbl_peserta.nama', $keyword)
-                    ->orLike('tbl_peserta.kode', $keyword)
-                    ->orLike('tbl_peserta.no_hp', $keyword)
-                    ->orLike('tbl_peserta.email', $keyword)
-                    ->groupEnd()
-                    ->orderBy('tbl_peserta.nama', 'ASC');
-    }
-
-    /**
-     * Get participant dropdown options
-     * 
-     * @return array
-     */
-    public function getDropdownOptions()
-    {
-        $peserta = $this->getActivePeserta();
-        $options = [];
-        
-        foreach ($peserta as $p) {
-            $label = "({$p->kode}) {$p->nama}";
-            $options[$p->id] = $label;
+        if ($status !== null && $status !== '') {
+            $builder->where('tbl_peserta.status', $status);
         }
-        
-        return $options;
+
+        return $builder->paginate($perPage, 'peserta', $page);
     }
 }

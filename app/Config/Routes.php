@@ -142,6 +142,8 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->post('store', 'Events::store');
         $routes->get('edit/(:num)', 'Events::edit/$1');
         $routes->get('show/(:num)', 'Events::show/$1');
+        $routes->get('view/(:num)', 'Events::viewEvent/$1');
+        $routes->get('print/(:num)', 'Events::print/$1');
         $routes->get('delete/(:num)', 'Events::delete/$1');
         $routes->get('toggle-status/(:num)', 'Events::toggleStatus/$1');
         $routes->get('search', 'Events::search');

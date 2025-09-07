@@ -44,15 +44,14 @@ class Peserta extends BaseController
     public function daftar()
     {
         $search  = $this->request->getGet('search');
-        $page    = $this->request->getGet('page') ?? 1;
         $perPage = 10;
 
-        if ($search) {
-            $peserta = $this->pesertaModel->searchPesertaQuery($search)->paginate($perPage);
-        } else {
-            $peserta = $this->pesertaModel->getPesertaWithGroupQuery()->paginate($perPage);
-        }
-        
+        // Fix pagination: get correct page number from query string
+        $page = (int) ($this->request->getGet('page_peserta') ?? $this->request->getGet('page') ?? 1);
+
+        // You can add more filters here if needed, e.g. $idKelompok, $status
+        $peserta = $this->pesertaModel->getPesertaWithFilters($perPage, $page, $search);
+
         $pager = $this->pesertaModel->pager;
 
         // Get latest participant for QR code display in success message
