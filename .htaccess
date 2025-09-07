@@ -1,6 +1,6 @@
 # /.htaccess di: htdocs/p56-wgtix
 RewriteEngine On
-RewriteBase /p56-wgtix
+RewriteBase /
 
 # 1) Kalau file/dir beneran ada, langsung serve
 RewriteCond %{REQUEST_FILENAME} -f [OR]
