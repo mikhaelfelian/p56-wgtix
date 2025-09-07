@@ -203,7 +203,7 @@ class Sale extends BaseController
 
             // Determine status and send appropriate notification
             if ($newPaymentStatus) {
-                $result = $kamupediaWA->sendPaymentNotification($order, $newPaymentStatus, $customerPhone, $customerName, $orderDetails);
+                $result = $kamupediaWA->sendOrderNotification($order, $newPaymentStatus, $customerPhone, $customerName, $orderDetails);
             } else {
                 $result = $kamupediaWA->sendOrderNotification($order, $newOrderStatus, $customerPhone, $customerName, $orderDetails);
             }
