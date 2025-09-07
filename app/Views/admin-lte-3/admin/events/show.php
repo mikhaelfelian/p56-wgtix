@@ -230,9 +230,40 @@
                                             <span class="detail-item">
                                                 <i class="fas fa-envelope"></i> <?= $participant->email ?>
                                             </span>
+                                            <?php
+                                                $wa_number = $participant->no_hp;
+                                                if ($wa_number) {
+                                                    // Remove all non-digit characters
+                                                    $wa_number = preg_replace('/\D/', '', $wa_number);
+                                                    // Remove leading zero if present
+                                                    if (substr($wa_number, 0, 1) === '0') {
+                                                        $wa_number = substr($wa_number, 1);
+                                                    }
+                                                    // Get admin name using Ion Auth $user object
+                                                    $admin_name = isset($user->first_name) && $user->first_name
+                                                        ? $user->first_name
+                                                        : (isset($user->username) && $user->username
+                                                            ? $user->username
+                                                            : 'Panitia');
+                                                    // Event name
+                                                    $event_name = $event->event ?? '';
+                                                    // Template message
+                                                    $wa_message = "Halo, saya $admin_name panitia $event_name%0A";
+                                                    // Prepend country code (assume Indonesia +62)
+                                                    $wa_link = 'https://wa.me/62' . $wa_number . '?text=' . urlencode("halo, saya $admin_name panitia $event_name\n");
+                                            ?>
                                             <span class="detail-item">
-                                                <i class="fas fa-phone"></i> <?= $participant->no_hp ?: 'Tidak ada' ?>
+                                                <i class="fas fa-phone"></i>
+                                                <a href="<?= $wa_link ?>" target="_blank" rel="noopener">
+                                                    <i class="fab fa-whatsapp" style="color:#25D366"></i>
+                                                    <?= $participant->no_hp ?>
+                                                </a>
                                             </span>
+                                            <?php } else { ?>
+                                            <span class="detail-item">
+                                                <i class="fas fa-phone"></i> Tidak ada
+                                            </span>
+                                            <?php } ?>
                                         </div>
                                         <div class="participant-date">
                                             <i class="fas fa-calendar"></i> Daftar: <?= date('d M Y H:i', strtotime($participant->created_at)) ?>

@@ -17,27 +17,27 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="nama_lengkap">Nama Lengkap <span class="text-danger">*</span></label>
+                            <label for="nama">Nama Lengkap <span class="text-danger">*</span></label>
                             <?= form_input([
-                                'name' => 'nama_lengkap',
-                                'id' => 'nama_lengkap',
+                                'name' => 'nama',
+                                'id' => 'nama',
                                 'class' => 'form-control rounded-0',
-                                'value' => old('nama_lengkap', $peserta->nama_lengkap),
+                                'value' => old('nama', $peserta->nama),
                                 'placeholder' => 'Masukkan nama lengkap'
                             ]) ?>
-                            <?php if (session('errors.nama_lengkap')): ?>
-                                <small class="text-danger"><?= session('errors.nama_lengkap') ?></small>
+                            <?php if (session('errors.nama')): ?>
+                                <small class="text-danger"><?= session('errors.nama') ?></small>
                             <?php endif ?>
                         </div>
 
                         <div class="form-group">
-                            <label for="kode_peserta">Kode Peserta <span class="text-danger">*</span></label>
+                            <label for="kode">Kode Peserta <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <?= form_input([
-                                    'name' => 'kode_peserta',
-                                    'id' => 'kode_peserta',
+                                    'name' => 'kode',
+                                    'id' => 'kode',
                                     'class' => 'form-control rounded-0',
-                                    'value' => old('kode_peserta', $peserta->kode_peserta),
+                                    'value' => old('kode', $peserta->kode),
                                     'readonly' => 'readonly'
                                 ]) ?>
                                 <div class="input-group-append">
@@ -47,52 +47,52 @@
                                 </div>
                             </div>
                             <small class="text-muted">Kode peserta tidak dapat diubah</small>
-                            <?php if (session('errors.kode_peserta')): ?>
-                                <small class="text-danger"><?= session('errors.kode_peserta') ?></small>
+                            <?php if (session('errors.kode')): ?>
+                                <small class="text-danger"><?= session('errors.kode') ?></small>
                             <?php endif ?>
                         </div>
 
                         <div class="form-group">
-                            <label for="jenis_kelamin">Jenis Kelamin <span class="text-danger">*</span></label>
+                            <label for="jns_klm">Jenis Kelamin <span class="text-danger">*</span></label>
                             <?= form_dropdown([
-                                'name' => 'jenis_kelamin',
-                                'id' => 'jenis_kelamin',
+                                'name' => 'jns_klm',
+                                'id' => 'jns_klm',
                                 'class' => 'form-control rounded-0'
                             ], [
                                 '' => 'Pilih Jenis Kelamin',
                                 'L' => 'Laki-laki',
                                 'P' => 'Perempuan'
-                            ], old('jenis_kelamin', $peserta->jenis_kelamin)) ?>
-                            <?php if (session('errors.jenis_kelamin')): ?>
-                                <small class="text-danger"><?= session('errors.jenis_kelamin') ?></small>
+                            ], old('jns_klm', $peserta->jns_klm)) ?>
+                            <?php if (session('errors.jns_klm')): ?>
+                                <small class="text-danger"><?= session('errors.jns_klm') ?></small>
                             <?php endif ?>
                         </div>
 
                         <div class="form-group">
-                            <label for="tempat_lahir">Tempat Lahir</label>
+                            <label for="tmp_lahir">Tempat Lahir</label>
                             <?= form_input([
-                                'name' => 'tempat_lahir',
-                                'id' => 'tempat_lahir',
+                                'name' => 'tmp_lahir',
+                                'id' => 'tmp_lahir',
                                 'class' => 'form-control rounded-0',
-                                'value' => old('tempat_lahir', $peserta->tempat_lahir),
+                                'value' => old('tmp_lahir', $peserta->tmp_lahir),
                                 'placeholder' => 'Masukkan tempat lahir'
                             ]) ?>
-                            <?php if (session('errors.tempat_lahir')): ?>
-                                <small class="text-danger"><?= session('errors.tempat_lahir') ?></small>
+                            <?php if (session('errors.tmp_lahir')): ?>
+                                <small class="text-danger"><?= session('errors.tmp_lahir') ?></small>
                             <?php endif ?>
                         </div>
 
                         <div class="form-group">
-                            <label for="tanggal_lahir">Tanggal Lahir</label>
+                            <label for="tgl_lahir">Tanggal Lahir</label>
                             <?= form_input([
-                                'name' => 'tanggal_lahir',
-                                'id' => 'tanggal_lahir',
+                                'name' => 'tgl_lahir',
+                                'id' => 'tgl_lahir',
                                 'type' => 'date',
                                 'class' => 'form-control rounded-0',
-                                'value' => old('tanggal_lahir', $peserta->tanggal_lahir)
+                                'value' => old('tgl_lahir', $peserta->tgl_lahir)
                             ]) ?>
-                            <?php if (session('errors.tanggal_lahir')): ?>
-                                <small class="text-danger"><?= session('errors.tanggal_lahir') ?></small>
+                            <?php if (session('errors.tgl_lahir')): ?>
+                                <small class="text-danger"><?= session('errors.tgl_lahir') ?></small>
                             <?php endif ?>
                         </div>
 

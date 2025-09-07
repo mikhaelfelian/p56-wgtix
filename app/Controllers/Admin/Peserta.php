@@ -118,10 +118,10 @@ class Peserta extends BaseController
     public function store()
     {
         $rules = [
-            'nama_lengkap'  => 'required|max_length[100]',
-            // 'jenis_kelamin' => 'required|in_list[L,P]',
-            // 'tempat_lahir'  => 'permit_empty|max_length[50]',
-            // 'tanggal_lahir' => 'permit_empty|valid_date',
+            'nama'  => 'required|max_length[100]',
+            // 'jns_klm' => 'required|in_list[L,P]',
+            // 'tmp_lahir'  => 'permit_empty|max_length[50]',
+            // 'tgl_lahir' => 'permit_empty|valid_date',
             // 'alamat'        => 'permit_empty',
             // 'no_hp'         => 'permit_empty|max_length[15]',
             // 'email'         => 'permit_empty|valid_email|max_length[100]',
@@ -141,11 +141,11 @@ class Peserta extends BaseController
         $kode_peserta = $this->generateUniqueKodePeserta();
 
         $data = [
-            'nama_lengkap'  => $this->request->getPost('nama_lengkap'),
-            'kode_peserta'  => $kode_peserta,
-            'jenis_kelamin' => $this->request->getPost('jenis_kelamin'),
-            'tempat_lahir'  => $this->request->getPost('tempat_lahir') ?: null,
-            'tanggal_lahir' => $this->request->getPost('tanggal_lahir') ?: null,
+            'nama'  => $this->request->getPost('nama'),
+            'kode'  => $kode_peserta,
+            'jns_klm' => $this->request->getPost('jns_klm'),
+            'tmp_lahir'  => $this->request->getPost('tmp_lahir') ?: null,
+            'tgl_lahir' => $this->request->getPost('tgl_lahir') ?: null,
             'alamat'        => $this->request->getPost('alamat') ?: null,
             'no_hp'         => $this->request->getPost('no_hp') ?: null,
             'email'         => $this->request->getPost('email') ?: null,
@@ -242,7 +242,7 @@ class Peserta extends BaseController
             'method'         => $platform->gateway_kode, // kode metode pembayaran Tripay
             'merchant_ref'   => $merchantRef,
             'amount'         => $amount,
-            'customer_name'  => $data['nama_lengkap'],
+            'customer_name'  => $data['nama'],
             'customer_email' => $data['email'] ?? 'noemail@example.com',
             'customer_phone' => $data['no_hp'] ?? '0800000000',
             'order_items'    => [
@@ -338,10 +338,10 @@ class Peserta extends BaseController
         }
 
         $rules = [
-            'nama_lengkap'  => 'required|max_length[100]',
-            'jenis_kelamin' => 'required|in_list[L,P]',
-            'tempat_lahir'  => 'permit_empty|max_length[50]',
-            'tanggal_lahir' => 'permit_empty|valid_date',
+            'nama'  => 'required|max_length[100]',
+            'jns_klm' => 'required|in_list[L,P]',
+            'tmp_lahir'  => 'permit_empty|max_length[50]',
+            'tgl_lahir' => 'permit_empty|valid_date',
             'alamat'        => 'permit_empty',
             'no_hp'         => 'permit_empty|max_length[15]',
             'email'         => 'permit_empty|valid_email|max_length[100]',
@@ -357,10 +357,10 @@ class Peserta extends BaseController
         }
 
         $data = [
-            'nama_lengkap'  => $this->request->getPost('nama_lengkap'),
-            'jenis_kelamin' => $this->request->getPost('jenis_kelamin'),
-            'tempat_lahir'  => $this->request->getPost('tempat_lahir') ?: null,
-            'tanggal_lahir' => $this->request->getPost('tanggal_lahir') ?: null,
+            'nama'  => $this->request->getPost('nama'),
+            'jns_klm' => $this->request->getPost('jns_klm'),
+            'tmp_lahir'  => $this->request->getPost('tmp_lahir') ?: null,
+            'tgl_lahir' => $this->request->getPost('tgl_lahir') ?: null,
             'alamat'        => $this->request->getPost('alamat') ?: null,
             'no_hp'         => $this->request->getPost('no_hp') ?: null,
             'email'         => $this->request->getPost('email') ?: null,
@@ -411,7 +411,7 @@ class Peserta extends BaseController
         $perPage = 10;
 
         $query = $this->pesertaModel->db->table('tbl_pendaftaran')
-            ->select('tbl_pendaftaran.*, tbl_peserta.nama_lengkap as nama_peserta, tbl_peserta.kode_peserta, tbl_m_jadwal.nama_jadwal, tbl_m_jadwal.tanggal_mulai, tbl_m_jadwal.tanggal_selesai')
+            ->select('tbl_pendaftaran.*, tbl_peserta.nama as nama_peserta, tbl_peserta.kode, tbl_m_jadwal.nama_jadwal, tbl_m_jadwal.tanggal_mulai, tbl_m_jadwal.tanggal_selesai')
             ->join('tbl_peserta', 'tbl_peserta.id = tbl_pendaftaran.id_peserta', 'left')
             ->join('tbl_m_jadwal', 'tbl_m_jadwal.id = tbl_pendaftaran.id_jadwal', 'left')
             ->where('tbl_pendaftaran.status', '1');
@@ -419,7 +419,7 @@ class Peserta extends BaseController
         if ($search) {
             $query = $query->groupStart()
                 ->like('tbl_pendaftaran.kode_pendaftaran', $search)
-                ->orLike('tbl_peserta.nama_lengkap', $search)
+                ->orLike('tbl_peserta.nama', $search)
                 ->orLike('tbl_m_jadwal.nama_jadwal', $search)
                 ->groupEnd();
         }
@@ -455,7 +455,7 @@ class Peserta extends BaseController
 
         // Get recent registrations
         $recentPendaftaran = $this->pesertaModel->db->table('tbl_pendaftaran')
-            ->select('tbl_pendaftaran.*, tbl_peserta.nama_lengkap as nama_peserta, tbl_m_jadwal.nama_jadwal')
+            ->select('tbl_pendaftaran.*, tbl_peserta.nama as nama_peserta, tbl_m_jadwal.nama_jadwal')
             ->join('tbl_peserta', 'tbl_peserta.id = tbl_pendaftaran.id_peserta', 'left')
             ->join('tbl_m_jadwal', 'tbl_m_jadwal.id = tbl_pendaftaran.id_jadwal', 'left')
             ->where('tbl_pendaftaran.status', '1')
@@ -466,9 +466,9 @@ class Peserta extends BaseController
 
         // Get participants by gender
         $pesertaByGender = $this->pesertaModel->db->table('tbl_peserta')
-            ->select('jenis_kelamin, COUNT(*) as jumlah')
+            ->select('jns_klm, COUNT(*) as jumlah')
             ->where('status', '1')
-            ->groupBy('jenis_kelamin')
+            ->groupBy('jns_klm')
             ->get()
             ->getResult();
 
