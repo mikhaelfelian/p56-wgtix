@@ -230,6 +230,15 @@ class Events extends BaseController
                                               ->where('status !=', -1)
                                               ->countAllResults();
 
+        // Get attended participant count
+        $attendedParticipants = $this->pesertaModel->where('id_event', $id)
+                                                 ->where('status !=', -1)
+                                                 ->where('status_hadir', '1')
+                                                 ->countAllResults();
+
+        // Calculate attendance rate
+        $attendanceRate = $totalParticipants > 0 ? round(($attendedParticipants / $totalParticipants) * 100, 1) : 0;
+
         // Calculate available capacity
         $availableCapacity = 'Unlimited';
         if ($event->jml > 0) {
@@ -243,6 +252,8 @@ class Events extends BaseController
             'pricing' => $this->eventsHargaModel->getEventPricings($id),
             'participants' => $participants,
             'total_participants' => $totalParticipants,
+            'attended_participants' => $attendedParticipants,
+            'attendance_rate' => $attendanceRate,
             'available_capacity' => $availableCapacity
         ];
 
