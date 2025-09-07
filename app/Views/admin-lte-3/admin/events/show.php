@@ -203,87 +203,67 @@
                 <div class="participants-section">
                     <div class="section-header">
                         <h6 class="section-title">
-                            <i class="fas fa-users"></i> Daftar Peserta Terbaru
+                            <i class="fas fa-users"></i> Daftar Peserta
                         </h6>
-                        <a href="<?= base_url('admin/peserta/daftar?event_id=' . $event->id) ?>" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-list"></i> Lihat Semua
-                        </a>
-                    </div>
-                    
-                    <?php if (isset($participants) && $participants): ?>
-                        <div class="participants-list">
-                            <?php foreach ($participants as $participant): ?>
-                                <div class="participant-card">
-                                    <div class="participant-avatar">
-                                        <i class="fas fa-user"></i>
+                        <div class="participant-actions">
+                            <div class="search-box">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
                                     </div>
-                                    <div class="participant-info">
-                                        <div class="participant-name">
-                                            <?= $participant->nama ?>
-                                            <?php if ($participant->status_hadir == '1'): ?>
-                                                <span class="attendance-badge">
-                                                    <i class="fas fa-check"></i> Hadir
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="participant-details">
-                                            <span class="detail-item">
-                                                <i class="fas fa-envelope"></i> <?= $participant->email ?>
-                                            </span>
-                                            <?php
-                                                $wa_number = $participant->no_hp;
-                                                if ($wa_number) {
-                                                    // Remove all non-digit characters
-                                                    $wa_number = preg_replace('/\D/', '', $wa_number);
-                                                    // Remove leading zero if present
-                                                    if (substr($wa_number, 0, 1) === '0') {
-                                                        $wa_number = substr($wa_number, 1);
-                                                    }
-                                                    // Get admin name using Ion Auth $user object
-                                                    $admin_name = isset($user->first_name) && $user->first_name
-                                                        ? $user->first_name
-                                                        : (isset($user->username) && $user->username
-                                                            ? $user->username
-                                                            : 'Panitia');
-                                                    // Event name
-                                                    $event_name = $event->event ?? '';
-                                                    // Template message
-                                                    $wa_message = "Halo, saya $admin_name panitia $event_name%0A";
-                                                    // Prepend country code (assume Indonesia +62)
-                                                    $wa_link = 'https://wa.me/62' . $wa_number . '?text=' . urlencode("halo, saya $admin_name panitia $event_name\n");
-                                            ?>
-                                            <span class="detail-item">
-                                                <i class="fas fa-phone"></i>
-                                                <a href="<?= $wa_link ?>" target="_blank" rel="noopener">
-                                                    <i class="fab fa-whatsapp" style="color:#25D366"></i>
-                                                    <?= $participant->no_hp ?>
-                                                </a>
-                                            </span>
-                                            <?php } else { ?>
-                                            <span class="detail-item">
-                                                <i class="fas fa-phone"></i> Tidak ada
-                                            </span>
-                                            <?php } ?>
-                                        </div>
-                                        <div class="participant-date">
-                                            <i class="fas fa-calendar"></i> Daftar: <?= date('d M Y H:i', strtotime($participant->created_at)) ?>
-                                        </div>
-                                    </div>
+                                    <input type="text" class="form-control" id="participant-search" placeholder="Cari peserta...">
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php else: ?>
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="fas fa-users"></i>
                             </div>
-                            <h5>Belum ada peserta</h5>
-                            <p>Event ini belum memiliki peserta yang terdaftar.</p>
-                            <a href="<?= base_url('admin/peserta/daftar?event_id=' . $event->id) ?>" class="btn btn-primary">
-                                <i class="fas fa-plus"></i> Lihat Peserta
+                            <a href="<?= base_url('admin/peserta/daftar?event_id=' . $event->id) ?>" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-list"></i> Lihat Semua
                             </a>
                         </div>
-                    <?php endif; ?>
+                    </div>
+                    
+                    <!-- Filter Options -->
+                    <div class="filter-options mb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <select class="form-control" id="status-filter">
+                                    <option value="">Semua Status</option>
+                                    <option value="hadir">Sudah Hadir</option>
+                                    <option value="belum">Belum Hadir</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-control" id="sort-filter">
+                                    <option value="nama">Urutkan: Nama</option>
+                                    <option value="created_at">Urutkan: Tanggal Daftar</option>
+                                    <option value="status_hadir">Urutkan: Status Kehadiran</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-secondary btn-block" id="reset-filters">
+                                    <i class="fas fa-undo"></i> Reset Filter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Participants List Container -->
+                    <div class="participants-container">
+                        <div id="participants-list" class="participants-list">
+                            <!-- Loading indicator -->
+                            <div class="loading-indicator text-center py-4" id="loading-indicator">
+                                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                                <p class="mt-2 text-muted">Memuat peserta...</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Load More Button -->
+                        <div class="text-center mt-3" id="load-more-container" style="display: none;">
+                            <button class="btn btn-outline-primary" id="load-more-btn">
+                                <i class="fas fa-plus"></i> Muat Lebih Banyak
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -606,6 +586,138 @@
     margin-bottom: 20px;
     padding-bottom: 15px;
     border-bottom: 2px solid #e9ecef;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.participant-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.search-box {
+    min-width: 250px;
+}
+
+.search-box .input-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.search-box .input-group-text {
+    background: #f8f9fa;
+    border-color: #ced4da;
+    color: #6c757d;
+}
+
+.search-box .form-control {
+    border-color: #ced4da;
+    padding: 8px 12px;
+}
+
+.search-box .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.filter-options {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.filter-options .form-control {
+    border-radius: 6px;
+    border-color: #ced4da;
+    padding: 8px 12px;
+}
+
+.filter-options .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.participants-container {
+    position: relative;
+}
+
+.loading-indicator {
+    padding: 40px 20px;
+}
+
+.loading-indicator i {
+    color: #007bff;
+}
+
+.participants-list {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.participants-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.participants-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.participants-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.participants-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.no-participants {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.no-participants .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.no-participants h6 {
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.no-participants p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.search-no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.search-no-results i {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.search-no-results h6 {
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.search-no-results p {
+    margin: 0;
+    font-size: 0.9rem;
 }
 
 .participants-list {
@@ -905,6 +1017,116 @@ $(document).ready(function() {
             toastr.success('Kode event berhasil disalin!');
         });
     });
+
+    // Participant list functionality
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMoreData = true;
+    let currentFilters = {
+        search: '',
+        status: '',
+        sort: 'nama'
+    };
+
+    // Load participants on page load
+    loadParticipants();
+
+    // Search functionality
+    $('#participant-search').on('input', function() {
+        currentFilters.search = $(this).val();
+        currentPage = 1;
+        hasMoreData = true;
+        loadParticipants();
+    });
+
+    // Filter functionality
+    $('#status-filter, #sort-filter').on('change', function() {
+        currentFilters.status = $('#status-filter').val();
+        currentFilters.sort = $('#sort-filter').val();
+        currentPage = 1;
+        hasMoreData = true;
+        loadParticipants();
+    });
+
+    // Reset filters
+    $('#reset-filters').on('click', function() {
+        $('#participant-search').val('');
+        $('#status-filter').val('');
+        $('#sort-filter').val('nama');
+        currentFilters = {
+            search: '',
+            status: '',
+            sort: 'nama'
+        };
+        currentPage = 1;
+        hasMoreData = true;
+        loadParticipants();
+    });
+
+    // Load more functionality
+    $('#load-more-btn').on('click', function() {
+        if (!isLoading && hasMoreData) {
+            currentPage++;
+            loadParticipants(true);
+        }
+    });
+
+    // Function to load participants
+    function loadParticipants(append = false) {
+        if (isLoading) return;
+        
+        isLoading = true;
+        
+        if (!append) {
+            $('#loading-indicator').show();
+            $('#participants-list').html('<div class="loading-indicator text-center py-4" id="loading-indicator"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><p class="mt-2 text-muted">Memuat peserta...</p></div>');
+        } else {
+            $('#load-more-btn').html('<i class="fas fa-spinner fa-spin"></i> Memuat...');
+        }
+
+        $.ajax({
+            url: '<?= base_url('admin/events/get-participants/' . $event->id) ?>',
+            type: 'GET',
+            data: {
+                page: currentPage,
+                search: currentFilters.search,
+                status: currentFilters.status,
+                sort: currentFilters.sort
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    if (append) {
+                        $('#participants-list').append(response.html);
+                    } else {
+                        $('#participants-list').html(response.html);
+                    }
+                    
+                    hasMoreData = response.has_more;
+                    
+                    if (hasMoreData) {
+                        $('#load-more-container').show();
+                    } else {
+                        $('#load-more-container').hide();
+                    }
+                } else {
+                    if (!append) {
+                        $('#participants-list').html('<div class="search-no-results"><i class="fas fa-search"></i><h6>Tidak ada peserta ditemukan</h6><p>Silakan coba kata kunci lain atau reset filter</p></div>');
+                    }
+                }
+            },
+            error: function() {
+                if (!append) {
+                    $('#participants-list').html('<div class="search-no-results"><i class="fas fa-exclamation-triangle"></i><h6>Terjadi kesalahan</h6><p>Gagal memuat data peserta</p></div>');
+                }
+            },
+            complete: function() {
+                isLoading = false;
+                $('#loading-indicator').hide();
+                $('#load-more-btn').html('<i class="fas fa-plus"></i> Muat Lebih Banyak');
+            }
+        });
+    }
 });
 </script>
 <?= $this->endSection() ?>

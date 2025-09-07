@@ -777,4 +777,146 @@ class Events extends BaseController
         
         return $cleanHtml;
     }
+
+    /**
+     * Get participants for AJAX loading with filters
+     */
+    public function getParticipants($id = null)
+    {
+        if (!$id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Event ID tidak valid'
+            ]);
+        }
+
+        $event = $this->eventsModel->find($id);
+        if (!$event) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Event tidak ditemukan'
+            ]);
+        }
+
+        // Get parameters
+        $page = $this->request->getGet('page') ?? 1;
+        $search = $this->request->getGet('search') ?? '';
+        $status = $this->request->getGet('status') ?? '';
+        $sort = $this->request->getGet('sort') ?? 'nama';
+        $perPage = 10;
+
+        // Build query
+        $builder = $this->pesertaModel->where('id_event', $id)
+                                    ->where('status !=', -1);
+
+        // Apply search filter
+        if (!empty($search)) {
+            $builder->groupStart()
+                   ->like('nama', $search)
+                   ->orLike('email', $search)
+                   ->orLike('no_hp', $search)
+                   ->groupEnd();
+        }
+
+        // Apply status filter
+        if ($status === 'hadir') {
+            $builder->where('status_hadir', '1');
+        } elseif ($status === 'belum') {
+            $builder->where('status_hadir !=', '1');
+        }
+
+        // Apply sorting
+        switch ($sort) {
+            case 'created_at':
+                $builder->orderBy('created_at', 'DESC');
+                break;
+            case 'status_hadir':
+                $builder->orderBy('status_hadir', 'DESC');
+                break;
+            case 'nama':
+            default:
+                $builder->orderBy('nama', 'ASC');
+                break;
+        }
+
+        // Get total count for pagination
+        $totalParticipants = $builder->countAllResults(false);
+
+        // Apply pagination
+        $offset = ($page - 1) * $perPage;
+        $participants = $builder->limit($perPage, $offset)->findAll();
+
+        // Check if there are more pages
+        $hasMore = ($offset + $perPage) < $totalParticipants;
+
+        // Generate HTML for participants
+        $html = '';
+        if (empty($participants)) {
+            if ($page == 1) {
+                $html = '<div class="no-participants">
+                            <div class="empty-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h6>Belum ada peserta</h6>
+                            <p>Event ini belum memiliki peserta yang terdaftar.</p>
+                        </div>';
+            }
+        } else {
+            foreach ($participants as $participant) {
+                $wa_number = $participant->no_hp;
+                $wa_link = '';
+                
+                if ($wa_number) {
+                    // Remove all non-digit characters
+                    $wa_number = preg_replace('/\D/', '', $wa_number);
+                    // Remove leading zero if present
+                    if (substr($wa_number, 0, 1) === '0') {
+                        $wa_number = substr($wa_number, 1);
+                    }
+                    // Get admin name using Ion Auth $user object
+                    $admin_name = isset($this->ionAuth->user()->first_name) && $this->ionAuth->user()->first_name
+                        ? $this->ionAuth->user()->first_name
+                        : (isset($this->ionAuth->user()->username) && $this->ionAuth->user()->username
+                            ? $this->ionAuth->user()->username
+                            : 'Panitia');
+                    // Event name
+                    $event_name = $event->event ?? '';
+                    // Create WhatsApp link
+                    $wa_link = 'https://wa.me/62' . $wa_number . '?text=' . urlencode("halo, saya $admin_name panitia $event_name\n");
+                }
+
+                $html .= '<div class="participant-card">
+                            <div class="participant-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="participant-info">
+                                <div class="participant-name">
+                                    ' . $participant->nama . '
+                                    ' . ($participant->status_hadir == '1' ? '<span class="attendance-badge"><i class="fas fa-check"></i> Hadir</span>' : '') . '
+                                </div>
+                                <div class="participant-details">
+                                    <span class="detail-item">
+                                        <i class="fas fa-envelope"></i> ' . $participant->email . '
+                                    </span>
+                                    <span class="detail-item">
+                                        <i class="fas fa-phone"></i>
+                                        ' . ($wa_link ? '<a href="' . $wa_link . '" target="_blank" rel="noopener"><i class="fab fa-whatsapp" style="color:#25D366"></i> ' . $participant->no_hp . '</a>' : 'Tidak ada') . '
+                                    </span>
+                                </div>
+                                <div class="participant-date">
+                                    <i class="fas fa-calendar"></i> Daftar: ' . date('d M Y H:i', strtotime($participant->created_at)) . '
+                                </div>
+                            </div>
+                        </div>';
+            }
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'html' => $html,
+            'has_more' => $hasMore,
+            'total' => $totalParticipants,
+            'page' => $page
+        ]);
+    }
 }
