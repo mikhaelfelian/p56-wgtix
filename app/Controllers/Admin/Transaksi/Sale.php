@@ -142,11 +142,36 @@ class Sale extends BaseController
             $updateData['status'] = $newOrderStatus;
         }
 
+        $sql = $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll();
+
+        if ($newPaymentStatus === 'paid') {
+            foreach ($sql as $s) {
+                $ps = json_decode($s->item_data);
+
+                $data = [
+                    'id_penjualan'  => $invoiceId,
+                    'id_kategori'   => 0,
+                    'id_platform'   => 0,
+                    'id_kelompok'   => 0,
+                    'id_event'      => $s->event_id,
+                    'kode'          => $this->pesertaModel->generateKode(),
+                    'nama'          => $ps->participant_name,
+                ];
+
+                $this->pesertaModel->insert($data);
+
+                // pre($data); // Remove or comment out debug
+            }
+        } elseif ($newPaymentStatus === 'pending') {
+            // Delete peserta with this invoiceId
+            $this->pesertaModel->where('id_penjualan', $invoiceId)->delete();
+        }
+
         if ($this->transJualModel->update($invoiceId, $updateData)) {
             // Generate QR codes and save participants if payment status changed to 'paid'
             if ($newPaymentStatus === 'paid' && $order->payment_status !== 'paid') {
                 $this->generateQRCodesForOrder($invoiceId);
-                $this->saveParticipantsFromOrder($invoiceId);
+                // $this->saveParticipantsFromOrder($invoiceId);
             }
             
             session()->setFlashdata('success', 'Order status updated successfully');

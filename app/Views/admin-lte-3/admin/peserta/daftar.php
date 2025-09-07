@@ -16,25 +16,25 @@
                             <div class="card-header">
                                 <h6 class="card-title">Kode Peserta: <strong><?= session('generated_code') ?></strong></h6>
                             </div>
-                                                         <div class="card-body text-center">
-                                 <?php 
-                                 if (isset($latestPeserta) && $latestPeserta && $latestPeserta->qr_code): 
-                                 ?>
-                                     <div id="new-participant-qr">
-                                         <img src="data:image/png;base64,<?= $latestPeserta->qr_code ?>" 
-                                              alt="QR Code" 
-                                              style="max-width: 150px; height: auto;">
-                                     </div>
-                                     <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="downloadNewQR()">
-                                         <i class="fas fa-download"></i> Download QR Code
-                                     </button>
-                                 <?php else: ?>
-                                     <div id="new-participant-qr">
-                                         <i class="fas fa-qrcode fa-3x text-muted"></i>
-                                         <br><small class="text-muted">QR Code tidak tersedia</small>
-                                     </div>
-                                 <?php endif ?>
-                             </div>
+                            <div class="card-body text-center">
+                                <?php 
+                                if (isset($latestPeserta) && $latestPeserta && $latestPeserta->qr_code): 
+                                ?>
+                                    <div id="new-participant-qr">
+                                        <img src="data:image/png;base64,<?= $latestPeserta->qr_code ?>" 
+                                             alt="QR Code" 
+                                             style="max-width: 150px; height: auto;">
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="downloadNewQR()">
+                                        <i class="fas fa-download"></i> Download QR Code
+                                    </button>
+                                <?php else: ?>
+                                    <div id="new-participant-qr">
+                                        <i class="fas fa-qrcode fa-3x text-muted"></i>
+                                        <br><small class="text-muted">QR Code tidak tersedia</small>
+                                    </div>
+                                <?php endif ?>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -105,24 +105,24 @@
                         <?php foreach ($peserta as $key => $row): ?>
                             <tr>
                                 <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
-                                <td><?= $row->kode_peserta ?></td>
-                                                                 <td>
-                                     <?php if ($row->qr_code): ?>
-                                         <div class="qr-code-container">
-                                             <img src="data:image/png;base64,<?= $row->qr_code ?>" 
-                                                  alt="QR Code" 
-                                                  style="max-width: 50px; height: auto;">
-                                         </div>
-                                     <?php else: ?>
-                                         <div class="qr-code-container">
-                                             <i class="fas fa-qrcode text-muted"></i>
-                                         </div>
-                                     <?php endif ?>
-                                 </td>
-                                <td><?= $row->nama_lengkap ?></td>
+                                <td><?= $row->kode ?></td>
                                 <td>
-                                    <span class="badge badge-<?= ($row->jenis_kelamin == 'L') ? 'info' : 'warning' ?>">
-                                        <?= ($row->jenis_kelamin == 'L') ? 'Laki-laki' : 'Perempuan' ?>
+                                    <?php if ($row->qr_code): ?>
+                                        <div class="qr-code-container">
+                                            <img src="data:image/png;base64,<?= $row->qr_code ?>" 
+                                                 alt="QR Code" 
+                                                 style="max-width: 50px; height: auto;">
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="qr-code-container">
+                                            <i class="fas fa-qrcode text-muted"></i>
+                                        </div>
+                                    <?php endif ?>
+                                </td>
+                                <td><?= $row->nama ?></td>
+                                <td>
+                                    <span class="badge badge-<?= ($row->jns_klm == 'L') ? 'info' : 'warning' ?>">
+                                        <?= ($row->jns_klm == 'L') ? 'Laki-laki' : 'Perempuan' ?>
                                     </span>
                                 </td>
                                 <td><?= $row->no_hp ?></td>
@@ -130,8 +130,8 @@
                                 <td><?= $row->nama_kelompok ?? '-' ?></td>
                                 <td><?= $row->nama_kategori ?? '-' ?></td>
                                 <td>
-                                    <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
-                                        <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
+                                    <span class="badge badge-<?= ($row->status == 1) ? 'success' : 'danger' ?>">
+                                        <?= ($row->status == 1) ? 'Aktif' : 'Tidak Aktif' ?>
                                     </span>
                                 </td>
                                 <td>

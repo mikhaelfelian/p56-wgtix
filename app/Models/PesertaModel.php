@@ -7,6 +7,10 @@
  * Date: January 22, 2025
  * Github: github.com/mikhaelfelian
  * Description: Model for managing peserta (participants) data
+ * 
+ * Adjusted to match table structure:
+ * - Table: tbl_peserta
+ * - Fields: id, id_user, id_kategori, id_platform, id_kelompok, created_at, updated_at, kode, nama, tmp_lahir, tgl_lahir, jns_klm, alamat, no_hp, email, qr_code, status
  */
 
 namespace App\Models;
@@ -25,20 +29,24 @@ class PesertaModel extends Model
 
     protected $allowedFields = [
         'id_user',
-        'kode_peserta',
-        'nama_lengkap',
-        'tempat_lahir',
-        'tanggal_lahir',
-        'jenis_kelamin',
+        'id_kategori',
+        'id_platform',
+        'id_kelompok',
+        'id_event',
+        'id_penjualan',
+        'created_at',
+        'updated_at',
+        'kode',
+        'nama',
+        'tmp_lahir',
+        'tgl_lahir',
+        'jns_klm',
         'alamat',
         'no_hp',
         'email',
-        'id_kelompok',
-        'id_kategori',
-        'status',
         'qr_code',
-        'tripay_reference',
-        'tripay_pay_url'
+        'status',
+        'status_hadir'
     ];
 
     // Dates
@@ -48,62 +56,19 @@ class PesertaModel extends Model
     protected $updatedField  = 'updated_at';
 
     // Validation
-    protected $validationRules = [
-        'nama_lengkap'    => 'required|max_length[100]',
-        'kode_peserta'    => 'required|max_length[20]',
-        'jenis_kelamin'   => 'required|in_list[L,P]',
-        'tempat_lahir'    => 'permit_empty|max_length[50]',
-        'tanggal_lahir'   => 'permit_empty|valid_date',
-        'alamat'          => 'permit_empty',
-        'no_hp'           => 'permit_empty|max_length[15]',
-        'email'           => 'permit_empty|valid_email|max_length[100]',
-        'id_kelompok'     => 'permit_empty|integer',
-        'id_kategori'     => 'permit_empty|integer',
-        'status'          => 'required|in_list[0,1]',
-        'id_user'         => 'required|integer'
-    ];
+    protected $validationRules = [];
 
-    protected $validationMessages = [
-        'nama_lengkap' => [
-            'required'   => 'Nama lengkap harus diisi',
-            'max_length' => 'Nama lengkap maksimal 100 karakter'
-        ],
-        'kode_peserta' => [
-            'required'   => 'Kode peserta harus diisi',
-            'max_length' => 'Kode peserta maksimal 20 karakter'
-        ],
-        'jenis_kelamin' => [
-            'required' => 'Jenis kelamin harus dipilih',
-            'in_list'  => 'Jenis kelamin harus L (Laki-laki) atau P (Perempuan)'
-        ],
-        'tempat_lahir' => [
-            'max_length' => 'Tempat lahir maksimal 50 karakter'
-        ],
-        'tanggal_lahir' => [
-            'valid_date' => 'Format tanggal lahir tidak valid'
-        ],
-        'no_hp' => [
-            'max_length' => 'Nomor HP maksimal 15 karakter'
-        ],
-        'email' => [
-            'valid_email' => 'Format email tidak valid',
-            'max_length'  => 'Email maksimal 100 karakter'
-        ],
-        'id_kelompok' => [
-            'integer' => 'ID Kelompok harus berupa angka'
-        ],
-        'status' => [
-            'required' => 'Status harus dipilih',
-            'in_list'  => 'Status harus 0 (tidak aktif) atau 1 (aktif)'
-        ],
-        'id_user' => [
-            'required' => 'ID User harus diisi',
-            'integer'  => 'ID User harus berupa angka'
-        ]
-    ];
+    protected $validationMessages = [];
 
     // Custom methods
-    
+
+    public function generateKode()
+    {
+        $lastPeserta = $this->orderBy('kode', 'DESC')->first();
+        $lastNumber = $lastPeserta ? (int)substr($lastPeserta->kode, 3) : 0;
+        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+    }
+
     /**
      * Get active participants
      * 
@@ -112,8 +77,8 @@ class PesertaModel extends Model
     public function getActivePeserta()
     {
         return $this->where('status', '1')
-                   ->orderBy('nama_lengkap', 'ASC')
-                   ->findAll();
+                    ->orderBy('nama', 'ASC')
+                    ->findAll();
     }
 
     /**
@@ -124,7 +89,7 @@ class PesertaModel extends Model
      */
     public function getPesertaByCode($kode)
     {
-        return $this->where('kode_peserta', $kode)->first();
+        return $this->where('kode', $kode)->first();
     }
 
     /**
@@ -135,10 +100,10 @@ class PesertaModel extends Model
     public function getPesertaWithGroup()
     {
         return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
-                   ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
-                   ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC')
-                   ->findAll();
+                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
+                    ->orderBy('tbl_peserta.nama', 'ASC')
+                    ->findAll();
     }
 
     /**
@@ -149,9 +114,9 @@ class PesertaModel extends Model
     public function getPesertaWithGroupQuery()
     {
         return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
-                   ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
-                   ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC');
+                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
+                    ->orderBy('tbl_peserta.nama', 'ASC');
     }
 
     /**
@@ -163,9 +128,9 @@ class PesertaModel extends Model
     public function getPesertaByKelompok($idKelompok)
     {
         return $this->where('id_kelompok', $idKelompok)
-                   ->where('status', '1')
-                   ->orderBy('nama_lengkap', 'ASC')
-                   ->findAll();
+                    ->where('status', 1)
+                    ->orderBy('nama', 'ASC')
+                    ->findAll();
     }
 
     /**
@@ -181,8 +146,8 @@ class PesertaModel extends Model
             return false;
         }
 
-        $builder = $this->where('kode_peserta', $kode);
-        
+        $builder = $this->where('kode', $kode);
+
         if ($excludeId) {
             $builder->where('id !=', $excludeId);
         }
@@ -198,10 +163,10 @@ class PesertaModel extends Model
     public function getPesertaStats()
     {
         $total = $this->countAll();
-        $active = $this->where('status', '1')->countAllResults();
-        $inactive = $this->where('status', '0')->countAllResults();
-        $male = $this->where('jenis_kelamin', 'L')->where('status', '1')->countAllResults();
-        $female = $this->where('jenis_kelamin', 'P')->where('status', '1')->countAllResults();
+        $active = $this->where('status', 1)->countAllResults();
+        $inactive = $this->where('status', 0)->countAllResults();
+        $male = $this->where('jns_klm', 'L')->where('status', 1)->countAllResults();
+        $female = $this->where('jns_klm', 'P')->where('status', 1)->countAllResults();
 
         return (object) [
             'total' => $total,
@@ -221,13 +186,13 @@ class PesertaModel extends Model
     public function searchPeserta($keyword)
     {
         return $this->groupStart()
-                   ->like('nama_lengkap', $keyword)
-                   ->orLike('kode_peserta', $keyword)
-                   ->orLike('no_hp', $keyword)
-                   ->orLike('email', $keyword)
-                   ->groupEnd()
-                   ->orderBy('nama_lengkap', 'ASC')
-                   ->findAll();
+                    ->like('nama', $keyword)
+                    ->orLike('kode', $keyword)
+                    ->orLike('no_hp', $keyword)
+                    ->orLike('email', $keyword)
+                    ->groupEnd()
+                    ->orderBy('nama', 'ASC')
+                    ->findAll();
     }
 
     /**
@@ -239,15 +204,15 @@ class PesertaModel extends Model
     public function searchPesertaQuery($keyword)
     {
         return $this->select('tbl_peserta.*, tbl_kelompok_peserta.nama_kelompok, tbl_m_kategori.kategori as nama_kategori')
-                   ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
-                   ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
-                   ->groupStart()
-                   ->like('tbl_peserta.nama_lengkap', $keyword)
-                   ->orLike('tbl_peserta.kode_peserta', $keyword)
-                   ->orLike('tbl_peserta.no_hp', $keyword)
-                   ->orLike('tbl_peserta.email', $keyword)
-                   ->groupEnd()
-                   ->orderBy('tbl_peserta.nama_lengkap', 'ASC');
+                    ->join('tbl_kelompok_peserta', 'tbl_kelompok_peserta.id = tbl_peserta.id_kelompok', 'left')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_peserta.id_kategori', 'left')
+                    ->groupStart()
+                    ->like('tbl_peserta.nama', $keyword)
+                    ->orLike('tbl_peserta.kode', $keyword)
+                    ->orLike('tbl_peserta.no_hp', $keyword)
+                    ->orLike('tbl_peserta.email', $keyword)
+                    ->groupEnd()
+                    ->orderBy('tbl_peserta.nama', 'ASC');
     }
 
     /**
@@ -261,10 +226,10 @@ class PesertaModel extends Model
         $options = [];
         
         foreach ($peserta as $p) {
-            $label = "({$p->kode_peserta}) {$p->nama_lengkap}";
+            $label = "({$p->kode}) {$p->nama}";
             $options[$p->id] = $label;
         }
         
         return $options;
     }
-} 
+}

@@ -21,27 +21,27 @@
                         <table class="table table-borderless">
                             <tr>
                                 <td width="150"><strong>Kode Peserta</strong></td>
-                                <td>: <?= $peserta->kode_peserta ?></td>
+                                <td>: <?= $peserta->kode ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Nama Lengkap</strong></td>
-                                <td>: <?= $peserta->nama_lengkap ?></td>
+                                <td>: <?= $peserta->nama ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Jenis Kelamin</strong></td>
                                 <td>: 
-                                    <span class="badge badge-<?= ($peserta->jenis_kelamin == 'L') ? 'info' : 'warning' ?>">
-                                        <?= ($peserta->jenis_kelamin == 'L') ? 'Laki-laki' : 'Perempuan' ?>
+                                    <span class="badge badge-<?= ($peserta->jns_klm == 'L') ? 'info' : 'warning' ?>">
+                                        <?= ($peserta->jns_klm == 'L') ? 'Laki-laki' : 'Perempuan' ?>
                                     </span>
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>Tempat Lahir</strong></td>
-                                <td>: <?= $peserta->tempat_lahir ?? '-' ?></td>
+                                <td>: <?= $peserta->tmp_lahir ?? '-' ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Tanggal Lahir</strong></td>
-                                <td>: <?= $peserta->tanggal_lahir ? date('d/m/Y', strtotime($peserta->tanggal_lahir)) : '-' ?></td>
+                                <td>: <?= $peserta->tgl_lahir ? date('d/m/Y', strtotime($peserta->tgl_lahir)) : '-' ?></td>
                             </tr>
                             <tr>
                                 <td><strong>No. HP</strong></td>
@@ -60,16 +60,44 @@
                                 <td>: <?= $peserta->nama_kategori ?? '-' ?></td>
                             </tr>
                             <tr>
+                                <td><strong>Platform</strong></td>
+                                <td>: <?= $peserta->id_platform ?? '-' ?></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Event</strong></td>
+                                <td>: <?= $peserta->id_event ?? '-' ?></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Penjualan</strong></td>
+                                <td>: <?= $peserta->id_penjualan ?? '-' ?></td>
+                            </tr>
+                            <tr>
                                 <td><strong>Alamat</strong></td>
                                 <td>: <?= $peserta->alamat ?? '-' ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Status</strong></td>
                                 <td>: 
-                                    <span class="badge badge-<?= ($peserta->status == '1') ? 'success' : 'danger' ?>">
-                                        <?= ($peserta->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
+                                    <span class="badge badge-<?= ($peserta->status == 1) ? 'success' : 'danger' ?>">
+                                        <?= ($peserta->status == 1) ? 'Aktif' : 'Tidak Aktif' ?>
                                     </span>
                                 </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status Hadir</strong></td>
+                                <td>: 
+                                    <span class="badge badge-<?= ($peserta->status_hadir == '1') ? 'primary' : 'secondary' ?>">
+                                        <?= ($peserta->status_hadir == '1') ? 'Hadir' : 'Tidak Hadir' ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Dibuat</strong></td>
+                                <td>: <?= $peserta->created_at ? date('d/m/Y H:i', strtotime($peserta->created_at)) : '-' ?></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Diupdate</strong></td>
+                                <td>: <?= $peserta->updated_at ? date('d/m/Y H:i', strtotime($peserta->updated_at)) : '-' ?></td>
                             </tr>
                         </table>
                     </div>
@@ -105,26 +133,20 @@
 <?= $this->endSection() ?>
 
 <script>
-// Define downloadQR function immediately
 function downloadQR() {
     const qrContainer = document.getElementById('participant-qr');
     if (qrContainer) {
         const img = qrContainer.querySelector('img');
         if (img) {
-            // Create a canvas to draw the image
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
-            
-            // Draw the image on canvas
             ctx.drawImage(img, 0, 0);
-            
-            // Convert to blob and download
             canvas.toBlob(function(blob) {
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.download = 'qr-code-<?= $peserta->kode_peserta ?>.png';
+                link.download = 'qr-code-<?= $peserta->kode ?>.png';
                 link.href = url;
                 link.click();
                 URL.revokeObjectURL(url);
@@ -134,7 +156,5 @@ function downloadQR() {
         }
     }
 }
-
-// Also make it available globally
 window.downloadQR = downloadQR;
 </script> 
