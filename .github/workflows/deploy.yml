@@ -1,9 +1,13 @@
-name: Deploy and Notify
+name: Deploy to wgptix.com
 
 on:
   push:
     branches:
       - main
+
+concurrency:
+  group: deploy-wgptix
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -11,16 +15,42 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup SSH Connection
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy Code to Directadmin Panel
+      - name: Trust server host key
         run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            cd ${{ secrets.DEPLOY_PATH }} &&
-            git pull origin main &&
-            exit"
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy Code to DirectAdmin (wgptix.com)
+        run: |
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          set -e
+          cd "${{ secrets.DEPLOY_PATH }}"
+
+          if [ ! -d ".git" ]; then
+            echo "❌ Bukan repo git. Jalankan setup manual sekali di server."
+            exit 1
+          fi
+
+          git fetch --all --prune
+          git checkout main || true
+          git reset --hard origin/main
+          git clean -fd
+
+          # (Opsional) kalau ada composer di server
+          if command -v composer >/dev/null 2>&1; then
+            composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction || true
+          fi
+
+          # (Opsional) kalau CodeIgniter 4: migrasi & reset opcache
+          if command -v php >/dev/null 2>&1; then
+            php spark migrate --all --ansi || true
+            php -r 'if(function_exists("opcache_reset")){ opcache_reset(); }'
+          fi
+          EOF
