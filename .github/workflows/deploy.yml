@@ -53,4 +53,4 @@ jobs:
             php spark migrate --all --ansi || true
             php -r 'if(function_exists("opcache_reset")){ opcache_reset(); }'
           fi
-          EOF
+          EOF 
