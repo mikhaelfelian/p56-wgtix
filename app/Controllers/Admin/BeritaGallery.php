@@ -57,32 +57,56 @@ class BeritaGallery extends BaseController
         // Disable CSRF for this endpoint since it's used by Dropzone
         $this->request->setGlobal('post', $this->request->getPost());
         
-        // Validation rules - handle both parameter names
+        // Validation rules - simplified for Dropzone
         $rules = [
-            'id_post' => 'permit_empty|integer',
-            'berita_id' => 'permit_empty|integer',
-            'images' => 'permit_empty',
-            'gallery' => 'permit_empty',
-            'images.*' => 'uploaded[images]|max_size[images,2048]|is_image[images]',
-            'gallery.*' => 'uploaded[gallery]|max_size[gallery,2048]|is_image[gallery]'
+            'berita_id'  => 'required|integer',
+            'gallery'    => 'uploaded[gallery]|max_size[gallery,2048]|ext_in[gallery,jpg,jpeg,png,gif]'
         ];
 
         if (!$this->validate($rules)) {
-            return $this->response->setJSON(['success' => false, 'error' => $this->validator->getErrors()]);
+            return $this->response->setJSON(['success' => false, 'error' => 'Validation failed: ' . implode(', ', $this->validator->getErrors())]);
         }
 
         // Get post ID from either parameter
         $postId = $this->request->getPost('id_post') ?: $this->request->getPost('berita_id');
+        
+        // Debug: Check if post ID is received
+        if (!$postId) {
+            return $this->response->setJSON(['success' => false, 'error' => 'No post ID received. POST data: ' . json_encode($this->request->getPost())]);
+        }
+        
         $post = $this->postsModel->find($postId);
         
         if (!$post) {
             return $this->response->setJSON(['success' => false, 'error' => 'Berita tidak ditemukan']);
         }
 
-        // Get images from either parameter
-        $images = $this->request->getFileMultiple('images') ?: $this->request->getFileMultiple('gallery');
+        // Get images from Dropzone (gallery parameter)
+        $images = $this->request->getFileMultiple('gallery');
         $uploaded = 0;
         $failed = 0;
+        
+        // Debug: Log what files are received
+        if (empty($images)) {
+            // Try single file if multiple files is empty
+            $singleFile = $this->request->getFile('gallery');
+            if ($singleFile && $singleFile->isValid()) {
+                $images = [$singleFile];
+            } else {
+                $files = $this->request->getFiles();
+                $fileInfo = [];
+                if ($singleFile) {
+                    $fileInfo = [
+                        'name' => $singleFile->getName(),
+                        'size' => $singleFile->getSize(),
+                        'type' => $singleFile->getClientMimeType(),
+                        'isValid' => $singleFile->isValid(),
+                        'error' => $singleFile->getErrorString()
+                    ];
+                }
+                return $this->response->setJSON(['success' => false, 'error' => 'No images received. Files: ' . json_encode(array_keys($files)) . ' File info: ' . json_encode($fileInfo) . ' POST data: ' . json_encode($this->request->getPost())]);
+            }
+        }
 
         if ($images) {
             // Create directory structure for this post
@@ -92,26 +116,41 @@ class BeritaGallery extends BaseController
             }
 
             foreach ($images as $image) {
+                // Debug: Check file validation
+                if (!$image->isValid()) {
+                    return $this->response->setJSON(['success' => false, 'error' => 'File validation failed: ' . $image->getErrorString()]);
+                }
+                
+                if ($image->hasMoved()) {
+                    return $this->response->setJSON(['success' => false, 'error' => 'File already moved']);
+                }
+                
                 if ($image->isValid() && !$image->hasMoved()) {
                     $imageName = $image->getRandomName();
                     
                     if ($image->move($uploadPath, $imageName)) {
                         $galeriData = [
                             'id_post' => $postId,
-                            'path' => 'file/posts/' . $postId . '/' . $imageName,
+                            'path' => 'file/posts/gallery/' . $postId . '/' . $imageName,
                             'caption' => $this->request->getPost('caption'),
                             'alt_text' => $this->request->getPost('alt_text'),
                             'is_primary' => 0,
                             'urutan' => $this->galeriModel->where('id_post', $postId)->countAllResults() + 1
                         ];
 
+                        // Debug: Log data being inserted
                         if ($this->galeriModel->insert($galeriData)) {
                             $uploaded++;
                         } else {
                             $failed++;
+                            // Debug: Log database insert error
+                            $errors = $this->galeriModel->errors();
+                            return $this->response->setJSON(['success' => false, 'error' => 'Database insert failed: ' . implode(', ', $errors)]);
                         }
                     } else {
                         $failed++;
+                        // Debug: Log file move error
+                        return $this->response->setJSON(['success' => false, 'error' => 'File move failed: ' . $image->getErrorString()]);
                     }
                 }
             }
@@ -179,23 +218,55 @@ class BeritaGallery extends BaseController
 
     public function delete($id)
     {
-        $image = $this->galeriModel->find($id);
-        
-        if (!$image) {
-            return redirect()->to('admin/berita-gallery')->with('error', 'Gambar tidak ditemukan');
+        // Accept both POST and AJAX (for compatibility)
+        if (
+            !$this->request->is('post') &&
+            !$this->request->isAJAX()
+        ) {
+            // If not POST or AJAX, show error page (for browser direct access)
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
         }
 
-        // Delete file
-        if (file_exists(ROOTPATH . 'public/' . $image->path)) {
-            unlink(ROOTPATH . 'public/' . $image->path);
+        $image = $this->galeriModel->find($id);
+
+        if (!$image) {
+            // If not found, return JSON for AJAX, or redirect for browser
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gambar tidak ditemukan']);
+            } else {
+                return redirect()->to('admin/berita-gallery')->with('error', 'Gambar tidak ditemukan');
+            }
+        }
+
+        // Debug: Log image data
+        log_message('debug', 'Delete image data: ' . json_encode($image));
+
+        // Build the correct file path for CI4 (ROOTPATH . 'public/file/posts/...') instead of fcpath
+        $filePath = ROOTPATH . 'public/' . $image->path;
+        log_message('debug', 'Delete file path: ' . $filePath);
+        log_message('debug', 'File exists: ' . (is_file($filePath) ? 'yes' : 'no'));
+        
+        if (is_file($filePath)) {
+            @unlink($filePath);
         }
 
         // Delete record (soft delete)
-        if ($this->galeriModel->delete($id)) {
-            return redirect()->to('admin/berita-gallery')->with('success', 'Gambar berhasil dihapus');
-        }
+        $deleteResult = $this->galeriModel->delete($id);
+        log_message('debug', 'Delete result: ' . ($deleteResult ? 'success' : 'failed'));
 
-        return redirect()->to('admin/berita-gallery')->with('error', 'Gagal menghapus gambar');
+        if ($deleteResult) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => true, 'message' => 'Gambar berhasil dihapus']);
+            } else {
+                return redirect()->to('admin/berita-gallery')->with('success', 'Gambar berhasil dihapus');
+            }
+        } else {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus gambar']);
+            } else {
+                return redirect()->to('admin/berita-gallery')->with('error', 'Gagal menghapus gambar');
+            }
+        }
     }
 
     public function bulkDelete()

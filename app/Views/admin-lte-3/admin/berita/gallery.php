@@ -101,16 +101,16 @@
                                                 <textarea class="form-control form-control-sm description-input" 
                                                           data-id="<?= $gallery->id ?>" 
                                                           placeholder="Tambah deskripsi..."
-                                                          rows="2"><?= esc($gallery->deskripsi) ?></textarea>
+                                                          rows="2"><?= esc($gallery->caption) ?></textarea>
                                                 <small class="text-muted">Klik di luar untuk simpan deskripsi</small>
                                                 <!-- Action Buttons moved below description -->
                                                 <div class="mt-2 d-flex justify-content-end">
                                                     <div class="btn-group">
-                                                        <?php if ($gallery->is_cover != 1): ?>
-                                                            <a href="<?= base_url("admin/berita-gallery/set-cover/$gallery->id") ?>" 
+                                                        <?php if ($gallery->is_primary != 1): ?>
+                                                            <a href="<?= base_url("admin/berita-gallery/set-primary-image/$gallery->id") ?>" 
                                                                class="btn btn-sm btn-success" 
-                                                               title="Set as Cover"
-                                                               onclick="return confirm('Set sebagai cover image?')">
+                                                               title="Set as Primary"
+                                                               onclick="return confirm('Set sebagai gambar utama?')">
                                                                 <i class="fas fa-star"></i>
                                                             </a>
                                                         <?php endif ?>
@@ -118,7 +118,7 @@
                                                                 class="btn btn-sm btn-danger delete-gallery" 
                                                                 title="Hapus"
                                                                 data-id="<?= $gallery->id ?>"
-                                                                data-file="<?= $gallery->file ?>">
+                                                                data-file="<?= $gallery->path ?>">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </div>
@@ -292,15 +292,7 @@ $(document).ready(function() {
                     chunking: false,
                     autoProcessQueue: false,
                     error: function(file, errorMessage, xhr) {
-                        var displayMessage = "Upload gagal";
-                        if (typeof errorMessage === 'string') {
-                            displayMessage = errorMessage;
-                        } else if (errorMessage && errorMessage.message) {
-                            displayMessage = errorMessage.message;
-                        } else if (errorMessage && typeof errorMessage === 'object') {
-                            displayMessage = "Upload gagal - " + JSON.stringify(errorMessage);
-                        }
-                        alert(displayMessage);
+                        // Error handling without alerts
                     },
         init: function() {
             this.on("sending", function(file, xhr, formData) {
@@ -310,51 +302,36 @@ $(document).ready(function() {
             
             this.on("success", function(file, response) {
                 if (response.success) {
+                    toastr.success('Upload berhasil!');
                     location.reload();
                 } else {
-                                var errorMsg = "Upload gagal";
-                                if (response.error && typeof response.error === 'string') {
-                                    errorMsg = response.error;
-                                } else if (response.error && response.error.message) {
-                                    errorMsg = response.error.message;
-                                }
-                                alert(errorMsg);
-                            }
-                        });
+                    toastr.error('Upload failed: ' + (response.error || 'Unknown error'));
+                }
+            });
 
-                        this.on("error", function(file, errorMessage, xhr) {
-                            var displayMessage = "Upload gagal";
-                            if (typeof errorMessage === 'string') {
-                                displayMessage = errorMessage;
-                            } else if (errorMessage && errorMessage.message) {
-                                displayMessage = errorMessage.message;
-                            } else if (errorMessage && typeof errorMessage === 'object') {
-                                displayMessage = "Upload gagal - " + JSON.stringify(errorMessage);
-                            }
-                            alert(displayMessage);
-                        });
+            this.on("error", function(file, errorMessage, xhr) {
+                toastr.error('Upload error: ' + errorMessage);
+            });
 
-                        this.on("addedfile", function(file) {
-                            if (!file.type.match(/image.*/)) {
-                                this.removeFile(file);
-                                alert('File ' + file.name + ' bukan file gambar yang valid');
-                                return;
-                            }
-                            if (file.size > 2 * 1024 * 1024) {
-                                this.removeFile(file);
-                                alert('File ' + file.name + ' terlalu besar (maksimal 2MB)');
-                                return;
-                            }
-                        });
+            this.on("addedfile", function(file) {
+                if (!file.type.match(/image.*/)) {
+                    this.removeFile(file);
+                    return;
+                }
+                if (file.size > 2 * 1024 * 1024) {
+                    this.removeFile(file);
+                    return;
+                }
+            });
 
-                        this.on("removedfile", function(file) {});
-                        this.on("processing", function(file) {});
-                        this.on("uploadprogress", function(file, progress, bytesSent) {});
-                        this.on("queuecomplete", function() {});
-                        this.on("rejectedfile", function(file, errorMessage) {
-                            alert('File ' + file.name + ' ditolak: ' + errorMessage);
-                        });
-                        this.on("complete", function(file) {});
+            this.on("removedfile", function(file) {});
+            this.on("processing", function(file) {});
+            this.on("uploadprogress", function(file, progress, bytesSent) {});
+            this.on("queuecomplete", function() {});
+            this.on("rejectedfile", function(file, errorMessage) {
+                // Handle rejected files silently
+            });
+            this.on("complete", function(file) {});
                     }
                 });
 
@@ -376,96 +353,10 @@ $(document).ready(function() {
         if (window.galleryDropzone) {
             if (window.galleryDropzone.files.length > 0) {
                 window.galleryDropzone.processQueue();
-            } else {
-                alert('Tidak ada file yang dipilih untuk diupload');
             }
-        } else {
-            alert('Dropzone belum diinisialisasi');
         }
     };
 
-    // Test upload configuration
-    window.testUploadConfig = function() {
-        $.ajax({
-            url: '<?= base_url('admin/berita-gallery/test-upload') ?>',
-            type: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    var phpSettings = response.php_settings;
-                    var requestData = response.request_data;
-
-                    // Check for common issues
-                    var issues = [];
-                    if (parseInt(phpSettings.upload_max_filesize) < 2) {
-                        issues.push('upload_max_filesize too low (need at least 2M)');
-                    }
-                    if (parseInt(phpSettings.post_max_size) < 8) {
-                        issues.push('post_max_size too low (need at least 8M)');
-                    }
-                    if (phpSettings.file_uploads !== '1') {
-                        issues.push('file_uploads disabled');
-                    }
-
-                    if (issues.length > 0) {
-                        alert('PHP Configuration Issues Found:\n' + issues.join('\n'));
-                    } else {
-                        alert('PHP configuration looks good!');
-                    }
-                }
-            },
-            error: function(xhr, status, error) {
-                alert('Error testing upload configuration');
-            }
-        });
-    };
-
-    // Test simple file upload (bypass Dropzone)
-    window.testSimpleUpload = function() {
-        // Create a file input
-        var fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        fileInput.style.display = 'none';
-
-        fileInput.onchange = function() {
-            var file = this.files[0];
-            if (file) {
-                var formData = new FormData();
-                formData.append('gallery', file);
-                formData.append('berita_id', beritaId);
-
-                // Test with the simple upload endpoint first
-                var testUrl = '<?= base_url('admin/berita-gallery/test-simple-upload') ?>';
-
-                // Use XMLHttpRequest instead of jQuery AJAX for better file upload handling
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', testUrl, true);
-
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        try {
-                            var response = JSON.parse(xhr.responseText);
-                            alert('Simple upload test response: ' + JSON.stringify(response));
-                        } catch (e) {
-                            alert('Response parsing error: ' + xhr.responseText);
-                        }
-                    } else {
-                        alert('Upload test failed with status: ' + xhr.status);
-                    }
-                };
-
-                xhr.onerror = function() {
-                    alert('Network error during upload test');
-                };
-
-                xhr.send(formData);
-            }
-        };
-
-        document.body.appendChild(fileInput);
-        fileInput.click();
-        document.body.removeChild(fileInput);
-    };
 
     // Handle description updates
     $('.description-input').on('blur', function() {
@@ -473,11 +364,11 @@ $(document).ready(function() {
         var description = $(this).val();
         
         $.ajax({
-            url: '<?= base_url('admin/berita-gallery/update-description') ?>',
+            url: '<?= base_url('admin/berita-gallery/update') ?>/' + id,
             type: 'POST',
             data: {
-                id: id,
-                 description: description
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+                caption: description
             },
             success: function(response) {
                 if (response.success) {
@@ -487,11 +378,11 @@ $(document).ready(function() {
                         textarea.removeClass('border-success');
                     }, 2000);
                 } else {
-                    alert('Gagal menyimpan deskripsi');
+                    toastr.error('Gagal menyimpan deskripsi');
                 }
             },
             error: function() {
-                alert('Terjadi kesalahan saat menyimpan deskripsi');
+                toastr.error('Terjadi kesalahan saat menyimpan deskripsi');
             }
         });
     });
@@ -501,20 +392,11 @@ $(document).ready(function() {
         e.preventDefault();
         
         var galleryId = $(this).data('id');
-        var fileName = $(this).data('file');
         var button = $(this);
         var galleryCard = button.closest('.col-md-3');
         
-        console.log('Delete clicked for gallery ID:', galleryId);
-        console.log('File name:', fileName);
-        console.log('CSRF Token:', '<?= csrf_hash() ?>');
-        console.log('CSRF Header:', '<?= csrf_header() ?>');
-        console.log('Delete URL:', '<?= base_url('admin/berita-gallery/delete') ?>/' + galleryId);
-        
         if (confirm('Apakah anda yakin ingin menghapus gambar ini?')) {
-            // Disable button and show loading
-            button.prop('disabled', true);
-            button.html('<i class="fas fa-spinner fa-spin"></i>');
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
             
             $.ajax({
                 url: '<?= base_url('admin/berita-gallery/delete') ?>/' + galleryId,
@@ -523,47 +405,19 @@ $(document).ready(function() {
                 data: {
                     '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
                 },
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
                 success: function(response) {
                     if (response.success) {
-                        // Show success message
-                        toastr.success(response.message || 'Galeri berhasil dihapus');
-                        
-                        // Fade out and remove the gallery card
                         galleryCard.fadeOut(300, function() {
                             $(this).remove();
                         });
                     } else {
-                        // Show error message
-                        toastr.error(response.error || 'Gagal menghapus galeri');
-                        
-                        // Re-enable button
-                        button.prop('disabled', false);
-                        button.html('<i class="fas fa-trash"></i>');
+                        toastr.error('Gagal menghapus galeri');
+                        button.prop('disabled', false).html('<i class="fas fa-trash"></i>');
                     }
                 },
-                error: function(xhr, status, error) {
-                    console.error('Delete error:', error);
-                    console.error('Status:', status);
-                    console.error('Response:', xhr.responseText);
-                    console.error('Status Code:', xhr.status);
-                    
-                    var errorMessage = 'Terjadi kesalahan saat menghapus galeri';
-                    if (xhr.status === 404) {
-                        errorMessage = 'Halaman tidak ditemukan (404). Periksa URL atau route.';
-                    } else if (xhr.status === 403) {
-                        errorMessage = 'Akses ditolak (403). Periksa izin atau CSRF token.';
-                    } else if (xhr.status === 500) {
-                        errorMessage = 'Server error (500). Periksa log server.';
-                    }
-                    
-                    toastr.error(errorMessage);
-                    
-                    // Re-enable button
-                    button.prop('disabled', false);
-                    button.html('<i class="fas fa-trash"></i>');
+                error: function() {
+                    toastr.error('Terjadi kesalahan saat menghapus galeri');
+                    button.prop('disabled', false).html('<i class="fas fa-trash"></i>');
                 }
             });
         }

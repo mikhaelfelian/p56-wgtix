@@ -297,7 +297,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->post('store', 'BeritaGallery::store');
         $routes->get('edit/(:num)', 'BeritaGallery::edit/$1');
         $routes->post('update/(:num)', 'BeritaGallery::update/$1');
-        $routes->get('delete/(:num)', 'BeritaGallery::delete/$1');
+        $routes->post('delete/(:num)', 'BeritaGallery::delete/$1'); // Changed from GET to POST for delete
         $routes->post('bulk-delete', 'BeritaGallery::bulkDelete');
         $routes->get('set-primary-image/(:num)', 'BeritaGallery::setPrimaryImage/$1');
         $routes->post('update-image-order', 'BeritaGallery::updateImageOrder');

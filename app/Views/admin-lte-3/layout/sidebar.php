@@ -242,62 +242,6 @@
                                 <p>Data Berita</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('admin/berita-gallery') ?>"
-                                class="nav-link <?= isMenuActive('admin/berita-gallery') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-images nav-icon"></i>
-                                <p>Galeri Berita</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- Events -->
-                <li
-                    class="nav-item has-treeview <?= isMenuActive(['admin/events', 'admin/event-pricing', 'admin/event-gallery', 'admin/kategori']) ? 'menu-open' : '' ?>">
-                    <a href="#"
-                        class="nav-link <?= isMenuActive(['admin/events', 'admin/event-pricing', 'admin/event-gallery', 'admin/kategori']) ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-calendar-check"></i>
-                        <p>
-                            Event
-                            <i class="right fas fa-angle-left"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <!-- Kategori -->
-                        <li class="nav-item">
-                            <a href="<?= base_url('admin/kategori') ?>"
-                                class="nav-link <?= isMenuActive('admin/kategori') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="nav-icon fas fa-list"></i>
-                                <p>Kategori</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('admin/events') ?>"
-                                class="nav-link <?= isMenuActive('admin/events') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-calendar-alt nav-icon"></i>
-                                <p>Data Event</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('admin/event-pricing') ?>"
-                                class="nav-link <?= isMenuActive('admin/event-pricing') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-tags nav-icon"></i>
-                                <p>Harga Event</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('admin/event-gallery') ?>"
-                                class="nav-link <?= isMenuActive('admin/event-gallery') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-images nav-icon"></i>
-                                <p>Galeri Event</p>
-                            </a>
-                        </li>
                     </ul>
                 </li>
 

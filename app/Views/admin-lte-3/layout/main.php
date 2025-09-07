@@ -20,48 +20,48 @@ if (!isset($Pengaturan)) {
     <!-- Google Font: Source Sans Pro -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/fontawesome-free/css/all.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/fontawesome-free/css/all.min.css') ?>">
     <!-- Theme style -->
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/dist/css/adminlte.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/dist/css/adminlte.min.css') ?>">
     
     <?= $this->renderSection('css') ?>
 
     <!-- Core Scripts -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery/jquery.min.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/moment/moment.min.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/adminlte.min.js') ?>"></script>
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/jquery/jquery.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/moment/moment.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/dist/js/adminlte.min.js') ?>"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
 
     <!-- Datepicker -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/bootstrap-datepicker/bootstrap-datepicker.min.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/bootstrap-datepicker/bootstrap-datepicker.id.min.js') ?>"></script>
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/bootstrap-datepicker/css/bootstrap-datepicker.min.css') ?>">
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/bootstrap-datepicker/bootstrap-datepicker.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/bootstrap-datepicker/bootstrap-datepicker.id.min.js') ?>"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/bootstrap-datepicker/css/bootstrap-datepicker.min.css') ?>">
 
     <!-- Select2 -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/select2/js/select2.full.min.js') ?>"></script>
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/select2/css/select2.min.css') ?>">
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') ?>">
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/select2/js/select2.full.min.js') ?>"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/select2/css/select2.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css') ?>">
 
     <!-- AutoNumeric -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/JAutoNumber/autonumeric.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/JAutoNumber/autonumeric.js') ?>"></script>
     <?= csrf_meta() ?>
 
     <!-- Toastr -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/toastr/toastr.min.js') ?>"></script>
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/toastr/toastr.min.css') ?>">
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/toastr/toastr.min.js') ?>"></script>
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/toastr/toastr.min.css') ?>">
 
     <!-- iCheck Bootstrap -->
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/icheck-bootstrap/icheck-bootstrap.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/icheck-bootstrap/icheck-bootstrap.min.css') ?>">
 
     <!-- jQuery UI -->
-    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
 
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/JAutonumber/autonumeric.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.js') ?>"></script>
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/moment/moment.min.js') ?>"></script>
-    <link href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>" rel="stylesheet">
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/JAutonumber/autonumeric.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/moment/moment.min.js') ?>"></script>
+    <link href="<?= base_url('assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>" rel="stylesheet">
 </head>
 
 <body class="hold-transition sidebar-mini">
@@ -220,10 +220,10 @@ if (!isset($Pengaturan)) {
     </script>
 
     <!-- jQuery UI -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.js') ?>"></script>
 
     <!-- Select2 -->
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/select2/js/select2.full.min.js') ?>"></script>
+    <script src="<?= base_url('assets/theme/admin-lte-3/plugins/select2/js/select2.full.min.js') ?>"></script>
 
     <!-- Sidebar toggle initialization -->
     <script>

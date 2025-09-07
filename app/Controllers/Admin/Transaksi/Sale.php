@@ -121,7 +121,7 @@ class Sale extends BaseController
     public function updateStatus($invoiceId)
     {
         $order = $this->transJualModel->find($invoiceId);
-        
+
         if (!$order) {
             session()->setFlashdata('error', 'Order not found');
             return redirect()->to('admin/transaksi/sale/orders');
@@ -129,7 +129,7 @@ class Sale extends BaseController
 
         $newPaymentStatus = $this->request->getPost('payment_status');
         $newOrderStatus = $this->request->getPost('order_status');
-        
+
         $updateData = [
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -165,16 +165,55 @@ class Sale extends BaseController
             $this->pesertaModel->where('id_penjualan', $invoiceId)->delete();
         }
 
+        $success = false;
         if ($this->transJualModel->update($invoiceId, $updateData)) {
             // Generate QR codes and save participants if payment status changed to 'paid'
             if ($newPaymentStatus === 'paid' && $order->payment_status !== 'paid') {
                 $this->generateQRCodesForOrder($invoiceId);
                 // $this->saveParticipantsFromOrder($invoiceId);
             }
-            
+
             session()->setFlashdata('success', 'Order status updated successfully');
+            $success = true;
         } else {
             session()->setFlashdata('error', 'Failed to update order status');
+        }
+
+        // After success update all, send WhatsApp notification using KamupediaWA library
+        if ($success) {
+            // Use fully qualified class name to avoid class name conflict
+            $kamupediaWA = new \App\Libraries\KamupediaWA();
+
+            // Get customer information
+            $customerPhone = null;
+            $customerName = null;
+            if ($order->user_id) {
+                $user = $this->ionAuth->user($order->user_id)->row();
+                $customerPhone = $user->phone ?? null;
+                $customerName = $user->first_name ?? $user->last_name ?? null;
+            }
+
+            // Get order details from tbl_trans_jual_det
+            $orderDetails = [];
+            if (isset($order->id)) {
+                $orderDetailsModel = new \App\Models\TransJualDetModel();
+                // Use correct field for foreign key
+                $orderDetails = $orderDetailsModel->where('id_penjualan', $order->id)->findAll();
+            }
+
+            // Determine status and send appropriate notification
+            if ($newPaymentStatus) {
+                $result = $kamupediaWA->sendPaymentNotification($order, $newPaymentStatus, $customerPhone, $customerName, $orderDetails);
+            } else {
+                $result = $kamupediaWA->sendOrderNotification($order, $newOrderStatus, $customerPhone, $customerName, $orderDetails);
+            }
+
+            // Log result
+            if (isset($result['success']) && $result['success']) {
+                log_message('info', 'WhatsApp notification sent successfully');
+            } else {
+                log_message('error', 'WhatsApp notification failed: ' . ($result['message'] ?? 'Unknown error'));
+            }
         }
 
         return redirect()->to('admin/transaksi/sale/detail/' . $invoiceId);

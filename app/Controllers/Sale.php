@@ -445,7 +445,7 @@ class Sale extends BaseController{
                     $this->transJualPlatModel->insert($platData);
                 }
             }
-            
+
             // Complete transaction
             $this->db->transComplete();
             
@@ -455,6 +455,38 @@ class Sale extends BaseController{
             
             // Clear cart after successful order
             $this->cartModel->clearCart($userId, $sessionId);
+
+            // After success order, use KamupediaWA to send notification
+            // Load KamupediaWA library
+            try {
+                $kamupediaWA = new \App\Libraries\KamupediaWA();
+
+                // Get customer information
+                $customerPhone = $this->ionAuth->user()->phone ?? null;
+                $customerName = $this->ionAuth->user()->first_name ?? $this->ionAuth->user()->last_name ?? null;
+
+                // Get the order just created
+                $order = $this->transJualModel->find($lastId);
+
+                // Get order details from tbl_trans_jual_det
+                $orderDetails = [];
+                if (isset($order->id)) {
+                    $orderDetailsModel = new \App\Models\TransJualDetModel();
+                    $orderDetails = $orderDetailsModel->where('id_trans', $order->id)->findAll();
+                }
+
+                // Send order notification (since payment is still pending)
+                $result = $kamupediaWA->sendOrderNotification($order, 'active', $customerPhone, $customerName, $orderDetails);
+
+                // Log result
+                if (isset($result['success']) && $result['success']) {
+                    log_message('info', 'WhatsApp notification sent successfully');
+                } else {
+                    log_message('error', 'WhatsApp notification failed: ' . ($result['message'] ?? 'Unknown error'));
+                }
+            } catch (\Throwable $waEx) {
+                log_message('error', 'WhatsApp notification exception: ' . $waEx->getMessage());
+            }
 
             // Check if payment confirmation or gateway is needed
             if (!empty($data['cart_payments'])) {
