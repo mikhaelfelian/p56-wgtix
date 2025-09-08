@@ -283,7 +283,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('create', 'BeritaCategory::create');
         $routes->post('store', 'BeritaCategory::store');
         $routes->get('edit/(:num)', 'BeritaCategory::edit/$1');
-        $routes->post('update/(:num)', 'BeritaCategory::update/$1');
+        $routes->post('update/(:num)', 'BeritaCategory::store');
         $routes->get('delete/(:num)', 'BeritaCategory::delete/$1');
         $routes->get('toggle-status/(:num)', 'BeritaCategory::toggleStatus/$1');
         $routes->post('update-order', 'BeritaCategory::updateOrder');

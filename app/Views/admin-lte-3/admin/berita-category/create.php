@@ -5,7 +5,7 @@
     <div class="col-12">
         <div class="card rounded-0">
             <div class="card-header">
-                <h3 class="card-title">Form Tambah Kategori Berita</h3>
+                <h3 class="card-title"><?= isset($category) && $category ? 'Form Edit Kategori Berita' : 'Form Tambah Kategori Berita' ?></h3>
                 <div class="card-tools">
                     <a href="<?= base_url('admin/berita-category') ?>" class="btn btn-secondary btn-sm rounded-0">
                         <i class="fas fa-arrow-left"></i> Kembali
@@ -13,7 +13,29 @@
                 </div>
             </div>
             <div class="card-body">
-                <?= form_open('admin/berita-category/store') ?>
+                <!-- Flash Messages -->
+                <?php if (session()->getFlashdata('success')): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?= session()->getFlashdata('success') ?>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (session()->getFlashdata('error')): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?= session()->getFlashdata('error') ?>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                <?php endif; ?>
+
+                <?= form_open(isset($category) && $category ? 'admin/berita-category/update/' . $category->id : 'admin/berita-category/store') ?>
+                <?php if (isset($category) && $category): ?>
+                    <?= form_hidden('id', $category->id) ?>
+                <?php endif; ?>
                 <div class="form-group">
                     <label for="nama">Nama Kategori <span class="text-danger">*</span></label>
                     <?= form_input([
@@ -21,7 +43,7 @@
                         'name' => 'nama',
                         'id' => 'nama',
                         'class' => 'form-control',
-                        'value' => old('nama') ?? '',
+                        'value' => old('nama') ?? (isset($category) ? $category->nama : ''),
                         'placeholder' => 'Masukkan nama kategori',
                         'maxlength' => 160,
                         'required' => 'required'
@@ -38,7 +60,7 @@
                         'name' => 'slug',
                         'id' => 'slug',
                         'class' => 'form-control',
-                        'value' => old('slug') ?? '',
+                        'value' => old('slug') ?? (isset($category) ? $category->slug : ''),
                         'placeholder' => 'Masukkan slug kategori',
                         'maxlength' => 180,
                         'required' => 'required'
@@ -56,7 +78,7 @@
                         'id' => 'deskripsi',
                         'class' => 'form-control',
                         'rows' => '3',
-                        'value' => old('deskripsi') ?? '',
+                        'value' => old('deskripsi') ?? (isset($category) ? $category->deskripsi : ''),
                         'placeholder' => 'Masukkan deskripsi kategori (opsional)'
                     ]) ?>
                     <small class="form-text text-muted">Deskripsi singkat tentang kategori (opsional)</small>
@@ -69,7 +91,7 @@
                         'name' => 'ikon',
                         'id' => 'ikon',
                         'class' => 'form-control',
-                        'value' => old('ikon') ?? '',
+                        'value' => old('ikon') ?? (isset($category) ? $category->ikon : ''),
                         'placeholder' => 'Masukkan class ikon FontAwesome (e.g., fas fa-newspaper)',
                         'maxlength' => 120
                     ]) ?>
@@ -86,7 +108,7 @@
                         'name' => 'urutan',
                         'id' => 'urutan',
                         'class' => 'form-control',
-                        'value' => old('urutan') ?? '1',
+                        'value' => old('urutan') ?? (isset($category) ? $category->urutan : '1'),
                         'min' => '1',
                         'max' => '999',
                         'required' => 'required'
@@ -107,7 +129,7 @@
                     ], [
                         '1' => 'Aktif',
                         '0' => 'Tidak Aktif'
-                    ], old('is_active') ?? '1') ?>
+                    ], old('is_active') ?? (isset($category) ? $category->is_active : '1')) ?>
                     <?php if (session()->getFlashdata('errors.is_active')) : ?>
                         <small class="text-danger"><?= session()->getFlashdata('errors.is_active') ?></small>
                     <?php endif; ?>
@@ -120,7 +142,7 @@
                         <i class="fas fa-arrow-left"></i> Kembali
                     </a>
                     <button type="submit" form="categoryForm" class="btn btn-primary rounded-0">
-                        <i class="fas fa-save"></i> Simpan Kategori
+                        <i class="fas fa-save"></i> <?= isset($category) && $category ? 'Update Kategori' : 'Simpan Kategori' ?>
                     </button>
                 </div>
             </div>

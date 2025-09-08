@@ -70,10 +70,14 @@ class BeritaCategory extends BaseController
 
     public function store()
     {
-        // Validation rules
+        // Get category ID for edit mode
+        $categoryId = $this->request->getPost('id');
+        $isEdit = !empty($categoryId);
+
+        // Validation rules - adjust for edit mode
         $rules = [
             'nama' => 'required|min_length[3]|max_length[160]',
-            'slug' => 'required|is_unique[tbl_posts_category.slug,id,{id}]',
+            'slug' => $isEdit ? 'required|is_unique[tbl_posts_category.slug,id,' . $categoryId . ']' : 'required|is_unique[tbl_posts_category.slug]',
             'deskripsi' => 'permit_empty|max_length[500]',
             'ikon' => 'permit_empty|max_length[100]',
             'urutan' => 'permit_empty|integer',
@@ -94,12 +98,19 @@ class BeritaCategory extends BaseController
             'is_active' => $this->request->getPost('is_active')
         ];
 
-        // Save category
-        if ($this->categoryModel->insert($categoryData)) {
-            return redirect()->to('admin/berita-category')->with('success', 'Kategori berhasil ditambahkan');
+        // Add ID for edit mode
+        if ($isEdit) {
+            $categoryData['id'] = $categoryId;
         }
 
-        return redirect()->back()->withInput()->with('error', 'Gagal menambahkan kategori');
+        // Save category using save() method
+        if ($this->categoryModel->save($categoryData)) {
+            $message = $isEdit ? 'Kategori berhasil diupdate' : 'Kategori berhasil ditambahkan';
+            return redirect()->to('admin/berita-category')->with('success', $message);
+        }
+
+        $errorMessage = $isEdit ? 'Gagal mengupdate kategori' : 'Gagal menambahkan kategori';
+        return redirect()->back()->withInput()->with('error', $errorMessage);
     }
 
     public function edit($id)
@@ -111,52 +122,13 @@ class BeritaCategory extends BaseController
         }
 
         $data = [
-            'title' => 'Edit Kategori',
-            'category' => $category,
-            'Pengaturan' => $this->getPengaturan()
+            'title'      => 'Edit Kategori',
+            'category'   => $category,
+            'Pengaturan' => $this->pengaturan,
+            'user'       => $this->ionAuth->user()->row(),
         ];
 
-        return $this->view($this->theme->getThemePath() . '/admin/berita-category/edit', $data);
-    }
-
-    public function update($id)
-    {
-        $category = $this->categoryModel->find($id);
-        
-        if (!$category) {
-            return redirect()->to('admin/berita-category')->with('error', 'Kategori tidak ditemukan');
-        }
-
-        // Validation rules
-        $rules = [
-            'nama' => 'required|min_length[3]|max_length[160]',
-            'slug' => "required|is_unique[tbl_posts_category.slug,id,{$id}]",
-            'deskripsi' => 'permit_empty|max_length[500]',
-            'ikon' => 'permit_empty|max_length[100]',
-            'urutan' => 'permit_empty|integer',
-            'is_active' => 'required|in_list[0,1]'
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
-        }
-
-        // Prepare category data
-        $categoryData = [
-            'nama' => $this->request->getPost('nama'),
-            'slug' => $this->request->getPost('slug'),
-            'deskripsi' => $this->request->getPost('deskripsi'),
-            'ikon' => $this->request->getPost('ikon'),
-            'urutan' => $this->request->getPost('urutan') ?? 0,
-            'is_active' => $this->request->getPost('is_active')
-        ];
-
-        // Update category
-        if ($this->categoryModel->update($id, $categoryData)) {
-            return redirect()->to('admin/berita-category')->with('success', 'Kategori berhasil diupdate');
-        }
-
-        return redirect()->back()->withInput()->with('error', 'Gagal mengupdate kategori');
+        return $this->view($this->theme->getThemePath() . '/admin/berita-category/create', $data);
     }
 
     public function delete($id)

@@ -26,14 +26,7 @@ class PostsCategoryModel extends Model
     protected $updatedField     = 'updated_at';
     protected $deletedField     = 'deleted_at';
 
-    protected $validationRules  = [
-        'nama' => 'required|min_length[3]|max_length[160]',
-        'slug' => 'required|max_length[180]|is_unique[tbl_posts_category.slug,id,{id}]',
-        'urutan' => 'required|integer',
-        'is_active' => 'required|in_list[0,1]',
-        'ikon' => 'permit_empty|max_length[120]',
-        'deskripsi' => 'permit_empty'
-    ];
+    protected $validationRules  = [];
 
     /**
      * Get categories with filters, search, and pagination
@@ -60,9 +53,9 @@ class PostsCategoryModel extends Model
         // Apply status filter
         if ($status !== null) {
             if ($status === 'active') {
-                $builder->where('is_active', 1);
+                $builder->where('is_active', '1');
             } elseif ($status === 'inactive') {
-                $builder->where('is_active', 0);
+                $builder->where('is_active', '0');
             }
         }
 
@@ -106,9 +99,9 @@ class PostsCategoryModel extends Model
         // Apply status filter
         if ($status !== null) {
             if ($status === 'active') {
-                $builder->where('is_active', 1);
+                $builder->where('is_active', '1');
             } elseif ($status === 'inactive') {
-                $builder->where('is_active', 0);
+                $builder->where('is_active', '0');
             }
         }
 

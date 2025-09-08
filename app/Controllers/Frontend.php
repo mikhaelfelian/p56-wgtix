@@ -270,6 +270,9 @@ class Frontend extends BaseController
             // Update with QR code
             $this->pesertaModel->update($insertedId, ['qr_code' => $qrBase64]);
 
+            // Send WhatsApp notification
+            $this->sendRegistrationNotification($insertedId, $data, $kode_peserta);
+
             // Check if platform is selected for payment
             $selectedPlatformId = $this->request->getPost('id_platform');
             if ($selectedPlatformId) {
@@ -303,9 +306,8 @@ class Frontend extends BaseController
                 'success' => true,
                 'message' => 'Registration successful',
                 'data' => [
-                    'kode_peserta' => $kode_peserta,
-                    'qr_code' => $qrBase64,
-                    'redirect_to_payment' => false,
+                    'kode_peserta'          => $kode_peserta,    
+                    'redirect_to_payment'   => false,
                     // Add this data to every view/response
                     'footer_text' => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',
                 ]
@@ -472,5 +474,117 @@ class Frontend extends BaseController
         ];
 
         return $this->view('admin-lte-3/frontend/payment_failed', $data);
+    }
+
+    /**
+     * Send WhatsApp notification for successful registration
+     */
+    private function sendRegistrationNotification($pesertaId, $data, $kodePeserta)
+    {
+        try {
+            // Load KamupediaWA helper
+            helper('kamupedia_wa');
+            
+            log_message('info', 'Starting WhatsApp notification for participant: ' . $kodePeserta);
+
+            // Get participant phone number
+            $phoneNumber = $data['no_hp'] ?? null;
+            log_message('info', 'Phone number from data: ' . ($phoneNumber ?? 'NULL'));
+            
+            if (!$phoneNumber) {
+                log_message('info', 'No phone number provided for participant ID: ' . $pesertaId);
+                return;
+            }
+
+            // Format phone number (add +62 if not present)
+            if (!str_starts_with($phoneNumber, '+62')) {
+                if (str_starts_with($phoneNumber, '0')) {
+                    $phoneNumber = '+62' . substr($phoneNumber, 1);
+                } else {
+                    $phoneNumber = '+62' . $phoneNumber;
+                }
+            }
+            
+            log_message('info', 'Formatted phone number: ' . $phoneNumber);
+
+            // Get platform info if available
+            $platformInfo = '';
+            if (!empty($data['id_platform'])) {
+                $platform = $this->platformModel->find($data['id_platform']);
+                if ($platform) {
+                    $platformInfo = "\n*Platform:* " . $platform->nama_platform;
+                }
+            }
+
+            // Get category info if available
+            $categoryInfo = '';
+            if (!empty($data['id_kategori'])) {
+                $kategori = $this->kategoriModel->find($data['id_kategori']);
+                if ($kategori) {
+                    $categoryInfo = "\n*Kategori:* " . $kategori->nama_kategori;
+                }
+            }
+
+            // Get kelompok info if available
+            $kelompokInfo = '';
+            if (!empty($data['id_kelompok'])) {
+                $kelompok = $this->kelompokModel->find($data['id_kelompok']);
+                if ($kelompok) {
+                    $kelompokInfo = "\n*Kelompok:* " . $kelompok->nama_kelompok;
+                }
+            }
+
+            // Create registration message
+            $message = "🎉 *Pendaftaran Berhasil!*\n\n";
+            $message .= "Halo *" . $data['nama_lengkap'] . "*,\n\n";
+            $message .= "Terima kasih telah mendaftar! Berikut detail pendaftaran Anda:\n\n";
+            $message .= "📋 *Detail Pendaftaran:*\n";
+            $message .= "• *Kode Peserta:* " . $kodePeserta . "\n";
+            $message .= "• *Nama:* " . $data['nama_lengkap'] . "\n";
+            $message .= "• *Jenis Kelamin:* " . ($data['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "\n";
+            
+            if (!empty($data['tempat_lahir'])) {
+                $message .= "• *Tempat Lahir:* " . $data['tempat_lahir'] . "\n";
+            }
+            if (!empty($data['tanggal_lahir'])) {
+                $message .= "• *Tanggal Lahir:* " . date('d/m/Y', strtotime($data['tanggal_lahir'])) . "\n";
+            }
+            if (!empty($data['alamat'])) {
+                $message .= "• *Alamat:* " . $data['alamat'] . "\n";
+            }
+            if (!empty($data['email'])) {
+                $message .= "• *Email:* " . $data['email'] . "\n";
+            }
+            
+            $message .= $platformInfo;
+            $message .= $categoryInfo;
+            $message .= $kelompokInfo;
+            
+            $message .= "\n📱 *Status:* Pendaftaran Berhasil\n";
+            $message .= "📅 *Tanggal Daftar:* " . date('d/m/Y H:i') . "\n\n";
+            $message .= "QR Code telah dikirim ke email Anda. Silakan simpan QR Code tersebut untuk keperluan event.\n\n";
+            $message .= "Terima kasih dan selamat bergabung! 🎊";
+
+            // Send WhatsApp notification
+            log_message('info', 'Sending WhatsApp message to: ' . $phoneNumber);
+            log_message('info', 'Message content: ' . substr($message, 0, 100) . '...');
+            
+            $result = send_wa_message(
+                $phoneNumber,
+                $message,
+                $data['nama_lengkap']
+            );
+            
+            log_message('info', 'WhatsApp send result: ' . json_encode($result));
+
+            if ($result['success']) {
+                log_message('info', 'WhatsApp notification sent successfully to participant: ' . $kodePeserta);
+            } else {
+                log_message('error', 'Failed to send WhatsApp notification to participant: ' . $kodePeserta . ' - ' . $result['message']);
+            }
+
+        } catch (Exception $e) {
+            log_message('error', 'Error sending WhatsApp notification for participant ' . $pesertaId . ': ' . $e->getMessage());
+        }
     }
 }
