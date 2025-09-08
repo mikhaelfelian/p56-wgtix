@@ -109,16 +109,17 @@ echo $this->section('content');
                 </div>
                 <div class="col-sm-6 form-group">
                     <label for="phone">Nomor Telepon *</label>
-                    <?= form_input([
-                        'name' => 'phone',
-                        'id' => 'phone',
-                        'class' => 'form-control',
-                        'required' => true,
-                        'placeholder' => '085741220427',
-                        'pattern' => '^08[0-9]{8,11}$',
-                        'title' => 'Masukkan nomor telepon yang valid (contoh: 085741220427)',
-                        'value' => old('phone')
-                    ]) ?>
+                        <?= form_input([
+                            'name' => 'phone',
+                            'id' => 'phone',
+                            'class' => 'form-control',
+                            'required' => true,
+                            'placeholder' => 'masukkan nomor telepon 08xxxxxxxxx',
+                            'pattern' => '^08[0-9]{8,11}$',
+                            'title' => 'Masukkan nomor telepon Indonesia yang valid (contoh: 085741220427)',
+                            'value' => old('phone'),
+                            'maxlength' => '15'
+                        ]) ?>
                 </div>
             </div>
             <div class="row">
@@ -192,6 +193,57 @@ echo $this->endSection();
             updatePasswordMatchIndicator(password, confirmPassword);
         });
 
+        // Real-time phone number validation
+        $('#phone').on('input', function () {
+            const phone = $(this).val().trim();
+            const phonePattern = /^08[0-9]{8,11}$/;
+            const phoneGroup = $(this).closest('.form-group');
+            
+            // Remove existing validation classes and messages
+            phoneGroup.removeClass('has-error has-success');
+            phoneGroup.find('.help-block').remove();
+            
+            if (phone === '') {
+                // Empty field - no validation message
+                return;
+            }
+            
+            if (phone.length < 10 || phone.length > 15) {
+                phoneGroup.addClass('has-error');
+                phoneGroup.append('<span class="help-block text-danger">Nomor telepon harus 10-15 digit.</span>');
+                return;
+            }
+            
+            if (!phonePattern.test(phone)) {
+                phoneGroup.addClass('has-error');
+                phoneGroup.append('<span class="help-block text-danger">Format nomor telepon tidak valid. Gunakan format Indonesia: 085741220427</span>');
+                return;
+            }
+            
+            // Valid phone number
+            phoneGroup.addClass('has-success');
+            phoneGroup.append('<span class="help-block text-success">✓ Format nomor telepon valid</span>');
+        });
+
+        // Format phone number as user types (auto-format)
+        $('#phone').on('keypress', function (e) {
+            // Only allow numbers
+            if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                return;
+            }
+            
+            // Auto-format: ensure it starts with 08
+            const currentValue = $(this).val();
+            if (currentValue.length === 0 && e.key !== '0') {
+                e.preventDefault();
+                $(this).val('0');
+            } else if (currentValue.length === 1 && currentValue === '0' && e.key !== '8') {
+                e.preventDefault();
+                $(this).val('08');
+            }
+        });
+
         // Form submission with reCAPTCHA v3
         let isSubmitting = false;
 
@@ -217,11 +269,24 @@ echo $this->endSection();
                 return;
             }
 
-            // Check phone number format
-            const phone = $('#phone').val();
+            // Check phone number format (Indonesian format only)
+            const phone = $('#phone').val().trim();
             const phonePattern = /^08[0-9]{8,11}$/;
+            
+            if (!phone) {
+                alert('Nomor telepon wajib diisi.');
+                $('#phone').focus();
+                return;
+            }
+            
+            if (phone.length < 10 || phone.length > 15) {
+                alert('Nomor telepon harus 10-15 digit.');
+                $('#phone').focus();
+                return;
+            }
+            
             if (!phonePattern.test(phone)) {
-                alert('Format nomor telepon tidak valid. Gunakan format: 085741220427');
+                alert('Format nomor telepon tidak valid. Gunakan format Indonesia: 085741220427');
                 $('#phone').focus();
                 return;
             }

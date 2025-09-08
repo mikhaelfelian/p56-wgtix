@@ -223,7 +223,7 @@ class Frontend extends BaseController
             'tempat_lahir'   => 'permit_empty|max_length[50]',
             'tanggal_lahir'  => 'permit_empty|valid_date',
             'alamat'         => 'permit_empty',
-            'no_hp'          => 'permit_empty|max_length[15]',
+            'phone'          => 'required|max_length[15]|min_length[10]|regex_match[/^08[0-9]{8,11}$/]',
             'email'          => 'permit_empty|valid_email|max_length[100]',
             'id_kelompok'    => 'permit_empty|integer',
             'id_kategori'    => 'permit_empty|integer',
@@ -231,10 +231,19 @@ class Frontend extends BaseController
         ];
 
         if (!$this->validate($rules)) {
+            $errors = $this->validator->getErrors();
+            
+            // Custom error message for phone number
+            if (isset($errors['phone'])) {
+                if (strpos($errors['phone'], 'regex_match') !== false) {
+                    $errors['phone'] = 'Nomor telepon harus dalam format Indonesia (contoh: 0857xxxxxxxx)';
+                }
+            }
+            
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $this->validator->getErrors()
+                'errors' => $errors
             ]);
         }
 
@@ -248,7 +257,7 @@ class Frontend extends BaseController
             'tempat_lahir' => $this->request->getPost('tempat_lahir') ?: null,
             'tanggal_lahir' => $this->request->getPost('tanggal_lahir') ?: null,
             'alamat' => $this->request->getPost('alamat') ?: null,
-            'no_hp' => $this->request->getPost('no_hp') ?: null,
+            'no_hp' => $this->request->getPost('phone') ?: null,
             'email' => $this->request->getPost('email') ?: null,
             'id_kelompok' => $this->request->getPost('id_kelompok') ?: null,
             'id_kategori' => $this->request->getPost('id_kategori') ?: null,
@@ -487,7 +496,7 @@ class Frontend extends BaseController
             
             log_message('info', 'Starting WhatsApp notification for participant: ' . $kodePeserta);
 
-            // Get participant phone number
+            // Get participant phone number (Indonesian format only)
             $phoneNumber = $data['no_hp'] ?? null;
             log_message('info', 'Phone number from data: ' . ($phoneNumber ?? 'NULL'));
             
@@ -496,14 +505,14 @@ class Frontend extends BaseController
                 return;
             }
 
-            // Format phone number (add +62 if not present)
-            if (!str_starts_with($phoneNumber, '+62')) {
-                if (str_starts_with($phoneNumber, '0')) {
-                    $phoneNumber = '+62' . substr($phoneNumber, 1);
-                } else {
-                    $phoneNumber = '+62' . $phoneNumber;
-                }
+            // Validate Indonesian phone number format (08xxxxxxxxx)
+            if (!preg_match('/^08[0-9]{8,11}$/', $phoneNumber)) {
+                log_message('error', 'Invalid Indonesian phone number format: ' . $phoneNumber);
+                return;
             }
+
+            // Format phone number for WhatsApp (08xxxxxxxxx -> +628xxxxxxxxx)
+            $phoneNumber = '+62' . substr($phoneNumber, 1);
             
             log_message('info', 'Formatted phone number: ' . $phoneNumber);
 
@@ -534,14 +543,14 @@ class Frontend extends BaseController
                 }
             }
 
-            // Create registration message
-            $message = "🎉 *Pendaftaran Berhasil!*\n\n";
+            // Create registration message for account registration (not participant)
+            $message = "*Registrasi Akun Berhasil!*\n\n";
             $message .= "Halo *" . $data['nama_lengkap'] . "*,\n\n";
-            $message .= "Terima kasih telah mendaftar! Berikut detail pendaftaran Anda:\n\n";
-            $message .= "📋 *Detail Pendaftaran:*\n";
-            $message .= "• *Kode Peserta:* " . $kodePeserta . "\n";
-            $message .= "• *Nama:* " . $data['nama_lengkap'] . "\n";
-            $message .= "• *Jenis Kelamin:* " . ($data['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "\n";
+            $message .= "Terima kasih telah melakukan registrasi akun. Berikut detail akun Anda:\n\n";
+            $message .= "*Detail Akun:*\n";
+            $message .= "*Kode Akun:* " . $kodePeserta . "\n";
+            $message .= "*Nama:* " . $data['nama_lengkap'] . "\n";
+            $message .= "*Jenis Kelamin:* " . ($data['jenis_kelamin'] == 'L' ? 'Laki-laki' : 'Perempuan') . "\n";
             
             if (!empty($data['tempat_lahir'])) {
                 $message .= "• *Tempat Lahir:* " . $data['tempat_lahir'] . "\n";
@@ -560,9 +569,9 @@ class Frontend extends BaseController
             $message .= $categoryInfo;
             $message .= $kelompokInfo;
             
-            $message .= "\n📱 *Status:* Pendaftaran Berhasil\n";
-            $message .= "📅 *Tanggal Daftar:* " . date('d/m/Y H:i') . "\n\n";
-            $message .= "QR Code telah dikirim ke email Anda. Silakan simpan QR Code tersebut untuk keperluan event.\n\n";
+            $message .= "\n*Status:* Registrasi Akun Berhasil\n";
+            $message .= "*Tanggal Registrasi:* " . date('d/m/Y H:i') . "\n\n";
+            // $message .= "QR Code akun Anda telah dikirim ke email. Silakan simpan QR Code tersebut untuk keperluan selanjutnya.\n\n";
             $message .= "Terima kasih dan selamat bergabung! 🎊";
 
             // Send WhatsApp notification
@@ -578,9 +587,9 @@ class Frontend extends BaseController
             log_message('info', 'WhatsApp send result: ' . json_encode($result));
 
             if ($result['success']) {
-                log_message('info', 'WhatsApp notification sent successfully to participant: ' . $kodePeserta);
+                log_message('info', 'WhatsApp notification sent successfully to account: ' . $kodePeserta);
             } else {
-                log_message('error', 'Failed to send WhatsApp notification to participant: ' . $kodePeserta . ' - ' . $result['message']);
+                log_message('error', 'Failed to send WhatsApp notification to account: ' . $kodePeserta . ' - ' . $result['message']);
             }
 
         } catch (Exception $e) {
