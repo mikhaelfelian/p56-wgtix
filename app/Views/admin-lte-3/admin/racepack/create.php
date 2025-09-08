@@ -3,7 +3,7 @@
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
-        <?= form_open_multipart(isset($racepack) && $racepack ? 'admin/racepack/update/' . $racepack->id : 'admin/racepack/store') ?>
+        <?= form_open_multipart(base_url('admin/racepack/store')) ?>
         <?php if (isset($racepack) && $racepack): ?>
             <?= form_hidden('id', $racepack->id) ?>
         <?php endif; ?>

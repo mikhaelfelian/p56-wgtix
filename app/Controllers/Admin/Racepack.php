@@ -84,7 +84,7 @@ class Racepack extends BaseController
     {
         // Get racepack ID for edit mode
         $racepackId = $this->request->getPost('id');
-        $isEdit = !empty($racepackId);
+        $isEdit     = !empty($racepackId);
 
         // Validation rules - adjust for edit mode
         $rules = [
@@ -98,7 +98,7 @@ class Racepack extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to(base_url('admin/racepack/create'))
                            ->withInput()
                            ->with('errors', $this->validator->getErrors());
         }
@@ -106,15 +106,23 @@ class Racepack extends BaseController
         // Handle file upload
         $gambar = $this->handleFileUpload($racepackId);
 
+        $kode_racepack = $this->request->getPost('kode_racepack');
+        $nama_racepack = $this->request->getPost('nama_racepack');
+        $id_kategori   = $this->request->getPost('id_kategori');
+        $deskripsi     = $this->request->getPost('deskripsi') ?: null;
+        $harga         = $this->request->getPost('harga');
+        $status        = $this->request->getPost('status');
+        $id_user       = $this->data['user']->id;
+
         $data = [
-            'kode_racepack' => $this->request->getPost('kode_racepack'),
-            'nama_racepack' => $this->request->getPost('nama_racepack'),
-            'id_kategori'   => $this->request->getPost('id_kategori'),
-            'deskripsi'     => $this->request->getPost('deskripsi') ?: null,
-            'harga'         => $this->request->getPost('harga'),
+            'kode_racepack' => $kode_racepack,
+            'nama_racepack' => $nama_racepack,
+            'id_kategori'   => $id_kategori,
+            'deskripsi'     => $deskripsi,
+            'harga'         => $harga,
             'gambar'        => $gambar,
-            'status'        => $this->request->getPost('status'),
-            'id_user'       => $this->data['user']->id
+            'status'        => $status,
+            'id_user'       => $id_user
         ];
 
         // Add ID for edit mode
@@ -130,7 +138,7 @@ class Racepack extends BaseController
         }
 
         $errorMessage = $isEdit ? 'Gagal memperbarui racepack' : 'Gagal menambahkan racepack';
-        return redirect()->back()
+        return redirect()->to(base_url('admin/racepack/create'))
                        ->withInput()
                        ->with('error', $errorMessage);
     }
