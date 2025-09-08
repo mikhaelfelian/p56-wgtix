@@ -7,42 +7,5 @@
  * This file represents the header section template for the Digital Agency theme.
  */
 ?>
-
 <!--Header-->
-<header class="top-bar row style2">
-    <div class="container">
-        <div class="welcome-message">
-            <?= !empty($Pengaturan->judul) ? esc($Pengaturan->judul) : 'Selamat datang di ' . esc($Pengaturan->judul) ?>
-        </div>
-        <ul class="nav top-nav">
-            <?php if (!empty($Pengaturan->url)): ?>
-                <li class="email">
-                    <a href="mailto:noreply@<?= getenv('app.domain') ?>">
-                        <i class="fa fa-envelope-o"></i>noreply@<?= getenv('app.domain') ?>
-                    </a>
-                </li>
-            <?php endif; ?>
-            <?php if (!empty($Pengaturan->alamat)): ?>
-                <li>
-                    <a href="https://maps.google.com/?q=<?= urlencode($Pengaturan->alamat) ?>" target="_blank">
-                        <i class="fa fa-map-marker"></i> <?= esc($Pengaturan->alamat) ?>
-                    </a>
-                </li>
-            <?php endif; ?>
-            <?php if (!empty($Pengaturan->kota)): ?>
-                <li>
-                    <a href="#">
-                        <i class="fa fa-building"></i> <?= ucwords($Pengaturan->kota) ?>
-                    </a>
-                </li>
-            <?php endif; ?>
-            <?php if (!empty($Pengaturan->telp)): ?>
-                <li class="tel">
-                    <a href="tel:<?= esc($Pengaturan->telp) ?>">
-                        <i class="fa fa-phone"></i><?= esc($Pengaturan->telp) ?>
-                    </a>
-                </li>
-            <?php endif; ?>
-        </ul>
-    </div>
-</header>
+
