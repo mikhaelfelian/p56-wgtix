@@ -119,7 +119,7 @@ class Racepack extends BaseController
             'nama_racepack' => $nama_racepack,
             'id_kategori'   => $id_kategori,
             'deskripsi'     => $deskripsi,
-            'harga'         => $harga,
+            'harga'         => format_angka_db($harga),
             'gambar'        => $gambar,
             'status'        => $status,
             'id_user'       => $id_user

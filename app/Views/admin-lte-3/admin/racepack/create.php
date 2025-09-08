@@ -19,7 +19,7 @@
                         'type' => 'text',
                         'name' => 'kode_racepack',
                         'id' => 'kode_racepack',
-                        'class' => 'form-control',
+                        'class' => 'form-control rounded-0',
                         'value' => old('kode_racepack') ?? (isset($racepack) ? $racepack->kode_racepack : ''),
                         'placeholder' => 'Masukkan kode racepack',
                         'required' => 'required'
@@ -32,7 +32,7 @@
                         'type' => 'text',
                         'name' => 'nama_racepack',
                         'id' => 'nama_racepack',
-                        'class' => 'form-control',
+                        'class' => 'form-control rounded-0',
                         'value' => old('nama_racepack') ?? (isset($racepack) ? $racepack->nama_racepack : ''),
                         'placeholder' => 'Masukkan nama racepack',
                         'required' => 'required'
@@ -44,7 +44,7 @@
                     <?= form_dropdown([
                         'name' => 'id_kategori',
                         'id' => 'id_kategori',
-                        'class' => 'form-control',
+                        'class' => 'form-control rounded-0',
                         'required' => 'required'
                     ], $kategoriOptions, old('id_kategori') ?? (isset($racepack) ? $racepack->id_kategori : '')) ?>
                 </div>
@@ -54,7 +54,7 @@
                     <?= form_textarea([
                         'name' => 'deskripsi',
                         'id' => 'deskripsi',
-                        'class' => 'form-control',
+                        'class' => 'form-control rounded-0',
                         'rows' => '3',
                         'value' => old('deskripsi') ?? (isset($racepack) ? $racepack->deskripsi : ''),
                         'placeholder' => 'Masukkan deskripsi racepack'
@@ -64,10 +64,10 @@
                 <div class="form-group">
                     <label for="harga">Harga <span class="text-danger">*</span></label>
                     <?= form_input([
-                        'type' => 'number',
+                        'type' => 'text',
                         'name' => 'harga',
                         'id' => 'harga',
-                        'class' => 'form-control',
+                        'class' => 'form-control rounded-0',
                         'value' => old('harga') ?? (isset($racepack) ? $racepack->harga : ''),
                         'placeholder' => 'Masukkan harga',
                         'required' => 'required'
@@ -87,7 +87,7 @@
                     <?= form_upload([
                         'name' => 'gambar',
                         'id' => 'gambar',
-                        'class' => 'form-control-file',
+                        'class' => 'form-control-file rounded-0',
                         'accept' => 'image/*'
                     ]) ?>
                     <small class="form-text text-muted">Format: JPG, PNG, GIF. Maksimal 2MB.
@@ -99,7 +99,7 @@
                     <?= form_dropdown([
                         'name' => 'status',
                         'id' => 'status',
-                        'class' => 'form-control'
+                        'class' => 'form-control rounded-0'
                     ], [
                         '1' => 'Aktif',
                         '0' => 'Nonaktif'
@@ -113,7 +113,7 @@
                     </a>
                     <button type="submit" class="btn btn-primary rounded-0">
                         <i class="fas fa-save"></i>
-                        <?= isset($racepack) && $racepack ? 'Update Racepack' : 'Simpan Racepack' ?>
+                        Simpan
                     </button>
                 </div>
             </div>
@@ -121,4 +121,30 @@
         <?= form_close() ?>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<script src="<?= base_url('assets/theme/admin-lte-3/plugins/JAutoNumber/autonumeric.js') ?>"></script>
+<script>
+$(document).ready(function() {
+    // Initialize autoNumeric for price field
+    $('#harga').autoNumeric('init', {
+        aSep: '.',           // Thousand separator
+        aDec: ',',           // Decimal separator
+        mDec: '0',           // No decimal places
+    });
+
+    // Form submission - get unformatted value
+    $('form').on('submit', function(e) {
+        // Get unformatted value from autoNumeric
+        var hargaValue = $('#harga').autoNumeric('get');
+        $('#harga').val(hargaValue);
+    });
+
+    // Format existing value on page load (for edit mode)
+    <?php if (isset($racepack) && $racepack && $racepack->harga): ?>
+        $('#harga').autoNumeric('set', '<?= $racepack->harga ?>');
+    <?php endif; ?>
+});
+</script>
 <?= $this->endSection() ?>
