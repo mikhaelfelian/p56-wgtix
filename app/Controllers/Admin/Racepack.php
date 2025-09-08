@@ -69,19 +69,26 @@ class Racepack extends BaseController
 
         $data = [
             'title'           => 'Tambah Racepack',
-            'kategoriOptions' => $kategoriOptions
+            'kategoriOptions' => $kategoriOptions,
+            'Pengaturan'      => $this->pengaturan,
+            'user'            => $this->ionAuth->user()->row(),
         ];
 
         return $this->view($this->theme->getThemePath() . '/admin/racepack/create', $data);
     }
 
     /**
-     * Store a newly created racepack
+     * Store a newly created racepack or update existing one
      */
     public function store()
     {
+        // Get racepack ID for edit mode
+        $racepackId = $this->request->getPost('id');
+        $isEdit = !empty($racepackId);
+
+        // Validation rules - adjust for edit mode
         $rules = [
-            'kode_racepack' => 'required|max_length[50]',
+            'kode_racepack' => $isEdit ? 'required|max_length[50]|is_unique[tbl_racepack.kode_racepack,id,' . $racepackId . ']' : 'required|max_length[50]|is_unique[tbl_racepack.kode_racepack]',
             'nama_racepack' => 'required|max_length[200]',
             'id_kategori'   => 'required|integer',
             'deskripsi'     => 'permit_empty',
@@ -96,33 +103,36 @@ class Racepack extends BaseController
                            ->with('errors', $this->validator->getErrors());
         }
 
-        // Check if kode already exists
-        $kode = $this->request->getPost('kode_racepack');
-        if ($this->racepackModel->isCodeExists($kode)) {
-            return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Kode racepack sudah ada');
-        }
+        // Handle file upload
+        $gambar = $this->handleFileUpload($racepackId);
 
         $data = [
-            'kode_racepack' => $kode,
+            'kode_racepack' => $this->request->getPost('kode_racepack'),
             'nama_racepack' => $this->request->getPost('nama_racepack'),
             'id_kategori'   => $this->request->getPost('id_kategori'),
             'deskripsi'     => $this->request->getPost('deskripsi') ?: null,
             'harga'         => $this->request->getPost('harga'),
-            'gambar'        => $this->request->getPost('gambar') ?: null,
+            'gambar'        => $gambar,
             'status'        => $this->request->getPost('status'),
             'id_user'       => $this->data['user']->id
         ];
 
-        if ($this->racepackModel->insert($data)) {
-            return redirect()->to('/admin/racepack')
-                           ->with('success', 'Racepack berhasil ditambahkan');
+        // Add ID for edit mode
+        if ($isEdit) {
+            $data['id'] = $racepackId;
         }
 
+        // Save racepack using save() method
+        if ($this->racepackModel->save($data)) {
+            $message = $isEdit ? 'Racepack berhasil diperbarui' : 'Racepack berhasil ditambahkan';
+            return redirect()->to('/admin/racepack')
+                           ->with('success', $message);
+        }
+
+        $errorMessage = $isEdit ? 'Gagal memperbarui racepack' : 'Gagal menambahkan racepack';
         return redirect()->back()
                        ->withInput()
-                       ->with('error', 'Gagal menambahkan racepack');
+                       ->with('error', $errorMessage);
     }
 
     /**
@@ -162,67 +172,14 @@ class Racepack extends BaseController
         $data = [
             'title'           => 'Edit Racepack',
             'racepack'        => $racepack,
-            'kategoriOptions' => $kategoriOptions
+            'kategoriOptions' => $kategoriOptions,
+            'Pengaturan'      => $this->pengaturan,
+            'user'            => $this->ionAuth->user()->row(),
         ];
 
-        return $this->view($this->theme->getThemePath() . '/admin/racepack/edit', $data);
+        return $this->view($this->theme->getThemePath() . '/admin/racepack/create', $data);
     }
 
-    /**
-     * Update the specified racepack
-     */
-    public function update($id = null)
-    {
-        $racepack = $this->racepackModel->find($id);
-
-        if (!$racepack) {
-            return redirect()->to('/admin/racepack')
-                           ->with('error', 'Racepack tidak ditemukan');
-        }
-
-        $rules = [
-            'kode_racepack' => 'required|max_length[50]',
-            'nama_racepack' => 'required|max_length[200]',
-            'id_kategori'   => 'required|integer',
-            'deskripsi'     => 'permit_empty',
-            'harga'         => 'required|decimal',
-            'gambar'        => 'permit_empty|max_length[255]',
-            'status'        => 'required|in_list[0,1]'
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()
-                           ->withInput()
-                           ->with('errors', $this->validator->getErrors());
-        }
-
-        // Check if kode already exists (excluding current record)
-        $kode = $this->request->getPost('kode_racepack');
-        if ($this->racepackModel->isCodeExists($kode, $id)) {
-            return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Kode racepack sudah ada');
-        }
-
-        $data = [
-            'kode_racepack' => $kode,
-            'nama_racepack' => $this->request->getPost('nama_racepack'),
-            'id_kategori'   => $this->request->getPost('id_kategori'),
-            'deskripsi'     => $this->request->getPost('deskripsi') ?: null,
-            'harga'         => $this->request->getPost('harga'),
-            'gambar'        => $this->request->getPost('gambar') ?: null,
-            'status'        => $this->request->getPost('status')
-        ];
-
-        if ($this->racepackModel->update($id, $data)) {
-            return redirect()->to('/admin/racepack')
-                           ->with('success', 'Racepack berhasil diperbarui');
-        }
-
-        return redirect()->back()
-                       ->withInput()
-                       ->with('error', 'Gagal memperbarui racepack');
-    }
 
     /**
      * Remove the specified racepack
@@ -243,5 +200,31 @@ class Racepack extends BaseController
 
         return redirect()->to('/admin/racepack')
                        ->with('error', 'Gagal menghapus racepack');
+    }
+
+    /**
+     * Handle file upload for racepack image
+     */
+    private function handleFileUpload($racepackId = null)
+    {
+        $file = $this->request->getFile('gambar');
+        
+        if (!$file || !$file->isValid()) {
+            // If editing and no new file uploaded, keep existing image
+            if ($racepackId) {
+                $existing = $this->racepackModel->find($racepackId);
+                return $existing ? $existing->gambar : null;
+            }
+            return null;
+        }
+
+        // Validate file
+        if (!$file->hasMoved()) {
+            $newName = $file->getRandomName();
+            $file->move(ROOTPATH . 'public/uploads/racepack/', $newName);
+            return $newName;
+        }
+
+        return null;
     }
 } 

@@ -244,7 +244,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('create', 'Racepack::create');
         $routes->post('store', 'Racepack::store');
         $routes->get('edit/(:num)', 'Racepack::edit/$1');
-        $routes->post('update/(:num)', 'Racepack::update/$1');
+        $routes->post('update/(:num)', 'Racepack::store');
         $routes->get('show/(:num)', 'Racepack::show/$1');
         $routes->get('delete/(:num)', 'Racepack::delete/$1');
     });
