@@ -31,6 +31,7 @@ echo $this->section('content');
                 <?php endif; ?>
 
                 <?= form_open('auth/cek_login', ['class' => 'login-form', 'role' => 'form', 'id' => 'loginForm']) ?>
+                <?php echo form_hidden('return_url', $_GET['return_url'] ?? ''); ?>
                 <h3 class="login-heading">Login Pengguna</h3>
 
                 <div class="form-group">

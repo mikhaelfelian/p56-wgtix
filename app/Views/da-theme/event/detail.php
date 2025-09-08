@@ -167,7 +167,7 @@ echo $this->section('content');
                                                                 <i class="fa fa-shopping-cart"></i> <span class="btn-text">Beli</span>
                                                             </button>
                                                         <?php else: ?>
-                                                            <a href="<?= base_url('auth/login') ?>" class="btn btn-warning btn-sm">
+                                                            <a href="<?= base_url('auth/login?return_url=' . urlencode(current_url())) ?>" class="btn btn-warning btn-sm">
                                                                 <i class="fa fa-sign-in"></i> Login untuk membeli
                                                             </a>
                                                         <?php endif; ?>

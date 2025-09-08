@@ -138,9 +138,10 @@ class Auth extends BaseController
     {
         $validasi = \Config\Services::validation();
         
-        $username = $this->request->getVar('user');
-        $password = $this->request->getVar('pass');
-        $remember = $this->request->getVar('ingat');
+        $username          = $this->request->getVar('user');
+        $password          = $this->request->getVar('pass');
+        $remember          = $this->request->getVar('ingat');
+        $return_url        = $this->request->getVar('return_url');
         $recaptchaResponse = $this->request->getVar('recaptcha_response');
         
         // reCAPTCHA check
@@ -206,7 +207,13 @@ class Auth extends BaseController
             ]);
         }
 
-        // Redirect ke halaman utama user setelah login
+        // Redirect ke $return_url jika ada, jika tidak ke halaman utama
+        if (!empty($return_url)) {
+            return redirect()->to($return_url)->with('toastr', [
+                'type' => 'success',
+                'message' => 'Login berhasil!'
+            ]);
+        }
         return redirect()->to('/')->with('toastr', [
             'type' => 'success',
             'message' => 'Login berhasil!'

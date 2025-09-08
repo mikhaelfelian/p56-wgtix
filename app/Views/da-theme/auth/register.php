@@ -40,7 +40,7 @@ echo $this->section('content');
             </div>
             <div class="row">
                 <div class="col-sm-6 form-group">
-                    <label for="username">Nama Pengguna</label>
+                    <label for="username">Nama Pengguna <i>* Username</i></label>
                     <?= form_input([
                         'name' => 'username',
                         'id' => 'username',
@@ -99,11 +99,12 @@ echo $this->section('content');
             <h3 class="checkout-heading child2">Informasi Tambahan</h3>
             <div class="row">
                 <div class="col-sm-6 form-group">
-                    <label for="company">Perusahaan</label>
+                    <label for="company">Instansi</label>
                     <?= form_input([
                         'name' => 'company',
                         'id' => 'company',
                         'class' => 'form-control',
+                        'placeholder' => 'masukkan instansi cth : PERCASI, PERBASI, PSMTI, dll',
                         'value' => old('company')
                     ]) ?>
                 </div>
@@ -119,7 +120,7 @@ echo $this->section('content');
                             'title' => 'Masukkan nomor telepon Indonesia yang valid (contoh: 085741220427)',
                             'value' => old('phone'),
                             'maxlength' => '15'
-                        ]) ?>
+                        ]) ?>   
                 </div>
             </div>
             <div class="row">
