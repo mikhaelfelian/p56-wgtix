@@ -840,72 +840,21 @@ class Sale extends BaseController{
 
         // Header background (semi-transparent over bg)
         $headerH = 1.8; // 1.8cm header height for compact ticket
-        // $pdf->SetAlpha(0.85);
-        // $pdf->SetFillColor(0, 123, 255);
-        // $pdf->Rect($ticketX, $ticketY, $ticketW, $headerH, 'F');
-        // $pdf->SetAlpha(1);
 
         // Decorative side strip (semi-transparent over bg)
         $sideStripW = 4.0;
         $sideStripX = $ticketX + $ticketW - $sideStripW;
         $sideStripY = $ticketY + $headerH;
         $sideStripH = $ticketH - $headerH;
-        // $pdf->SetAlpha(0.85);
-        // $pdf->SetFillColor(240, 240, 240);
-        // $pdf->Rect($sideStripX, $sideStripY, $sideStripW, $sideStripH, 'F');
-        // $pdf->SetAlpha(1);
-
-        // Header content
-        // $pdf->SetTextColor(255, 255, 255);
-        // $pdf->SetFont('helvetica', 'B', 13);
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + 0.3);
-        // $pdf->Cell(10, 0.6, 'WGTIX Event Management', 0, 1, 'L');
-
-        // $pdf->SetFont('helvetica', '', 7);
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + 0.9);
-        // $pdf->Cell(10, 0.5, 'EVENT TICKET', 0, 1, 'L');
-
-        // // Ticket number
-        // $pdf->SetFont('helvetica', 'B', 9);
-        // $pdf->SetXY($ticketX + 10, $ticketY + 0.3);
-        // $pdf->Cell(9.5, 0.6, 'TICKET #' . str_pad($orderDetail->id, 6, '0', STR_PAD_LEFT), 0, 1, 'R');
-
-        // $pdf->SetFont('helvetica', '', 7);
-        // $pdf->SetXY($ticketX + 10, $ticketY + 0.9);
-        // $pdf->Cell(9.5, 0.5, 'Invoice: ' . $order->invoice_no, 0, 1, 'R');
-
-        // Event info
-        // $pdf->SetTextColor(0, 0, 0);
-        // $pdf->SetFont('helvetica', 'B', 13);
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 0.2);
-        // $pdf->Cell($ticketW - $sideStripW - 1, 0.7, $event->title, 0, 1, 'L');
-
-        // $pdf->SetFont('helvetica', '', 8);
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 1.0);
-        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Date: ' . date('d F Y', strtotime($order->invoice_date)), 0, 1, 'L');
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 1.5);
-        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Time: 09:00 - 17:00 WIB', 0, 1, 'L');
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 2.0);
-        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Location: ' . $event->location, 0, 1, 'L');
-        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 2.5);
-        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Category: ' . ($orderDetail->price_description ?: 'General'), 0, 1, 'L');
 
         // Participant info
         $itemData = json_decode($orderDetail->item_data, true) ?: [];
         $currentY = $ticketY + $headerH + 3.0;
         if (isset($itemData['participant_name'])) {
-            // $pdf->SetFont('helvetica', 'B', 9);
-            // $pdf->SetXY($ticketX + 0.5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Participant:', 0, 1, 'L');
-            // $currentY += 0.5;
-            // $pdf->SetFont('helvetica', '', 8);
-            // $pdf->SetXY($ticketX + 0.5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, $itemData['participant_name'], 0, 1, 'L');
             $currentY += 0.5;
 
             if (isset($itemData['participant_number'])) {
                 $pdf->SetXY($ticketX + 0.5, $currentY);
-                // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Participant #: ' . $itemData['participant_number'], 0, 1, 'L');
                 $currentY += 0.5;
             }
         }
@@ -983,31 +932,18 @@ class Sale extends BaseController{
         }
 
         // Ticket ID and count
-        $nama = json_decode($orderDetail->item_data, true);
         $pdf->SetFont('helvetica', '', 18);
-        $pdf->SetXY(2.5, $qrBoxY - 0.2);
-        $pdf->Cell($sideStripW - 1.50, 0.4,  ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
+        $pdf->SetXY(2.5, $qrBoxY - 0.24);
+        $pdf->Cell($sideStripW - 1.50, 0.4,  ($itemData['participant_number'] != 0 ? $itemData['participant_number'] : ''), 0, 1, 'L');
         $pdf->SetFont('helvetica', 'B', 18);
         $pdf->SetXY(8.45, $qrBoxY - 0.2);
-        $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($nama['participant_name']), 0, 1, 'L');
+        $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($itemData['participant_name']), 0, 1, 'L');
 
-        // // Terms and conditions (shortened for compact ticket)
-        // $pdf->SetFont('helvetica', '', 6);
-        // $pdf->SetTextColor(100, 100, 100);
-        // $pdf->SetXY($sideStripX, $ticketY + $ticketH - 1.8);
-        // $pdf->MultiCell($sideStripW, 0.3, "Terms:\n• Non-transferable\n• One entry\n• No refund", 0, 'L');
-
-        // Payment status
-        $pdf->SetFont('helvetica', 'B', 8);
-        if ($order->payment_status === 'paid') {
-            $pdf->SetTextColor(0, 150, 0);
-            $pdf->SetXY($qrBoxX + 0.1, 7);
-            $pdf->Cell($sideStripW, 0.4, 'PAID', 0, 1, 'C');
-        } else {
-            $pdf->SetTextColor(200, 0, 0);        
-            $pdf->SetXY($qrBoxX + 0.1, 7);
-            $pdf->Cell($sideStripW, 0.4, 'UNPAID', 0, 1, 'C');
-        }
+        // Terms and conditions (shortened for compact ticket)
+        $pdf->SetFont('helvetica', '', 6);
+        $pdf->SetTextColor(100, 100, 100);
+        $pdf->SetXY($sideStripX - 0.60, $ticketY + $ticketH - 1.90);
+        $pdf->MultiCell($sideStripW, 0.3, "Terms:\n• Non-transferable\n• One entry - No refund \n\nTanggal Pembelian : ".tgl_indo8($order->invoice_date), 0, 'L');
 
         // Reset colors
         $pdf->SetTextColor(0, 0, 0);
