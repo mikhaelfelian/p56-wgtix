@@ -989,7 +989,7 @@ class Sale extends BaseController{
         $pdf->Cell($sideStripW - 1.50, 0.4,  ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
         $pdf->SetFont('helvetica', 'B', 18);
         $pdf->SetXY(8.45, $qrBoxY - 0.2);
-        $pdf->Cell($sideStripW + 2.10, 0.4, $nama['participant_name'], 0, 1, 'L');
+        $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($nama['participant_name']), 0, 1, 'L');
 
         // // Terms and conditions (shortened for compact ticket)
         // $pdf->SetFont('helvetica', '', 6);
