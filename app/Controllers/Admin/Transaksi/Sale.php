@@ -158,7 +158,7 @@ class Sale extends BaseController
                     'nama'          => $ps->participant_name,
                 ];
 
-                if (!empty($ps->participant_id)) {
+                if (!empty($ps->participant_id) && $ps->participant_id != 0) {
                     $data['id'] = $ps->participant_id;
                 }
 
