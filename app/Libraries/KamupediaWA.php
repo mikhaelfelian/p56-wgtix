@@ -24,7 +24,7 @@ class KamupediaWA
     {
         // Get API key from parameter or environment variable, or throw if not set
         $this->apiKey       = $apiKey      ?? getenv('WASENDER_TOKEN');
-        $this->senderNumber = $senderNumber ?? getenv('WASENDER_SENDER');
+        $this->senderNumber = $senderNumber ?? getenv('WASENDER_ID');
         $this->apiUrl       = $apiUrl      ?? 'https://wasender.kamupedia.com/apiv2/send-message.php';
         $this->timeout      = $timeout     ?? 30;
         
