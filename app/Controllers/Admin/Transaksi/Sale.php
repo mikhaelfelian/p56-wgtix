@@ -149,7 +149,6 @@ class Sale extends BaseController
                 $ps = json_decode($s->item_data);
 
                 $data = [
-                    'id'            => $ps->participant_id,
                     'id_penjualan'  => $invoiceId,
                     'id_kategori'   => 0,
                     'id_platform'   => 0,
@@ -158,6 +157,10 @@ class Sale extends BaseController
                     'kode'          => $this->pesertaModel->generateKode($s->event_id),
                     'nama'          => $ps->participant_name,
                 ];
+
+                if ($ps->participant_id) {
+                    $data['id'] = $ps->participant_id;
+                }
 
                 $this->pesertaModel->save($data);
                 $lastPesertaId = $this->pesertaModel->insertID() ?? $ps->participant_id;
