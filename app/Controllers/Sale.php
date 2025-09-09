@@ -498,16 +498,22 @@ class Sale extends BaseController{
                 $smtpUser = getenv('smtp_user');
                 $smtpPass = getenv('smtp_pass');
 
+                // Ensure $smtpPort is an integer, fallback to 465 if not set or not numeric
+                $smtpPortInt = 465;
+                if (is_numeric($smtpPort)) {
+                    $smtpPortInt = (int)$smtpPort;
+                }
+
                 $emailConfig = [
-                    'protocol'  => 'smtp',
-                    'SMTPHost'  => $smtpHost,
-                    'SMTPPort'  => $smtpPort,
-                    'SMTPUser'  => $smtpUser,
-                    'SMTPPass'  => $smtpPass,
-                    'mailType'  => 'html',
-                    'charset'   => 'utf-8',
-                    'SMTPTimeout' => 10,
-                    'SMTPCrypto' => 'tls',
+                    'protocol'     => 'smtp',
+                    'SMTPHost'     => $smtpHost,
+                    'SMTPPort'     => $smtpPort,
+                    'SMTPUser'     => $smtpUser,
+                    'SMTPPass'     => $smtpPass,
+                    'mailType'     => 'html',
+                    'charset'      => 'utf-8',
+                    'SMTPTimeout'  => 10,
+                    'SMTPCrypto'   => 'tls',
                 ];
                 $email->initialize($emailConfig);
 
@@ -519,12 +525,17 @@ class Sale extends BaseController{
                 if ($userEmail) {
                     $email->setTo($userEmail);
                     $email->setFrom($smtpUser, $this->pengaturan->judul);
-                    $email->setSubject('Order Berhasil - ' . $data['no_nota']);
+
+                    // Use order object for email subject and body, fallback if fields missing
+                    $invoiceNo = isset($data['no_nota']) ? $data['no_nota'] : (isset($data['invoice_no']) ? $data['invoice_no'] : '');
+                    $subtotal = isset($data['subtotal']) ? $data['subtotal'] : (isset($data['total_amount']) ? $data['total_amount'] : 0);
+
+                    $email->setSubject('Order Berhasil - ' . $invoiceNo);
 
                     // Compose email message
                     $message = '<h3>Terima kasih, pesanan Anda berhasil dibuat!</h3>';
-                    $message .= '<p>Nomor Invoice: <b>' . htmlspecialchars($data['no_nota']) . '</b></p>';
-                    $message .= '<p>Total: <b>Rp ' . number_format($data['subtotal'], 0, ',', '.') . '</b></p>';
+                    $message .= '<p>Nomor Invoice: <b>' . htmlspecialchars($invoiceNo) . '</b></p>';
+                    $message .= '<p>Total: <b>Rp ' . number_format($subtotal, 0, ',', '.') . '</b></p>';
                     $message .= '<p>Status Pembayaran: <b>Pending</b></p>';
                     $message .= '<p>Silakan lakukan pembayaran sesuai instruksi di halaman order Anda.</p>';
                     $message .= '<br><small>Email ini dikirim otomatis oleh sistem "' . $this->pengaturan->judul . '".</small>';

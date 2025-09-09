@@ -22,13 +22,11 @@ class KamupediaWA
 
     public function __construct($apiKey = null, $senderNumber = null, $apiUrl = null, $timeout = null)
     {
-        // Get API key from parameter or environment variable
-        $this->apiKey = $apiKey ?? getenv('WASENDER_TOKEN');
-        
-        // Use provided parameters or fall back to defaults
-        $this->senderNumber = $senderNumber ?? '309448';
-        $this->apiUrl = $apiUrl ?? 'https://wasender.kamupedia.com/apiv2/send-message.php';
-        $this->timeout = $timeout ?? 30;
+        // Get API key from parameter or environment variable, or throw if not set
+        $this->apiKey       = $apiKey      ?? getenv('WASENDER_TOKEN');
+        $this->senderNumber = $senderNumber ?? getenv('WASENDER_SENDER');
+        $this->apiUrl       = $apiUrl      ?? 'https://wasender.kamupedia.com/apiv2/send-message.php';
+        $this->timeout      = $timeout     ?? 30;
         
         if (empty($this->apiKey)) {
             throw new \Exception('KamupediaWA API key not found. Please provide API key or set WASENDER_TOKEN environment variable.');

@@ -241,7 +241,7 @@ class Sale extends BaseController
                 $emailConfig = [
                     'protocol'  => 'smtp',
                     'SMTPHost'  => $smtpHost,
-                    'SMTPPort'  => $smtpPortInt,
+                    'SMTPPort'  => $smtpPort,
                     'SMTPUser'  => $smtpUser,
                     'SMTPPass'  => $smtpPass,
                     'mailType'  => 'html',
