@@ -14,17 +14,20 @@ namespace App\Controllers\Admin;
 use App\Controllers\BaseController;
 use App\Models\PesertaModel;
 use App\Models\EventsModel;
+use App\Models\TransJualDetModel;
 
 class Absen extends BaseController
 {
     protected $pesertaModel;
     protected $eventsModel;
+    protected $transJualDetModel;
 
     public function __construct()
     {
         parent::__construct();
-        $this->pesertaModel = new PesertaModel();
-        $this->eventsModel = new EventsModel();
+        $this->pesertaModel         = new PesertaModel();
+        $this->eventsModel          = new EventsModel();
+        $this->transJualDetModel    = new TransJualDetModel();
     }
 
     /**
@@ -65,69 +68,153 @@ class Absen extends BaseController
      */
     public function scan()
     {
-        if (!$this->request->isAJAX()) {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Invalid request method',
+                    'error_code' => 'INVALID_METHOD'
+                ]);
+            }
+
+            $qrCode = $this->request->getPost('qr_code');
+            $eventId = $this->request->getPost('event_id');
+
+            // Debug logging
+            log_message('info', 'Absen scan: QR=' . $qrCode . ', EventID=' . $eventId);
+
+            // Validate input
+            if (!$qrCode || !$eventId) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'QR Code dan Event ID diperlukan',
+                    'error_code' => 'MISSING_PARAMETERS'
+                ]);
+            }
+
+            // Validate event exists
+            $event = $this->eventsModel->find($eventId);
+            if (!$event) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Event tidak ditemukan',
+                    'error_code' => 'EVENT_NOT_FOUND'
+                ]);
+            }
+
+            // Find participant by QR code and event
+            // QR content format: {detail_id}|{invoice_id}|{timestamp}
+            $participant = null;
+            
+            // First, try to find by exact QR code match (in case it's stored as base64)
+            $participant = $this->pesertaModel->where('qr_code', $qrCode)
+                                            ->where('id_event', $eventId)
+                                            ->where('status !=', -1)
+                                            ->first();
+            
+            // If not found, try to find by order detail ID from QR content
+            if (!$participant && strpos($qrCode, '|') !== false) {
+                $qrParts = explode('|', $qrCode);
+                if (count($qrParts) >= 2 && is_numeric($qrParts[0])) {
+                    $detailId = (int)$qrParts[0];
+                    $invoiceId = (int)$qrParts[1];
+                    
+                    // Find the order detail
+                    $orderDetail = $this->transJualDetModel->find($detailId);
+                    
+                    if ($orderDetail && $orderDetail->id_penjualan == $invoiceId) {
+                        // Find participant by transjualdet detail id (id_transjual_det)
+                        // $participant = $this->pesertaModel->where('id_transjual_det', $detailId)
+                        //                                 ->where('id_event', $eventId)
+                        //                                 ->where('status !=', -1)
+                        //                                 ->first();
+
+                        $sql_det = $this->transJualDetModel->where('id', $detailId)->first();
+                        $ps = json_decode($sql_det->item_data);
+                        $participant = $this->pesertaModel->where('id', $ps->participant_id)
+                                                        ->where('id_event', $eventId)
+                                                        ->where('status !=', -1)
+                                                        ->first();
+                    }
+                }
+            }
+
+            // Debug: Check what participants exist for this event
+            $allParticipants = $this->pesertaModel->where('id_event', $eventId)
+                                                ->where('status !=', -1)
+                                                ->findAll();
+            
+            log_message('info', 'Absen debug: Found ' . count($allParticipants) . ' participants for event ' . $eventId);
+            log_message('info', 'Absen debug: Looking for QR code: ' . $qrCode);
+            
+            // Debug QR code parsing
+            if (strpos($qrCode, '|') !== false) {
+                $qrParts = explode('|', $qrCode);
+                log_message('info', 'Absen debug: QR code parts: ' . json_encode($qrParts));
+                if (count($qrParts) >= 2 && is_numeric($qrParts[0])) {
+                    log_message('info', 'Absen debug: Extracted detail ID: ' . $qrParts[0] . ', Invoice ID: ' . $qrParts[1]);
+                }
+            }
+
+            if (!$participant) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Peserta tidak ditemukan atau QR Code tidak valid untuk event ini',
+                    'error_code' => 'PARTICIPANT_NOT_FOUND',
+                    'debug_info' => [
+                        'qr_code' => $qrCode,
+                        'event_id' => $eventId,
+                        'total_participants' => count($allParticipants),
+                        'qr_parsed_detail_id' => (strpos($qrCode, '|') !== false) ? explode('|', $qrCode)[0] : null,
+                        'qr_parsed_invoice_id' => (strpos($qrCode, '|') !== false && count(explode('|', $qrCode)) >= 2) ? explode('|', $qrCode)[1] : null
+                    ]
+                ]);
+            }
+
+            // Check if already attended
+            if ($participant->status_hadir == '1') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Peserta sudah melakukan absensi sebelumnya',
+                    'error_code' => 'ALREADY_ATTENDED',
+                    'participant' => [
+                        'nama' => $participant->nama,
+                        'email' => $participant->email,
+                        'status_hadir' => $participant->status_hadir
+                    ]
+                ]);
+            }
+
+            // Update attendance status
+            $updateData = [
+                'status_hadir' => '1',
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            if ($this->pesertaModel->update($participant->id, $updateData)) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Absensi berhasil dicatat',
+                    'participant' => [
+                        'nama' => $participant->nama,
+                        'email' => $participant->email,
+                        'status_hadir' => '1'
+                    ]
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mencatat absensi. Silakan coba lagi.',
+                    'error_code' => 'UPDATE_FAILED'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Absen scan error: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Invalid request method'
-            ]);
-        }
-
-        $qrCode = $this->request->getPost('qr_code');
-        $eventId = $this->request->getPost('event_id');
-
-        if (!$qrCode || !$eventId) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'QR Code dan Event ID diperlukan'
-            ]);
-        }
-
-        // Find participant by QR code and event
-        $participant = $this->pesertaModel->where('qr_code', $qrCode)
-                                        ->where('id_event', $eventId)
-                                        ->where('status !=', -1)
-                                        ->first();
-
-        if (!$participant) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Peserta tidak ditemukan atau QR Code tidak valid'
-            ]);
-        }
-
-        // Check if already attended
-        if ($participant->status_hadir == '1') {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Peserta sudah melakukan absensi sebelumnya',
-                'participant' => [
-                    'nama' => $participant->nama,
-                    'email' => $participant->email,
-                    'status_hadir' => $participant->status_hadir
-                ]
-            ]);
-        }
-
-        // Update attendance status
-        $updateData = [
-            'status_hadir' => '1',
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-
-        if ($this->pesertaModel->update($participant->id, $updateData)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Absensi berhasil dicatat',
-                'participant' => [
-                    'nama' => $participant->nama,
-                    'email' => $participant->email,
-                    'status_hadir' => '1'
-                ]
-            ]);
-        } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Gagal mencatat absensi'
+                'message' => 'Terjadi kesalahan saat memproses QR Code',
+                'error_code' => 'SYSTEM_ERROR'
             ]);
         }
     }
@@ -168,29 +255,50 @@ class Absen extends BaseController
      */
     public function reset($eventId = null)
     {
-        if (!$this->request->isAJAX()) {
+        try {
+            if (!$this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Invalid request method',
+                    'error_code' => 'INVALID_METHOD'
+                ]);
+            }
+
+            $event = $this->eventsModel->find($eventId);
+            if (!$event) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Event tidak ditemukan',
+                    'error_code' => 'EVENT_NOT_FOUND'
+                ]);
+            }
+
+            // Reset all attendance for this event
+            $result = $this->pesertaModel->where('id_event', $eventId)
+                                      ->set(['status_hadir' => '0', 'updated_at' => date('Y-m-d H:i:s')])
+                                      ->update();
+
+            if ($result) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Absensi berhasil direset',
+                    'reset_count' => $this->pesertaModel->affectedRows()
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mereset absensi',
+                    'error_code' => 'RESET_FAILED'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Absen reset error: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Invalid request method'
+                'message' => 'Terjadi kesalahan saat mereset absensi',
+                'error_code' => 'SYSTEM_ERROR'
             ]);
         }
-
-        $event = $this->eventsModel->find($eventId);
-        if (!$event) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Event tidak ditemukan'
-            ]);
-        }
-
-        // Reset all attendance for this event
-        $this->pesertaModel->where('id_event', $eventId)
-                          ->set(['status_hadir' => '0', 'updated_at' => date('Y-m-d H:i:s')])
-                          ->update();
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'Absensi berhasil direset'
-        ]);
     }
 }

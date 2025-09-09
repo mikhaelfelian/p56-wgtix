@@ -163,7 +163,7 @@ class Sale extends BaseController
                 }
 
                 $this->pesertaModel->save($data);
-                $lastPesertaId = $this->pesertaModel->insertID() ?? $ps->participant_id;
+                $lastPesertaId = (!empty($ps->participant_id) && $ps->participant_id != 0 ? $ps->participant_id : $this->pesertaModel->insertID());
 
                 $peserta = [
                     "participant_name"     => $ps->participant_name,

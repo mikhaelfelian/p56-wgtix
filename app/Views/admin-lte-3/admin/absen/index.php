@@ -750,6 +750,8 @@
 <script>
 let html5QrcodeScanner;
 let attendanceLog = [];
+let isProcessing = false; // Flag to prevent double submission
+let lastScanTime = 0; // Track last scan time for debouncing
 
 $(document).ready(function() {
     // Initialize QR Scanner
@@ -757,6 +759,8 @@ $(document).ready(function() {
     
     // Manual QR input
     $('#manual-scan-btn').click(function() {
+        if (isProcessing) return; // Prevent double submission
+        
         const qrCode = $('#manual-qr').val().trim();
         if (qrCode) {
             processQRCode(qrCode);
@@ -768,7 +772,7 @@ $(document).ready(function() {
     
     // Enter key for manual input
     $('#manual-qr').keypress(function(e) {
-        if (e.which === 13) {
+        if (e.which === 13 && !isProcessing) {
             $('#manual-scan-btn').click();
         }
     });
@@ -790,9 +794,10 @@ function initQRScanner() {
     html5QrcodeScanner = new Html5QrcodeScanner(
         "qr-reader",
         { 
-            fps: 10, 
+            fps: 5, // Reduced FPS to prevent multiple scans
             qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
+            aspectRatio: 1.0,
+            rememberLastUsedCamera: true
         },
         false
     );
@@ -801,7 +806,18 @@ function initQRScanner() {
 }
 
 function onScanSuccess(decodedText, decodedResult) {
-    processQRCode(decodedText);
+    const currentTime = Date.now();
+    const timeSinceLastScan = currentTime - lastScanTime;
+    
+    // Only process if not already processing and at least 2 seconds since last scan
+    if (!isProcessing && timeSinceLastScan > 2000) {
+        lastScanTime = currentTime;
+        processQRCode(decodedText);
+    } else if (isProcessing) {
+        console.log('Already processing QR code, ignoring duplicate scan');
+    } else {
+        console.log('Scan too soon, ignoring (debounced)');
+    }
 }
 
 function onScanFailure(error) {
@@ -809,6 +825,18 @@ function onScanFailure(error) {
 }
 
 function processQRCode(qrCode) {
+    // Prevent double submission
+    if (isProcessing) {
+        console.log('Already processing QR code, ignoring duplicate scan');
+        return;
+    }
+    
+    isProcessing = true;
+    
+    // Disable manual input while processing
+    $('#manual-qr').prop('disabled', true);
+    $('#manual-scan-btn').prop('disabled', true).text('Processing...');
+    
     $.ajax({
         url: '<?= base_url('admin/events/absen/scan') ?>',
         type: 'POST',
@@ -835,6 +863,15 @@ function processQRCode(qrCode) {
         error: function(xhr, status, error) {
             showError('Error', 'Terjadi kesalahan saat memproses QR Code');
             addToAttendanceLog({nama: 'Unknown', email: qrCode}, 'error');
+        },
+        complete: function() {
+            // Re-enable input after processing
+            isProcessing = false;
+            $('#manual-qr').prop('disabled', false);
+            $('#manual-scan-btn').prop('disabled', false).text('Scan');
+            
+            // Clear manual input
+            $('#manual-qr').val('');
         }
     });
 }

@@ -88,6 +88,8 @@ class Filters extends BaseFilters
                 'admin/event-gallery/upload',
                 'admin/event-gallery/update-description',
                 'admin/berita-gallery/upload',
+                'admin/events/absen/scan',
+                'admin/events/absen/reset/*',
                 'cart/getItems',
                 'cart/getCount',
                 'cart/getPlatforms',

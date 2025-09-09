@@ -193,14 +193,14 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('toggle-status/(:num)', 'EventGallery::toggleStatus/$1');
     });
 
-        // Admin Events Absen routes
-        $routes->group('events', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
-            $routes->get('absen/(:num)', 'Absen::index/$1');
-            $routes->post('absen/scan', 'Absen::scan');
-            $routes->get('absen/get-stats/(:num)', 'Absen::getStats/$1');
-            $routes->post('absen/reset/(:num)', 'Absen::reset/$1');
-            $routes->get('get-participants/(:num)', 'Events::getParticipants/$1');
-        });
+    // Admin Events Absen routes
+    $routes->group('events', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
+        $routes->get('absen/(:num)', 'Absen::index/$1');
+        $routes->post('absen/scan', 'Absen::scan');
+        $routes->get('absen/get-stats/(:num)', 'Absen::getStats/$1');
+        $routes->post('absen/reset/(:num)', 'Absen::reset/$1');
+        $routes->get('get-participants/(:num)', 'Events::getParticipants/$1');
+    });
 
     // Admin Peserta routes
     $routes->group('peserta', ['namespace' => 'App\Controllers\Admin'], function ($routes) {
