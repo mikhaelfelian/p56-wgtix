@@ -241,7 +241,7 @@ class Sale extends BaseController
                 // Get user email
                 $userEmail = null;
                 if ($this->ionAuth->loggedIn()) {
-                    $userEmail = $this->ionAuth->user()->row()->email ?? null;
+                    $userEmail = $this->ionAuth->user($order->id)->row()->email ?? null;
                 }
                 if ($userEmail) {
                     $email->setTo($userEmail);
