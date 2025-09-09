@@ -589,8 +589,10 @@ class Sale extends BaseController
 
         try {
             // Create a master PDF to combine all individual tickets
-            $pdfHeightMm = 330 * 0.264583; // ≈ 47.625 mm
-            $masterPdf = new \TCPDF('L', 'mm', array(210, $pdfHeightMm), true, 'UTF-8', false);
+            // Use centimeters for page size (TCPDF supports 'cm' as unit)
+            $pdfWidthCm = 21.0; // 210mm = 21cm (A4 width)
+            $pdfHeightCm = 8.5; // Example: 11cm height (adjust as needed)
+            $masterPdf = new \TCPDF('L', 'cm', array($pdfWidthCm, $pdfHeightCm), true, 'UTF-8', false);
             $masterPdf->SetCreator('WGTIX System');
             $masterPdf->SetAuthor('WGTIX Event Management');
             $masterPdf->SetTitle('Event Tickets - Invoice #' . $order->invoice_no);
@@ -613,11 +615,9 @@ class Sale extends BaseController
                 $this->drawTicketInMasterPdf($masterPdf, $orderDetail, $order, $user, $event, $index + 1, count($orderDetails));
             }
             
-            // Output PDF inline in browser (not as download)
+            // Output PDF as a download (attachment)
             $filename = 'All_Tickets_' . $order->invoice_no . '_' . date('Y-m-d') . '.pdf';
-            // Output the PDF directly to the browser (inline)
             $masterPdf->Output($filename, 'I');
-            // Stop further execution after outputting PDF
             exit;
                 
         } catch (\Exception $e) {
@@ -634,16 +634,16 @@ class Sale extends BaseController
     {
         // Use ticket background image (domain path, not C:\...)
         $bgPath = FCPATH . 'file/app/bg_tiket.png';
-        // Set ticket size (A5 landscape: 210 x 148.5 mm), but ticket area is 200x75mm
-        $ticketX = 5;
-        $ticketY = 5;
-        $ticketW = 200;
-        $ticketH = 75; // Adjusted to 75mm height
+        // Set ticket size (A5 landscape: 21 x 14.85 cm), but ticket area is 20x7.5cm
+        $ticketX = 0.5; // 0.5cm margin
+        $ticketY = 0.5;
+        $ticketW = 20.0;
+        $ticketH = 7.5; // 7.5cm height
 
         // If using a background image, get its real size and fit to ticket area
         if (file_exists($bgPath)) {
             list($imgWidthPx, $imgHeightPx) = getimagesize($bgPath);
-            // TCPDF uses mm, so we use the ticketW and ticketH as the image size
+            // TCPDF uses cm, so we use the ticketW and ticketH as the image size
             $pdf->Image($bgPath, $ticketX, $ticketY, $ticketW, $ticketH, 'PNG');
         } else {
             // Fallback: white background if image not found
@@ -652,19 +652,19 @@ class Sale extends BaseController
         }
 
         // Ticket border
-        $pdf->SetDrawColor(0, 123, 255);
-        $pdf->SetLineWidth(1);
-        $pdf->Rect($ticketX, $ticketY, $ticketW, $ticketH, 'D');
+        // $pdf->SetDrawColor(0, 123, 255);
+        // $pdf->SetLineWidth(0.1); // 1mm = 0.1cm
+        // $pdf->Rect($ticketX, $ticketY, $ticketW, $ticketH, 'D');
 
         // Header background (semi-transparent over bg)
-        $headerH = 18; // Adjusted header height for compact ticket
+        $headerH = 1.8; // 1.8cm header height for compact ticket
         // $pdf->SetAlpha(0.85);
         // $pdf->SetFillColor(0, 123, 255);
         // $pdf->Rect($ticketX, $ticketY, $ticketW, $headerH, 'F');
         // $pdf->SetAlpha(1);
 
         // Decorative side strip (semi-transparent over bg)
-        $sideStripW = 40;
+        $sideStripW = 4.0;
         $sideStripX = $ticketX + $ticketW - $sideStripW;
         $sideStripY = $ticketY + $headerH;
         $sideStripH = $ticketH - $headerH;
@@ -676,85 +676,86 @@ class Sale extends BaseController
         // Header content
         // $pdf->SetTextColor(255, 255, 255);
         // $pdf->SetFont('helvetica', 'B', 13);
-        // $pdf->SetXY($ticketX + 5, $ticketY + 3);
-        // $pdf->Cell(100, 6, 'WGTIX Event Management', 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + 0.3);
+        // $pdf->Cell(10, 0.6, 'WGTIX Event Management', 0, 1, 'L');
 
         // $pdf->SetFont('helvetica', '', 7);
-        // $pdf->SetXY($ticketX + 5, $ticketY + 9);
-        // $pdf->Cell(100, 5, 'EVENT TICKET', 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + 0.9);
+        // $pdf->Cell(10, 0.5, 'EVENT TICKET', 0, 1, 'L');
 
         // // Ticket number
         // $pdf->SetFont('helvetica', 'B', 9);
-        // $pdf->SetXY($ticketX + 100, $ticketY + 3);
-        // $pdf->Cell(95, 6, 'TICKET #' . str_pad($orderDetail->id, 6, '0', STR_PAD_LEFT), 0, 1, 'R');
+        // $pdf->SetXY($ticketX + 10, $ticketY + 0.3);
+        // $pdf->Cell(9.5, 0.6, 'TICKET #' . str_pad($orderDetail->id, 6, '0', STR_PAD_LEFT), 0, 1, 'R');
 
         // $pdf->SetFont('helvetica', '', 7);
-        // $pdf->SetXY($ticketX + 100, $ticketY + 9);
-        // $pdf->Cell(95, 5, 'Invoice: ' . $order->invoice_no, 0, 1, 'R');
+        // $pdf->SetXY($ticketX + 10, $ticketY + 0.9);
+        // $pdf->Cell(9.5, 0.5, 'Invoice: ' . $order->invoice_no, 0, 1, 'R');
 
         // Event info
         // $pdf->SetTextColor(0, 0, 0);
         // $pdf->SetFont('helvetica', 'B', 13);
-        // $pdf->SetXY($ticketX + 5, $ticketY + $headerH + 2);
-        // $pdf->Cell($ticketW - $sideStripW - 10, 7, $event->title, 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 0.2);
+        // $pdf->Cell($ticketW - $sideStripW - 1, 0.7, $event->title, 0, 1, 'L');
 
         // $pdf->SetFont('helvetica', '', 8);
-        // $pdf->SetXY($ticketX + 5, $ticketY + $headerH + 10);
-        // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Date: ' . date('d F Y', strtotime($order->invoice_date)), 0, 1, 'L');
-        // $pdf->SetXY($ticketX + 5, $ticketY + $headerH + 15);
-        // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Time: 09:00 - 17:00 WIB', 0, 1, 'L');
-        // $pdf->SetXY($ticketX + 5, $ticketY + $headerH + 20);
-        // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Location: ' . $event->location, 0, 1, 'L');
-        // $pdf->SetXY($ticketX + 5, $ticketY + $headerH + 25);
-        // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Category: ' . ($orderDetail->price_description ?: 'General'), 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 1.0);
+        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Date: ' . date('d F Y', strtotime($order->invoice_date)), 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 1.5);
+        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Time: 09:00 - 17:00 WIB', 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 2.0);
+        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Location: ' . $event->location, 0, 1, 'L');
+        // $pdf->SetXY($ticketX + 0.5, $ticketY + $headerH + 2.5);
+        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Category: ' . ($orderDetail->price_description ?: 'General'), 0, 1, 'L');
 
         // Participant info
         $itemData = json_decode($orderDetail->item_data, true) ?: [];
-        $currentY = $ticketY + $headerH + 30;
+        $currentY = $ticketY + $headerH + 3.0;
         if (isset($itemData['participant_name'])) {
             // $pdf->SetFont('helvetica', 'B', 9);
-            // $pdf->SetXY($ticketX + 5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Participant:', 0, 1, 'L');
-            // $currentY += 5;
+            // $pdf->SetXY($ticketX + 0.5, $currentY);
+            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Participant:', 0, 1, 'L');
+            // $currentY += 0.5;
             // $pdf->SetFont('helvetica', '', 8);
-            // $pdf->SetXY($ticketX + 5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 10, 4, $itemData['participant_name'], 0, 1, 'L');
-            $currentY += 5;
+            // $pdf->SetXY($ticketX + 0.5, $currentY);
+            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, $itemData['participant_name'], 0, 1, 'L');
+            $currentY += 0.5;
 
             if (isset($itemData['participant_number'])) {
-                $pdf->SetXY($ticketX + 5, $currentY);
-                // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Participant #: ' . $itemData['participant_number'], 0, 1, 'L');
-                $currentY += 5;
+                $pdf->SetXY($ticketX + 0.5, $currentY);
+                // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Participant #: ' . $itemData['participant_number'], 0, 1, 'L');
+                $currentY += 0.5;
             }
         }
 
         // Customer info
         if ($user) {
             $pdf->SetFont('helvetica', 'B', 8);
-            $pdf->SetXY($ticketX + 5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Ticket Holder:', 0, 1, 'L');
-            $currentY += 4;
+            $pdf->SetXY($ticketX + 0.5, $currentY);
+            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Ticket Holder:', 0, 1, 'L');
+            $currentY += 0.4;
             $pdf->SetFont('helvetica', '', 7);
-            $pdf->SetXY($ticketX + 5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 10, 4, $user->first_name . ' ' . $user->last_name, 0, 1, 'L');
-            $currentY += 4;
-            $pdf->SetXY($ticketX + 5, $currentY);
-            // $pdf->Cell($ticketW - $sideStripW - 10, 4, $user->email, 0, 1, 'L');
-            $currentY += 4;
+            $pdf->SetXY($ticketX + 0.5, $currentY);
+            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, $user->first_name . ' ' . $user->last_name, 0, 1, 'L');
+            $currentY += 0.4;
+            $pdf->SetXY($ticketX + 0.5, $currentY);
+            // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, $user->email, 0, 1, 'L');
+            $currentY += 0.4;
         }
 
         // Price info
         $pdf->SetFont('helvetica', 'B', 9);
-        $pdf->SetXY($ticketX + 5, $ticketY + $ticketH - 12);
-        // $pdf->Cell($ticketW - $sideStripW - 10, 4, 'Price: Rp ' . number_format($orderDetail->total_price, 0, ',', '.'), 0, 1, 'L');
+        $pdf->SetXY($ticketX + 0.5, $ticketY + $ticketH - 1.2);
+        // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Price: Rp ' . number_format($orderDetail->total_price, 0, ',', '.'), 0, 1, 'L');
 
         // QR Code section - white box for barcode/QR
-        // Move QR block up 12px and left 15px, and center all text (SCAN TO VERIFY, QR, etc) in the block
-        $qrBoxW = 22;
-        $qrBoxH = 22;
-        // Move left 15px and up 12px from original position
-        $qrBoxX = $sideStripX + ($sideStripW - $qrBoxW) / 2 - 15;
-        $qrBoxY = $ticketY + $headerH + 5 - 12;
+        // Move QR block up 1.2cm and left 1.5cm, and center all text (SCAN TO VERIFY, QR, etc) in the block
+        $qrBoxW = 2.2;
+        $qrBoxH = 2.2;
+
+        // Move left 1.5cm and up 1.2cm from original position
+        $qrBoxX = $sideStripX + ($sideStripW - $qrBoxW) / 2 - 1.5;
+        $qrBoxY = $ticketY + $headerH + 0.5 - 1.2;
 
         // Draw white box for QR/barcode
         $pdf->SetFillColor(255, 255, 255);
@@ -762,8 +763,8 @@ class Sale extends BaseController
 
         // Center "SCAN TO VERIFY" at the top of the QR block
         $pdf->SetFont('helvetica', 'B', 8);
-        $pdf->SetXY($qrBoxX, $qrBoxY - 2); // 7px above the QR box
-        $pdf->Cell(40, 4, 'SCAN TO VERIFY', 0, 1, 'C');
+        $pdf->SetXY($qrBoxX + 0.1, $qrBoxY - 0.2); // 0.2cm above the QR box
+        $pdf->Cell(4, 0.5, 'SCAN TO VERIFY', 0, 1, 'C');
 
         // Display QR code if available, inside the white box at the exact box position (no shift)
         if (!empty($orderDetail->qrcode)) {
@@ -771,58 +772,60 @@ class Sale extends BaseController
             if (file_exists($qrPath)) {
                 // Place QR image exactly inside the white box (no shift)
                 // Make the QR code box bigger and keep it proportional (square)
-                $biggerQrBoxW = 38;
-                $biggerQrBoxH = 38;
-                $biggerQrBoxX = $sideStripX + ($sideStripW - $biggerQrBoxW) / 2 - 13.5;
-                $biggerQrBoxY = $ticketY + $headerH + 2 - 12;
+                $biggerQrBoxW = 4.5;
+                $biggerQrBoxH = 4.5;
+                $biggerQrBoxX = $sideStripX + ($sideStripW - $biggerQrBoxW) / 2 - 1.35;
+                $biggerQrBoxY = $ticketY + $headerH + 0.2 - 1.2;
 
-                // Place QR image exactly at the bigger box position (with 2px margin), no rectangle
-                $pdf->Image($qrPath, $biggerQrBoxX + 11, $biggerQrBoxY + 7, $biggerQrBoxW - 4, $biggerQrBoxH - 4, 'PNG');
+                // Place QR image exactly at the bigger box position (with 0.2cm margin), no rectangle
+                $pdf->Image($qrPath, $biggerQrBoxX + 1, $biggerQrBoxY + 0.7, $biggerQrBoxW - 0.4, $biggerQrBoxH - 0.4, 'PNG');
             } else {
                 // QR placeholder in white box, centered
                 $pdf->SetFont('helvetica', '', 7);
                 $pdf->SetTextColor(150, 150, 150);
-                $pdf->SetXY($qrBoxX, $qrBoxY + 2);
-                $pdf->Cell($qrBoxW, 4, 'QR CODE', 0, 1, 'C');
-                $pdf->SetXY($qrBoxX, $qrBoxY + 7);
-                $pdf->Cell($qrBoxW, 4, 'PENDING', 0, 1, 'C');
+                $pdf->SetXY($qrBoxX, $qrBoxY + 0.2);
+                $pdf->Cell($qrBoxW, 0.4, 'QR CODE', 0, 1, 'C');
+                $pdf->SetXY($qrBoxX, $qrBoxY + 0.7);
+                $pdf->Cell($qrBoxW, 0.4, 'PENDING', 0, 1, 'C');
                 $pdf->SetTextColor(0, 0, 0);
             }
         } else {
             // No QR code, show placeholder in white box, centered
             $pdf->SetFont('helvetica', '', 7);
             $pdf->SetTextColor(150, 150, 150);
-            $pdf->SetXY($qrBoxX, $qrBoxY + 7);
-            $pdf->Cell($qrBoxW, 4, 'QR CODE', 0, 1, 'C');
-            $pdf->SetXY($qrBoxX, $qrBoxY + 12);
-            $pdf->Cell($qrBoxW, 4, 'NOT READY', 0, 1, 'C');
+            $pdf->SetXY($qrBoxX, $qrBoxY + 0.7);
+            $pdf->Cell($qrBoxW, 0.4, 'QR CODE', 0, 1, 'C');
+            $pdf->SetXY($qrBoxX, $qrBoxY + 1.2);
+            $pdf->Cell($qrBoxW, 0.4, 'NOT READY', 0, 1, 'C');
             $pdf->SetTextColor(0, 0, 0);
         }
 
         // Ticket ID and count
-        // $pdf->SetFont('helvetica', '', 7);
-        // $pdf->SetXY($sideStripX, $qrBoxY + $qrBoxH + 18);
-        // $pdf->Cell($sideStripW, 4, 'ID: ' . $orderDetail->id, 0, 1, 'C');
-        // $pdf->SetXY($sideStripX, $qrBoxY + $qrBoxH + 6);
-        // $pdf->Cell($sideStripW, 4, 'Ticket ' . $ticketNumber . ' of ' . $totalTickets, 0, 1, 'C');
+        $nama = json_decode($orderDetail->item_data, true);
+        $pdf->SetFont('helvetica', '', 18);
+        $pdf->SetXY(2.5, $qrBoxY - 0.2);
+        $pdf->Cell($sideStripW - 1.50, 0.4,  ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
+        $pdf->SetFont('helvetica', 'B', 18);
+        $pdf->SetXY(8.45, $qrBoxY - 0.2);
+        $pdf->Cell($sideStripW + 2.10, 0.4, $nama['participant_name'], 0, 1, 'L');
 
         // // Terms and conditions (shortened for compact ticket)
         // $pdf->SetFont('helvetica', '', 6);
         // $pdf->SetTextColor(100, 100, 100);
-        // $pdf->SetXY($sideStripX, $ticketY + $ticketH - 18);
-        // $pdf->MultiCell($sideStripW, 3, "Terms:\n• Non-transferable\n• One entry\n• No refund", 0, 'L');
+        // $pdf->SetXY($sideStripX, $ticketY + $ticketH - 1.8);
+        // $pdf->MultiCell($sideStripW, 0.3, "Terms:\n• Non-transferable\n• One entry\n• No refund", 0, 'L');
 
-        // // Payment status
-        // $pdf->SetFont('helvetica', 'B', 7);
-        // if ($order->payment_status === 'paid') {
-        //     $pdf->SetTextColor(0, 150, 0);
-        //     $pdf->SetXY($sideStripX, $ticketY + $ticketH - 7);
-        //     $pdf->Cell($sideStripW, 4, 'PAID', 0, 1, 'C');
-        // } else {
-        //     $pdf->SetTextColor(200, 0, 0);
-        //     $pdf->SetXY($sideStripX, $ticketY + $ticketH - 7);
-        //     $pdf->Cell($sideStripW, 4, 'UNPAID', 0, 1, 'C');
-        // }
+        // Payment status
+        $pdf->SetFont('helvetica', 'B', 8);
+        if ($order->payment_status === 'paid') {
+            $pdf->SetTextColor(0, 150, 0);
+            $pdf->SetXY($qrBoxX + 0.1, 7);
+            $pdf->Cell($sideStripW, 0.4, 'PAID', 0, 1, 'C');
+        } else {
+            $pdf->SetTextColor(200, 0, 0);        
+            $pdf->SetXY($qrBoxX + 0.1, 7);
+            $pdf->Cell($sideStripW, 0.4, 'UNPAID', 0, 1, 'C');
+        }
 
         // Reset colors
         $pdf->SetTextColor(0, 0, 0);
