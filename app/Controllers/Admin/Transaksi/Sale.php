@@ -232,10 +232,16 @@ class Sale extends BaseController
                 $smtpUser = getenv('smtp_user');
                 $smtpPass = getenv('smtp_pass');
 
+                // Ensure $smtpPort is an integer, fallback to 587 if not set or not numeric
+                $smtpPortInt = 465;
+                if (is_numeric($smtpPort)) {
+                    $smtpPortInt = (int)$smtpPort;
+                }
+
                 $emailConfig = [
                     'protocol'  => 'smtp',
                     'SMTPHost'  => $smtpHost,
-                    'SMTPPort'  => $smtpPort,
+                    'SMTPPort'  => $smtpPortInt,
                     'SMTPUser'  => $smtpUser,
                     'SMTPPass'  => $smtpPass,
                     'mailType'  => 'html',
