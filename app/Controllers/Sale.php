@@ -488,6 +488,61 @@ class Sale extends BaseController{
                 log_message('error', 'WhatsApp notification exception: ' . $waEx->getMessage());
             }
 
+            // Send email berhasil order via SMTP
+            try {
+                $email = \Config\Services::email();
+
+                // Get SMTP config from environment
+                $smtpHost = getenv('smtp_host');
+                $smtpPort = getenv('smtp_port');
+                $smtpUser = getenv('smtp_user');
+                $smtpPass = getenv('smtp_pass');
+
+                $emailConfig = [
+                    'protocol'  => 'smtp',
+                    'SMTPHost'  => $smtpHost,
+                    'SMTPPort'  => $smtpPort,
+                    'SMTPUser'  => $smtpUser,
+                    'SMTPPass'  => $smtpPass,
+                    'mailType'  => 'html',
+                    'charset'   => 'utf-8',
+                    'SMTPTimeout' => 10,
+                    'SMTPCrypto' => 'tls',
+                ];
+                $email->initialize($emailConfig);
+
+                // Get user email
+                $userEmail = null;
+                if ($this->ionAuth->loggedIn()) {
+                    $userEmail = $this->ionAuth->user()->row()->email ?? null;
+                }
+                if ($userEmail) {
+                    $email->setTo($userEmail);
+                    $email->setFrom($smtpUser, $this->pengaturan->judul);
+                    $email->setSubject('Order Berhasil - ' . $data['no_nota']);
+
+                    // Compose email message
+                    $message = '<h3>Terima kasih, pesanan Anda berhasil dibuat!</h3>';
+                    $message .= '<p>Nomor Invoice: <b>' . htmlspecialchars($data['no_nota']) . '</b></p>';
+                    $message .= '<p>Total: <b>Rp ' . number_format($data['subtotal'], 0, ',', '.') . '</b></p>';
+                    $message .= '<p>Status Pembayaran: <b>Pending</b></p>';
+                    $message .= '<p>Silakan lakukan pembayaran sesuai instruksi di halaman order Anda.</p>';
+                    $message .= '<br><small>Email ini dikirim otomatis oleh sistem "' . $this->pengaturan->judul . '".</small>';
+
+                    $email->setMessage($message);
+
+                    if ($email->send()) {
+                        log_message('info', 'Order success email sent to ' . $userEmail);
+                    } else {
+                        log_message('error', 'Failed to send order success email: ' . $email->printDebugger(['headers']));
+                    }
+                } else {
+                    log_message('error', 'User email not found, cannot send order success email.');
+                }
+            } catch (\Throwable $mailEx) {
+                log_message('error', 'Order success email exception: ' . $mailEx->getMessage());
+            }
+
             // Check if payment confirmation or gateway is needed
             if (!empty($data['cart_payments'])) {
                 foreach ($data['cart_payments'] as $payment) {
