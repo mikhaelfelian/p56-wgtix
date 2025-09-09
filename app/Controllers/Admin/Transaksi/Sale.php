@@ -154,6 +154,7 @@ class Sale extends BaseController
                     'id_platform'   => 0,
                     'id_kelompok'   => 0,
                     'id_event'      => $s->event_id,
+                    'id_user'       => $order->user_id,
                     'kode'          => $this->pesertaModel->generateKode($s->event_id),
                     'nama'          => $ps->participant_name,
                 ];

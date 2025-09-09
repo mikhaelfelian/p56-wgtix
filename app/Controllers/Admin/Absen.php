@@ -80,9 +80,6 @@ class Absen extends BaseController
             $qrCode = $this->request->getPost('qr_code');
             $eventId = $this->request->getPost('event_id');
 
-            // Debug logging
-            log_message('info', 'Absen scan: QR=' . $qrCode . ', EventID=' . $eventId);
-
             // Validate input
             if (!$qrCode || !$eventId) {
                 return $this->response->setJSON([
@@ -123,12 +120,6 @@ class Absen extends BaseController
                     $orderDetail = $this->transJualDetModel->find($detailId);
                     
                     if ($orderDetail && $orderDetail->id_penjualan == $invoiceId) {
-                        // Find participant by transjualdet detail id (id_transjual_det)
-                        // $participant = $this->pesertaModel->where('id_transjual_det', $detailId)
-                        //                                 ->where('id_event', $eventId)
-                        //                                 ->where('status !=', -1)
-                        //                                 ->first();
-
                         $sql_det = $this->transJualDetModel->where('id', $detailId)->first();
                         $ps = json_decode($sql_det->item_data);
                         $participant = $this->pesertaModel->where('id', $ps->participant_id)
@@ -139,35 +130,11 @@ class Absen extends BaseController
                 }
             }
 
-            // Debug: Check what participants exist for this event
-            $allParticipants = $this->pesertaModel->where('id_event', $eventId)
-                                                ->where('status !=', -1)
-                                                ->findAll();
-            
-            log_message('info', 'Absen debug: Found ' . count($allParticipants) . ' participants for event ' . $eventId);
-            log_message('info', 'Absen debug: Looking for QR code: ' . $qrCode);
-            
-            // Debug QR code parsing
-            if (strpos($qrCode, '|') !== false) {
-                $qrParts = explode('|', $qrCode);
-                log_message('info', 'Absen debug: QR code parts: ' . json_encode($qrParts));
-                if (count($qrParts) >= 2 && is_numeric($qrParts[0])) {
-                    log_message('info', 'Absen debug: Extracted detail ID: ' . $qrParts[0] . ', Invoice ID: ' . $qrParts[1]);
-                }
-            }
-
             if (!$participant) {
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Peserta tidak ditemukan atau QR Code tidak valid untuk event ini',
-                    'error_code' => 'PARTICIPANT_NOT_FOUND',
-                    'debug_info' => [
-                        'qr_code' => $qrCode,
-                        'event_id' => $eventId,
-                        'total_participants' => count($allParticipants),
-                        'qr_parsed_detail_id' => (strpos($qrCode, '|') !== false) ? explode('|', $qrCode)[0] : null,
-                        'qr_parsed_invoice_id' => (strpos($qrCode, '|') !== false && count(explode('|', $qrCode)) >= 2) ? explode('|', $qrCode)[1] : null
-                    ]
+                    'error_code' => 'PARTICIPANT_NOT_FOUND'
                 ]);
             }
 
@@ -188,7 +155,8 @@ class Absen extends BaseController
             // Update attendance status
             $updateData = [
                 'status_hadir' => '1',
-                'updated_at' => date('Y-m-d H:i:s')
+                'updated_at'   => date('Y-m-d H:i:s'),
+                'qr_code'      => date('Y-m-d H:i:s')
             ];
 
             if ($this->pesertaModel->update($participant->id, $updateData)) {
@@ -210,7 +178,6 @@ class Absen extends BaseController
             }
 
         } catch (\Exception $e) {
-            log_message('error', 'Absen scan error: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memproses QR Code',
