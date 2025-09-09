@@ -202,17 +202,24 @@ class Sale extends BaseController
             }
 
             // Determine status and send appropriate notification
-            if ($newPaymentStatus) {
-                $result = $kamupediaWA->sendOrderNotification($order, $newPaymentStatus, $customerPhone, $customerName, $orderDetails);
-            } else {
-                $result = $kamupediaWA->sendOrderNotification($order, $newOrderStatus, $customerPhone, $customerName, $orderDetails);
-            }
+            $waResult = null;
+            try {
+                if ($newPaymentStatus) {
+                    $waResult = $kamupediaWA->sendOrderNotification($order, $newPaymentStatus, $customerPhone, $customerName, $orderDetails);
+                } else {
+                    $waResult = $kamupediaWA->sendOrderNotification($order, $newOrderStatus, $customerPhone, $customerName, $orderDetails);
+                }
 
-            // Log result
-            if (isset($result['success']) && $result['success']) {
-                log_message('info', 'WhatsApp notification sent successfully');
-            } else {
-                log_message('error', 'WhatsApp notification failed: ' . ($result['message'] ?? 'Unknown error'));
+                // Log result
+                if (isset($waResult['success']) && $waResult['success']) {
+                    log_message('info', 'WhatsApp notification sent successfully');
+                } else {
+                    $waErrorMsg = isset($waResult['message']) ? $waResult['message'] : 'Unknown error';
+                    log_message('warning', 'WhatsApp message not sent: ' . $waErrorMsg);
+                    log_message('error', 'WhatsApp notification failed: WhatsApp message failed: ' . $waErrorMsg);
+                }
+            } catch (\Throwable $waEx) {
+                log_message('error', 'WhatsApp notification exception: ' . $waEx->getMessage());
             }
 
             // Send email berhasil order via SMTP
@@ -241,18 +248,23 @@ class Sale extends BaseController
                 // Get user email
                 $userEmail = null;
                 if ($this->ionAuth->loggedIn()) {
-                    $userEmail = $this->ionAuth->user($order->id)->row()->email ?? null;
+                    $userEmail = $this->ionAuth->user($order->user_id)->row()->email ?? null;
                 }
                 if ($userEmail) {
                     $email->setTo($userEmail);
                     $email->setFrom($smtpUser, $this->pengaturan->judul);
-                    $email->setSubject('Order Berhasil - ' . $data['no_nota']);
+
+                    // Use order object for email subject and body, fallback if fields missing
+                    $invoiceNo = isset($order->invoice_no) ? $order->invoice_no : $invoiceId;
+                    $subtotal = isset($order->subtotal) ? $order->subtotal : (isset($order->total_amount) ? $order->total_amount : 0);
+
+                    $email->setSubject('Order Berhasil - ' . $invoiceNo);
 
                     // Compose email message
                     $message = '<h3>Terima kasih, pesanan Anda berhasil dibuat!</h3>';
-                    $message .= '<p>Nomor Invoice: <b>' . htmlspecialchars($data['no_nota']) . '</b></p>';
-                    $message .= '<p>Total: <b>Rp ' . number_format($data['subtotal'], 0, ',', '.') . '</b></p>';
-                    $message .= '<p>Status Pembayaran: <b>Paid</b></p>';
+                    $message .= '<p>Nomor Invoice: <b>' . htmlspecialchars($invoiceNo) . '</b></p>';
+                    $message .= '<p>Total: <b>Rp ' . number_format($subtotal, 0, ',', '.') . '</b></p>';
+                    $message .= '<p>Status Pembayaran: <b>' . htmlspecialchars(ucfirst($newPaymentStatus)) . '</b></p>';
                     $message .= '<p>Silakan lakukan pembayaran sesuai instruksi di halaman order Anda.</p>';
                     $message .= '<br><small>Email ini dikirim otomatis oleh sistem "' . $this->pengaturan->judul . '".</small>';
 
