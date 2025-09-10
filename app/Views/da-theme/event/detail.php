@@ -985,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <option value="">Pilih Metode Pembayaran</option>
                                         <?php if (!empty($platformOptions)): ?>
                                             <?php foreach ($platformOptions as $platform): ?>
-                                                <option value="<?= esc($platform->id) ?>" data-fee="<?= esc($platform->deskripsi) ?>"><?= esc($platform->nama) ?> - <?= esc($platform->deskripsi) ?></option>
+                                                <option value="<?= esc($platform->id) ?>" data-fee="<?= esc($platform->nama).' '.esc($platform->nama_rekening).' - '.esc($platform->nomor_rekening) ?>"><?= esc($platform->nama) ?> - <?= esc($platform->nama_rekening) ?></option>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                     </select>
