@@ -94,6 +94,7 @@ class Filters extends BaseFilters
                 'cart/getCount',
                 'cart/getPlatforms',
                 'cart/test',
+                'checkout',
                 'sale/upload-payment-proof/*',
                 'sale/tripay/callback',
                 'sale/test-callback'

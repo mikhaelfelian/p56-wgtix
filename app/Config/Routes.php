@@ -44,9 +44,13 @@ $routes->group('cart', ['namespace' => 'App\Controllers', 'filter' => 'authUser'
     $routes->post('updateQuantity', 'Cart::updateQuantity');
     $routes->post('remove', 'Cart::remove');
     $routes->post('clear', 'Cart::clear');
+    $routes->get('debug', 'Cart::debug');
 });
 
 
+
+// Public checkout route (no authentication required)
+$routes->post('checkout', 'Sale::store');
 
 // Sale routes (Payment, Orders, Tickets)
 $routes->group('sale', ['namespace' => 'App\Controllers', 'filter' => 'authUser'], function($routes) {

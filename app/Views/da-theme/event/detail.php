@@ -378,79 +378,334 @@ document.addEventListener('DOMContentLoaded', function() {
         // CSRF hash
         window.csrf_hash = '<?= csrf_hash() ?>';
 
-        // Add to cart
-        $('.add-to-cart-btn').on('click', function() {
-            var btn = $(this);
-            var eventId = btn.data('event-id');
-            var priceId = btn.data('price-id');
-            var price = btn.data('price');
-            var description = btn.data('description');
-            var quantity = $('input[name="quantity_' + priceId + '"]').val() || 1;
+        // Participant Names Modal functionality
+        let currentPurchaseData = {};
+        
+        // Handle buy button click - show modal
+        $('.add-to-cart-btn').on('click', function(e) {
+            e.preventDefault();
+            
+            const eventId = $(this).data('event-id');
+            const priceId = $(this).data('price-id');
+            const price = $(this).data('price');
+            const description = $(this).data('description');
+            const quantity = $(this).closest('tr').find('.quantity').val() || 1;
+            
+            // Store current purchase data
+            currentPurchaseData = {
+                eventId: eventId,
+                priceId: priceId,
+                price: price,
+                description: description,
+                quantity: parseInt(quantity)
+            };
+            
+            // Generate participant name fields
+            generateParticipantFields(quantity);
+            
+            // Show modal
+            $('#participantNamesModal').modal('show');
+        });
+        
+        // Generate participant name fields based on quantity
+        function generateParticipantFields(quantity) {
+            const fieldsContainer = $('#participantFields');
+            fieldsContainer.empty();
+            
+            for (let i = 1; i <= quantity; i++) {
+                // Prepare dropdown options for kategori and kelompok
+                let kategoriOptions = `<option value="">Pilih Kategori</option>`;
+                <?php if (!empty($kategori_list)): ?>
+                    <?php foreach ($kategori_list as $kategori): ?>
+                        kategoriOptions += `<option value="<?= esc($kategori->id) ?>"><?= esc($kategori->nama) ?></option>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
 
-            btn.prop('disabled', true);
-            btn.find('.btn-text').text('Adding...');
-            btn.find('i').removeClass('fa-shopping-cart').addClass('fa-spinner fa-spin');
+                let kelompokOptions = `<option value="">Pilih Kelompok</option>`;
+                <?php if (!empty($kelompok_list)): ?>
+                    <?php foreach ($kelompok_list as $kelompok): ?>
+                        kelompokOptions += `<option value="<?= esc($kelompok->id) ?>"><?= esc($kelompok->nama) ?></option>`;
+                    <?php endforeach; ?>
+                <?php endif; ?>
 
+
+                const fieldHtml = `
+                    <div class="participant-row mb-3 p-3 border rounded" style="background-color: #f8f9fa;">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fa fa-user"></i> Peserta ${i}
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label for="participant_${i}" class="form-label small">Nama Lengkap <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="participant_${i}" name="participant_${i}" 
+                                           placeholder="Nama lengkap peserta ${i}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label for="gender_${i}" class="form-label small">Jenis Kelamin <span class="text-danger">*</span></label>
+                                    <select class="form-control form-control-sm" id="gender_${i}" name="gender_${i}" required>
+                                        <option value="">Pilih Jenis Kelamin</option>
+                                        <option value="L">Laki-laki</option>
+                                        <option value="P">Perempuan</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label for="no_hp_${i}" class="form-label small">No. HP <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="no_hp_${i}" name="no_hp_${i}" 
+                                           placeholder="085741220427" maxlength="15" pattern="^08[0-9]{8,13}$" required
+                                           title="Masukkan nomor HP yang valid, contoh: 085741220427">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label for="alamat_${i}" class="form-label small">Alamat <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="alamat_${i}" name="alamat_${i}" 
+                                           placeholder="Alamat peserta ${i}" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                fieldsContainer.append(fieldHtml);
+            }
+            
+            // Add event listener for single payment method change
+            $('#payment_method').on('change', function() {
+                const selectedOption = $(this).find('option:selected');
+                const fee = selectedOption.data('fee') || 'Pilih metode pembayaran';
+                $('#payment_fee').text(fee);
+            });
+        }
+        
+        // Handle confirm purchase
+        $('#confirmPurchase').on('click', function() {
+            // Validate all fields
+            let isValid = true;
+            const participantData = [];
+            
+            // Get single payment method
+            const paymentMethod = $('#payment_method').val();
+            
+            // Validate payment method
+            if (!paymentMethod) {
+                isValid = false;
+                $('#payment_method').addClass('is-invalid');
+            } else {
+                $('#payment_method').removeClass('is-invalid');
+            }
+            
+            for (let i = 1; i <= currentPurchaseData.quantity; i++) {
+                const name = $(`#participant_${i}`).val().trim();
+                const gender = $(`#gender_${i}`).val();
+                const phone = $(`#no_hp_${i}`).val().trim();
+                const address = $(`#alamat_${i}`).val().trim();
+                
+                // Validate name
+                if (!name) {
+                    isValid = false;
+                    $(`#participant_${i}`).addClass('is-invalid');
+                } else {
+                    $(`#participant_${i}`).removeClass('is-invalid');
+                }
+                
+                // Validate gender
+                if (!gender) {
+                    isValid = false;
+                    $(`#gender_${i}`).addClass('is-invalid');
+                } else {
+                    $(`#gender_${i}`).removeClass('is-invalid');
+                }
+                
+                // Validate phone
+                if (!phone || !phone.match(/^08[0-9]{8,13}$/)) {
+                    isValid = false;
+                    $(`#no_hp_${i}`).addClass('is-invalid');
+                } else {
+                    $(`#no_hp_${i}`).removeClass('is-invalid');
+                }
+                
+                // Validate address
+                if (!address) {
+                    isValid = false;
+                    $(`#alamat_${i}`).addClass('is-invalid');
+                } else {
+                    $(`#alamat_${i}`).removeClass('is-invalid');
+                }
+                
+                // Collect participant data (without individual payment method)
+                participantData.push({
+                    name: name,
+                    gender: gender,
+                    phone: phone,
+                    address: address
+                });
+            }
+            
+            if (!isValid) {
+                alert('Mohon lengkapi semua data peserta dengan benar!');
+                return;
+            }
+            
+            // Bypass cart and go directly to checkout
+            proceedToCheckout(participantData, paymentMethod);
+        });
+        
+        // Proceed directly to checkout function
+        function proceedToCheckout(participantData, paymentMethod) {
+            // Show loading state
+            $('#confirmPurchase').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+            
+            // Generate invoice number
+            const invoiceNo = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+            
+            // Calculate total
+            const total = currentPurchaseData.price * currentPurchaseData.quantity;
+            
+            // Prepare order data in the format expected by Sale controller
+            const orderData = {
+                no_nota: invoiceNo,
+                subtotal: total,
+                cart_data: JSON.stringify({
+                    event_id: currentPurchaseData.eventId,
+                    quantity: currentPurchaseData.quantity,
+                    price: currentPurchaseData.price,
+                    total: total
+                }),
+                participant: participantData.map((participant, index) => ({
+                    participant_id: 0,
+                    participant_name: participant.name,
+                    event_id: currentPurchaseData.eventId,
+                    price_id: 1, // Default price ID
+                    event_title: '<?= esc($event->event) ?>',
+                    price_description: 'Event Registration',
+                    quantity: 1,
+                    unit_price: currentPurchaseData.price,
+                    total_price: currentPurchaseData.price,
+                    kategori_id: 0, // Default category
+                    platform_id: paymentMethod
+                })),
+                cart_payments: [{
+                    platform_id: paymentMethod,
+                    amount: total,
+                    note: 'Event Registration - ' + participantData.length + ' participants'
+                }]
+            };
+            
+            // Submit directly to Sale controller store method
+            $.ajax({
+                url: '<?= base_url('checkout') ?>',
+                type: 'POST',
+                data: {
+                    order_data: JSON.stringify(orderData)
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Redirect to checkout success page or order detail
+                        window.location.href = response.redirect_url || '<?= base_url('sale/orders') ?>';
+                    } else {
+                        alert('Error: ' + (response.message || 'Failed to process checkout'));
+                        $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Checkout error:', error);
+                    console.error('Response:', xhr.responseText);
+                    console.error('Status:', xhr.status);
+                    alert('Error processing checkout. Status: ' + xhr.status + '. Please try again.');
+                    $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
+                }
+            });
+        }
+        
+        // Add to cart function with participant data
+        function addToCartWithParticipants(participantData) {
+            // Show loading state
+            $('#confirmPurchase').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
+            
+            // Prepare CSRF data
             var csrfData = {};
             var csrfToken = '<?= csrf_token() ?>';
             var csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
             csrfData[csrfToken] = csrfHash;
 
+            // Make AJAX request to add to cart
             $.ajax({
                 url: '<?= base_url('cart/add') ?>',
                 type: 'POST',
-                dataType: 'json',
                 data: $.extend({
-                    event_id: eventId,
-                    price_id: priceId,
-                    quantity: quantity,
-                    price: price,
+                    event_id: currentPurchaseData.eventId,
+                    price_id: currentPurchaseData.priceId,
+                    quantity: currentPurchaseData.quantity,
+                    price: currentPurchaseData.price,
+                    participant_data: participantData,
                     event_title: '<?= esc($event->event ?? 'Event') ?>',
                     event_image: '<?= $event->foto ?? '' ?>',
-                    price_description: description,
+                    price_description: currentPurchaseData.description,
                     event_date: '<?= $event->tgl_masuk ?? '' ?>',
                     event_location: '<?= $event->lokasi ?? 'TBA' ?>'
                 }, csrfData),
+                dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        toastr.success(response.message);
+                        // Show success message
+                        if (typeof toastr !== 'undefined') {
+                            toastr.success(response.message || 'Tiket berhasil ditambahkan ke keranjang!');
+                        } else {
+                            alert('Tiket berhasil ditambahkan ke keranjang!');
+                        }
+                        
+                        // Close modal
+                        $('#participantNamesModal').modal('hide');
+                        
+                        // Reset form
+                        $('#participantNamesForm')[0].reset();
+                        
+                        // Update cart counter
                         updateCartCounter();
+                        
+                        // Update CSRF hash
                         if (response.csrf_hash) {
                             $('input[name="<?= csrf_token() ?>"]').val(response.csrf_hash);
                             window.csrf_hash = response.csrf_hash;
                         }
-                        btn.find('.btn-text').text('Added!');
-                        btn.removeClass('btn-primary').addClass('btn-success');
-                        setTimeout(function() {
-                            btn.find('.btn-text').text('Beli');
-                            btn.removeClass('btn-success').addClass('btn-primary');
-                            btn.prop('disabled', false);
-                            btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
-                        }, 2000);
                     } else {
-                        toastr.error(response.message || 'Failed to add item to cart');
-                        resetButton();
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error(response.message || 'Gagal menambahkan ke keranjang');
+                        } else {
+                            alert('Error: ' + (response.message || 'Gagal menambahkan ke keranjang'));
+                        }
                     }
                 },
                 error: function(xhr) {
-                    var errorMsg = 'An error occurred while adding item to cart';
+                    var errorMsg = 'Terjadi kesalahan saat menambahkan ke keranjang';
                     try {
                         var response = JSON.parse(xhr.responseText);
                         if (response.message) errorMsg = response.message;
-                        if (response.debug) console.log('Debug info:', response.debug);
                     } catch(e) {
                         console.log('Could not parse error response');
                     }
+                    
+                    if (typeof toastr !== 'undefined') {
                     toastr.error(errorMsg);
-                    resetButton();
+                    } else {
+                        alert(errorMsg);
+                    }
+                },
+                complete: function() {
+                    // Reset button state
+                    $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Konfirmasi Pembelian');
                 }
             });
-
-            function resetButton() {
-                btn.prop('disabled', false);
-                btn.find('.btn-text').text('Beli');
-                btn.find('i').removeClass('fa-spinner fa-spin').addClass('fa-shopping-cart');
-            }
+        }
+        
+        // Remove validation class on input
+        $(document).on('input', '#participantFields input', function() {
+            $(this).removeClass('is-invalid');
         });
 
         // Update cart counter
@@ -604,6 +859,55 @@ document.addEventListener('DOMContentLoaded', function() {
 .gallery-slider .owl-nav .owl-next {
     right: 10px;
 }
+/* Participant Form Styles */
+.participant-row {
+    border: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.participant-row:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+.participant-row h6 {
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #007bff;
+}
+
+.form-label.small {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.form-control-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Payment method styling */
+.payment-method-section {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.payment-fee-display {
+    background-color: #e9ecef !important;
+    color: #495057;
+    font-weight: 500;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .event-gallery-section {
@@ -616,8 +920,101 @@ document.addEventListener('DOMContentLoaded', function() {
         width: 60px !important;
         height: 45px !important;
     }
+    
+    /* Stack fields vertically on mobile */
+    .participant-row .row > div {
+        margin-bottom: 10px;
+    }
+    
+    /* Make gender dropdown full width on mobile */
+    .participant-row .col-md-3 {
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .participant-row {
+        padding: 15px !important;
+    }
+    
+    .participant-row h6 {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+    
+    /* Stack all fields in single column on very small screens */
+    .participant-row .col-md-3 {
+        width: 100%;
+        margin-bottom: 15px;
+    }
 }
 </style>
+
+<!-- Participant Names Modal -->
+<div class="modal fade" id="participantNamesModal" tabindex="-1" role="dialog" aria-labelledby="participantNamesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="participantNamesModalLabel">
+                    <i class="fa fa-users"></i> Data Peserta
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="participantNamesForm">
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i> 
+                        Masukkan nama lengkap untuk setiap peserta sesuai dengan jumlah tiket yang dibeli.
+                    </div>
+                    <div id="participantFields">
+                        <!-- Participant name fields will be generated here -->
+                    </div>
+                    
+                    <!-- Single Payment Method Section -->
+                    <div class="payment-method-section mt-4 p-3 border rounded" style="background-color: #f8f9fa;">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fa fa-credit-card"></i> Metode Pembayaran
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="payment_method" class="form-label small">Pilih Metode Pembayaran <span class="text-danger">*</span></label>
+                                    <select class="form-control form-control-sm" id="payment_method" name="payment_method" required>
+                                        <option value="">Pilih Metode Pembayaran</option>
+                                        <?php if (!empty($platformOptions)): ?>
+                                            <?php foreach ($platformOptions as $platform): ?>
+                                                <option value="<?= esc($platform->id) ?>" data-fee="<?= esc($platform->deskripsi) ?>"><?= esc($platform->nama) ?> - <?= esc($platform->deskripsi) ?></option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label class="form-label small">Biaya Admin</label>
+                                    <div class="form-control form-control-sm payment-fee-display" id="payment_fee">
+                                        Pilih metode pembayaran
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times"></i> Batal
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmPurchase">
+                    <i class="fa fa-shopping-cart"></i> Konfirmasi Pembelian
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <?php
 echo $this->endSection();

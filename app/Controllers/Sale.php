@@ -362,6 +362,12 @@ class Sale extends BaseController{
         $orderDataJson = $this->request->getPost('order_data');
         
         if (empty($orderDataJson)) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'No order data received'
+                ]);
+            }
             die('No order data received');
         }
         
@@ -369,11 +375,23 @@ class Sale extends BaseController{
         $data = json_decode($orderDataJson, true);
         
         if (json_last_error() !== JSON_ERROR_NONE) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Invalid order data format'
+                ]);
+            }
             die('Invalid order data format');
         }
         
         // Validate required fields
         if (empty($data['no_nota']) || empty($data['cart_data']) || empty($data['subtotal'])) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Missing required order information'
+                ]);
+            }
             die('Missing required order information');
         }
         
@@ -384,6 +402,12 @@ class Sale extends BaseController{
             // 1. Save to tbl_trans_jual (header)
             $userId    = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
             $sessionId = $userId ? null : session_id();
+            
+            // For public checkout, we need to handle user creation or guest checkout
+            if (!$userId) {
+                // Use a default user ID for guest checkout (you might want to create a dedicated guest user)
+                $userId = 1; // Using admin user as fallback for guest checkout
+            }
             
             $headerData = [
                 'invoice_no'      => $data['no_nota'],
@@ -404,6 +428,15 @@ class Sale extends BaseController{
             
             // 2. Save to tbl_trans_jual_det (detail items)
             foreach ($data['participant'] as $item) {
+                $participant = [
+                    'participant_id'    => $item['participant_id']    ?? 0,
+                    'participant_name'  => $item['participant_name']  ?? '',
+                    'id_user'           => $userId,
+                    'id_event'          => $item['event_id']          ?? 0,
+                    'id_kategori'       => $item['kategori_id']       ?? 0,
+                    'id_platform'       => $data['cart_payments'][0]['platform_id'] ?? 0,
+                ];
+
                 $detailData = [
                     'id_penjualan'      => $lastId,
                     'event_id'          => $item['event_id']         ?? 0,
@@ -413,7 +446,7 @@ class Sale extends BaseController{
                     'quantity'          => $item['quantity']         ?? 1,
                     'unit_price'        => $item['unit_price']       ?? 0,
                     'total_price'       => $item['total_price']      ?? 0,
-                    'item_data'         => json_encode($item),
+                    'item_data'         => json_encode($participant),
                     'created_at'        => date('Y-m-d H:i:s'),
                     'updated_at'        => date('Y-m-d H:i:s')
                 ];
@@ -567,12 +600,24 @@ class Sale extends BaseController{
                             // If status_system == 0 and status_gateway == 1, throw into tripay payment gateway
                             if ($platform->status_system == 0 && $platform->status_gateway == 1 && $platform->jenis == 'tripay') {
                                 // Redirect to tripay payment gateway page
+                                if ($this->request->isAJAX()) {
+                                    return $this->response->setJSON([
+                                        'success' => true,
+                                        'redirect_url' => base_url('sale/tripay/' . $lastId)
+                                    ]);
+                                }
                                 return redirect()->to(base_url('sale/tripay/' . $lastId));
                             }
 
                             // If status_system == 0 and status_gateway == 0, manual confirmation
                             if ($platform->status_system == 0 && $platform->status_gateway == 0) {
                                 // Redirect to payment confirmation page
+                                if ($this->request->isAJAX()) {
+                                    return $this->response->setJSON([
+                                        'success' => true,
+                                        'redirect_url' => base_url('sale/confirm/' . $lastId)
+                                    ]);
+                                }
                                 return redirect()->to(base_url('sale/confirm/' . $lastId));
                             }
                         }
@@ -581,6 +626,12 @@ class Sale extends BaseController{
             }
 
             // Default redirect to orders page
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'redirect_url' => base_url('sale/orders')
+                ]);
+            }
             return redirect()->to(base_url('sale/orders'));            
         } catch (\Exception $e) {
             $this->db->transRollback();
@@ -590,6 +641,13 @@ class Sale extends BaseController{
                 'original_data' => $data,
                 'transaction_status' => 'FAILED'
             ];
+            
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ]);
+            }
             
             return redirect()->to(base_url('sale/orders'))->with('toastr', [
                 'type' => 'error', 
@@ -801,11 +859,9 @@ class Sale extends BaseController{
             $filename = 'All_Tickets_' . $order->invoice_no . '_' . date('Y-m-d') . '.pdf';
             $masterPdf->Output($filename, 'I');
             exit;
-                
         } catch (\Exception $e) {
-            log_message('error', 'All tickets generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate tickets: ' . $e->getMessage());
-            return redirect()->to('admin/transaksi/sale/detail/' . $invoiceId);
+            return redirect()->to(base_url('sale/order/' . $invoiceId));
         }
     }
 
@@ -852,11 +908,6 @@ class Sale extends BaseController{
         $currentY = $ticketY + $headerH + 3.0;
         if (isset($itemData['participant_name'])) {
             $currentY += 0.5;
-
-            if (isset($itemData['participant_number'])) {
-                $pdf->SetXY($ticketX + 0.5, $currentY);
-                $currentY += 0.5;
-            }
         }
 
         // Customer info
@@ -935,7 +986,7 @@ class Sale extends BaseController{
         $pdf->SetFont('helvetica', '', 18);
         $pdf->SetXY(2.5, $qrBoxY - 0.24);
         $pdf->Cell($sideStripW - 1.50, 0.4,  ($itemData['participant_number'] != 0 ? $itemData['participant_number'] : ''), 0, 1, 'L');
-        $pdf->SetFont('helvetica', 'B', 18);
+        $pdf->SetFont('helvetica', 'B', 12);
         $pdf->SetXY(8.45, $qrBoxY - 0.2);
         $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($itemData['participant_name']), 0, 1, 'L');
 

@@ -52,9 +52,12 @@ class Cart extends BaseController
             $price = $this->request->getPost('price') ?? 0;
             $eventDate = $this->request->getPost('event_date') ?? '';
             $eventLocation = $this->request->getPost('event_location') ?? 'TBA';
+            
+            // Get participant data
+            $participantData = $this->request->getPost('participant_data') ?? [];
 
             // Debug log
-            log_message('info', 'Cart add request: event_id=' . $eventId . ', price_id=' . $priceId . ', quantity=' . $quantity);
+            log_message('info', 'Cart add request: event_id=' . $eventId . ', price_id=' . $priceId . ', quantity=' . $quantity . ', participants=' . count($participantData));
 
             // Validation
             if (!$eventId || !$priceId || !$price) {
@@ -63,6 +66,56 @@ class Cart extends BaseController
                     'message' => 'Event ID, Price ID, and Price are required',
                     'debug' => ['event_id' => $eventId, 'price_id' => $priceId, 'price' => $price]
                 ]);
+            }
+
+            // Validate participant data if provided
+            if (!empty($participantData)) {
+                if (count($participantData) != $quantity) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Jumlah data peserta tidak sesuai dengan quantity',
+                        'debug' => ['participant_count' => count($participantData), 'quantity' => $quantity]
+                    ]);
+                }
+                
+                // Validate each participant has required fields
+                foreach ($participantData as $index => $participant) {
+                    if (empty($participant['name']) || empty($participant['gender']) || empty($participant['phone']) || empty($participant['address']) || empty($participant['payment_method'])) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Data peserta ' . ($index + 1) . ' tidak lengkap',
+                            'debug' => ['participant' => $participant]
+                        ]);
+                    }
+                    
+                    // Validate gender
+                    if (!in_array($participant['gender'], ['L', 'P'])) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Jenis kelamin peserta ' . ($index + 1) . ' tidak valid',
+                            'debug' => ['gender' => $participant['gender']]
+                        ]);
+                    }
+                    
+                    // Validate phone format
+                    if (!preg_match('/^08[0-9]{8,13}$/', $participant['phone'])) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Format nomor HP peserta ' . ($index + 1) . ' tidak valid',
+                            'debug' => ['phone' => $participant['phone']]
+                        ]);
+                    }
+                    
+                    // Validate payment method exists in platform table
+                    $platform = $this->platformModel->where(['id' => $participant['payment_method'], 'status' => 1])->first();
+                    if (!$platform) {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Metode pembayaran peserta ' . ($index + 1) . ' tidak valid',
+                            'debug' => ['payment_method' => $participant['payment_method']]
+                        ]);
+                    }
+                }
             }
 
             // Prepare cart data
@@ -82,7 +135,8 @@ class Cart extends BaseController
                     'price_description' => $priceDescription,
                     'harga' => (float)$price,
                     'event_date' => $eventDate,
-                    'event_location' => $eventLocation
+                    'event_location' => $eventLocation,
+                    'participants' => $participantData // Add participant data to cart_data
                 ]
             ];
 
@@ -130,16 +184,29 @@ class Cart extends BaseController
         $userId = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
         $sessionId = $userId ? null : session_id();
 
+        // If user is logged in, try to transfer session cart to user
+        if ($userId) {
+            $this->transferSessionCartToUser($sessionId, $userId);
+        }
+
         $cartItems = $this->cartModel->getCartItems($userId, $sessionId);
         $cartTotal = $this->cartModel->getCartTotal($userId, $sessionId);
         $cartCount = $this->cartModel->getCartCount($userId, $sessionId);
+
+        // Debug logging
+        log_message('info', 'Cart getItems - userId: ' . $userId . ', sessionId: ' . $sessionId . ', items count: ' . count($cartItems));
 
         return $this->response->setJSON([
             'success' => true,
             'items' => $cartItems,
             'total' => $cartTotal,
             'count' => $cartCount,
-            'formatted_total' => 'Rp ' . number_format($cartTotal, 0, ',', '.')
+            'formatted_total' => 'Rp ' . number_format($cartTotal, 0, ',', '.'),
+            'debug' => [
+                'user_id' => $userId,
+                'session_id' => $sessionId,
+                'items_count' => count($cartItems)
+            ]
         ]);
     }
 
@@ -282,6 +349,11 @@ class Cart extends BaseController
         $userId = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
         $sessionId = $userId ? null : session_id();
 
+        // If user is logged in, try to transfer session cart to user
+        if ($userId) {
+            $this->transferSessionCartToUser($sessionId, $userId);
+        }
+
         $cartCount = $this->cartModel->getCartCount($userId, $sessionId);
 
         return $this->response->setJSON([
@@ -297,6 +369,11 @@ class Cart extends BaseController
     {
         $userId = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
         $sessionId = $userId ? null : session_id();
+
+        // If user is logged in, try to transfer session cart to user
+        if ($userId) {
+            $this->transferSessionCartToUser($sessionId, $userId);
+        }
 
         $cartItems = $this->cartModel->getCartItems($userId, $sessionId);
         $cartTotal = $this->cartModel->getCartTotal($userId, $sessionId);
@@ -604,5 +681,117 @@ class Cart extends BaseController
 
         // Respond to Tripay
         return $this->response->setJSON(['success' => true]);
+    }
+
+    /**
+     * Transfer session cart items to user account
+     */
+    private function transferSessionCartToUser($sessionId, $userId)
+    {
+        try {
+            // Only process session-based cart items (where user_id IS NULL)
+            $sessionCartItems = $this->cartModel->where('session_id', $sessionId)
+                                              ->where('user_id IS NULL')
+                                              ->where('status', 'active')
+                                              ->findAll();
+            
+            if (empty($sessionCartItems)) {
+                return true; // No session cart items to transfer
+            }
+            
+            // Process session items
+            $this->processSessionItems($sessionCartItems, $userId);
+            
+            return true;
+
+        } catch (\Exception $e) {
+            log_message('error', 'Failed to transfer session cart to user: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    private function processSessionItems($sessionCartItems, $userId)
+    {
+        foreach ($sessionCartItems as $sessionItem) {
+            $existingUserItem = $this->cartModel->where('user_id', $userId)
+                                               ->where('event_id', $sessionItem->event_id)
+                                               ->where('price_id', $sessionItem->price_id)
+                                               ->where('status', 'active')
+                                               ->first();
+
+            if ($existingUserItem) {
+                // Merge quantities and update existing item
+                $newQuantity = $existingUserItem->quantity + $sessionItem->quantity;
+                $cartData = json_decode($existingUserItem->cart_data, true);
+                $unitPrice = $cartData['harga'] ?? 0;
+                $newTotalPrice = $newQuantity * $unitPrice;
+
+                $this->cartModel->update($existingUserItem->id, [
+                    'quantity' => $newQuantity,
+                    'total_price' => $newTotalPrice,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+
+                // Delete the session item
+                $this->cartModel->delete($sessionItem->id);
+            } else {
+                // Transfer session item to user
+                $this->cartModel->update($sessionItem->id, [
+                    'user_id' => $userId,
+                    'session_id' => null,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+            }
+        }
+        
+        log_message('info', 'Session cart transferred to user: ' . $userId . ', items processed: ' . count($sessionCartItems));
+    }
+
+    /**
+     * Debug method to test cart queries directly
+     */
+    public function debug()
+    {
+        $userId = $this->ionAuth->loggedIn() ? $this->ionAuth->user()->row()->id : null;
+        $sessionId = $userId ? null : session_id();
+
+        // Test direct database query
+        $db = \Config\Database::connect();
+        $query = $db->table('tbl_cart')
+                   ->where('status', 'active')
+                   ->where('user_id', $userId)
+                   ->get();
+        
+        $results = $query->getResult();
+        
+        // Test query without soft deletes
+        $queryNoSoftDelete = $db->table('tbl_cart')
+                               ->where('status', 'active')
+                               ->where('user_id', $userId)
+                               ->where('deleted_at IS NULL')
+                               ->get();
+        
+        $resultsNoSoftDelete = $queryNoSoftDelete->getResult();
+        
+        // Check if cart item has deleted_at value
+        $checkDeleted = $db->table('tbl_cart')
+                          ->where('user_id', $userId)
+                          ->get();
+        
+        $allUserItems = $checkDeleted->getResult();
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'debug' => [
+                'user_id' => $userId,
+                'session_id' => $sessionId,
+                'direct_query_count' => count($results),
+                'direct_query_results' => $results,
+                'no_soft_delete_count' => count($resultsNoSoftDelete),
+                'no_soft_delete_results' => $resultsNoSoftDelete,
+                'all_user_items' => $allUserItems,
+                'model_query_count' => count($this->cartModel->getCartItems($userId, $sessionId))
+            ]
+        ]);
     }
 }

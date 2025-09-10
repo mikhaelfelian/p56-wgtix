@@ -6,15 +6,18 @@ use CodeIgniter\Model;
 
 class CartModel extends Model
 {
-    protected $table = 'tbl_cart';
-    protected $primaryKey = 'id';
+    // Table & Primary Key
+    protected $table            = 'tbl_cart';
+    protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType = 'object';
-    protected $useSoftDeletes = true;
+    protected $returnType       = 'object';
+    protected $useSoftDeletes   = false;
+
+    // Allowed Fields
     protected $protectFields = true;
     protected $allowedFields = [
         'user_id',
-        'session_id', 
+        'session_id',
         'event_id',
         'price_id',
         'cart_data',
@@ -23,50 +26,50 @@ class CartModel extends Model
         'status'
     ];
 
-    // Dates
+    // Timestamps
     protected $useTimestamps = true;
-    protected $dateFormat = 'datetime';
-    protected $createdField = 'created_at';
-    protected $updatedField = 'updated_at';
-    protected $deletedField = 'deleted_at';
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
 
     // Validation
     protected $validationRules = [
-        'event_id' => 'required|integer',
-        'price_id' => 'required|integer',
-        'quantity' => 'required|integer|greater_than[0]',
+        'event_id'    => 'required|integer',
+        'price_id'    => 'required|integer',
+        'quantity'    => 'required|integer|greater_than[0]',
         'total_price' => 'required|decimal'
     ];
 
     protected $validationMessages = [
         'event_id' => [
             'required' => 'Event ID is required',
-            'integer' => 'Event ID must be an integer'
+            'integer'  => 'Event ID must be an integer'
         ],
         'price_id' => [
             'required' => 'Price ID is required',
-            'integer' => 'Price ID must be an integer'
+            'integer'  => 'Price ID must be an integer'
         ],
         'quantity' => [
-            'required' => 'Quantity is required',
-            'integer' => 'Quantity must be an integer',
+            'required'     => 'Quantity is required',
+            'integer'      => 'Quantity must be an integer',
             'greater_than' => 'Quantity must be greater than 0'
         ]
     ];
 
-    protected $skipValidation = false;
-    protected $cleanValidationRules = true;
+    protected $skipValidation        = false;
+    protected $cleanValidationRules  = true;
 
     // Callbacks
     protected $allowCallbacks = true;
-    protected $beforeInsert = [];
-    protected $afterInsert = [];
-    protected $beforeUpdate = [];
-    protected $afterUpdate = [];
-    protected $beforeFind = [];
-    protected $afterFind = [];
-    protected $beforeDelete = [];
-    protected $afterDelete = [];
+    protected $beforeInsert   = [];
+    protected $afterInsert    = [];
+    protected $beforeUpdate   = [];
+    protected $afterUpdate    = [];
+    protected $beforeFind     = [];
+    protected $afterFind      = [];
+    protected $beforeDelete   = [];
+    protected $afterDelete    = [];
 
     /**
      * Get cart items for a user or session
@@ -82,7 +85,21 @@ class CartModel extends Model
             $builder->where('session_id', $sessionId);
         }
 
-        return $builder->orderBy('created_at', 'DESC')->findAll();
+        // Debug logging
+        log_message('info', 'CartModel getCartItems - userId: ' . $userId . ', sessionId: ' . $sessionId);
+
+        $result = $builder->orderBy('created_at', 'DESC')->findAll();
+        
+        log_message('info', 'CartModel result count: ' . count($result));
+        
+        // Debug: Log first result if exists
+        if (!empty($result)) {
+            log_message('info', 'CartModel first item: ' . json_encode($result[0]));
+        } else {
+            log_message('info', 'CartModel: No items found for userId=' . $userId . ', sessionId=' . $sessionId);
+        }
+        
+        return $result;
     }
 
     /**

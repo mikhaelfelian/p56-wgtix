@@ -127,6 +127,7 @@ echo $this->endSection();
                 type: 'GET',
                 dataType: 'json',
                 success: function (response) {
+                    console.log('Cart response:', response);
                     if (response.success) {
                         displayCartItems(response);
                     } else {
@@ -142,10 +143,12 @@ echo $this->endSection();
 
         // Display cart items using theme's existing table structure
         function displayCartItems(data) {
+            console.log('Displaying cart items:', data);
             var tbody = $('.cart-table tbody');
             tbody.empty();
 
             if (data.items && data.items.length > 0) {
+                console.log('Found ' + data.items.length + ' cart items');
                 $.each(data.items, function (index, item) {
                     var cartData = typeof item.cart_data === 'string' ? JSON.parse(item.cart_data) : item.cart_data;
                     var itemTotal = parseFloat(item.total_price);
@@ -182,6 +185,32 @@ echo $this->endSection();
                     if (cartData.event_location) {
                         row += '<br><small class="text-muted"><i class="fa fa-map-marker"></i> ' + cartData.event_location + '</small>';
                     }
+                    
+                    // Display participant data if exists
+                    if (cartData.participants && cartData.participants.length > 0) {
+                        row += '<br><div class="participant-info" style="margin-top: 10px; padding: 8px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid #007bff;">';
+                        row += '<small class="text-primary"><i class="fa fa-users"></i> <strong>Data Peserta:</strong></small><br>';
+                        cartData.participants.forEach(function(participant, index) {
+                            row += '<small class="text-muted">';
+                            row += '<i class="fa fa-user"></i> ' + (index + 1) + '. ' + participant.name;
+                            if (participant.gender) {
+                                const genderText = participant.gender === 'L' ? 'Laki-laki' : 'Perempuan';
+                                row += ' <span class="text-info">(' + genderText + ')</span>';
+                            }
+                            if (participant.phone) {
+                                row += ' <span class="text-muted">(' + participant.phone + ')</span>';
+                            }
+                            if (participant.address) {
+                                row += '<br><span class="text-muted" style="margin-left: 15px;"><i class="fa fa-map-marker"></i> ' + participant.address + '</span>';
+                            }
+                            if (participant.payment_method) {
+                                row += '<br><span class="text-success" style="margin-left: 15px;"><i class="fa fa-credit-card"></i> Metode: ' + participant.payment_method + '</span>';
+                            }
+                            row += '</small><br>';
+                        });
+                        row += '</div>';
+                    }
+                    
                     row += '</div>';
                     row += '</div>';
                     row += '</td>';
@@ -223,6 +252,7 @@ echo $this->endSection();
 
         // Show empty cart message
         function showEmptyCart() {
+            console.log('Showing empty cart message');
             var tbody = $('.cart-table tbody');
             tbody.empty();
             var emptyRow = '<tr><td colspan="5" class="text-center" style="padding: 50px;">';

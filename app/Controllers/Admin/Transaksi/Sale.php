@@ -167,17 +167,13 @@ class Sale extends BaseController
                 $lastPesertaId = (!empty($ps->participant_id) && $ps->participant_id != 0 ? $ps->participant_id : $this->pesertaModel->insertID());
 
                 $peserta = [
-                    "participant_name"     => $ps->participant_name,
-                    "participant_id"       => $lastPesertaId,
-                    "participant_number"   => $data['kode'],
-                    "ticket_info"          => $ps->ticket_info,
-                    "event_id"             => $ps->event_id,
-                    "price_id"             => $ps->price_id,
-                    "quantity"             => $ps->quantity ?? 1,
-                    "unit_price"           => $ps->unit_price,
-                    "total_price"          => $ps->total_price,
-                    "event_title"          => $ps->event_title,
-                    "price_description"    => $ps->price_description
+                    "participant_id"      => $lastPesertaId,
+                    "participant_name"    => strtolower(ucwords($ps->participant_name)),
+                    "participant_number"  => $data['kode'],
+                    "id_user"             => $order->user_id,
+                    "id_event"            => $ps->id_event,
+                    "id_kategori"         => $ps->id_kategori,
+                    "id_platform"         => $ps->id_platform,
                 ];
 
                 $this->transJualDetModel->update($s->id, ['item_data' => json_encode($peserta)]);

@@ -182,7 +182,15 @@ echo $this->section('content');
                                         </td>
                                         <td style="padding: 15px; border: 1px solid #ddd;">
                                             <?php if ($order->payment_status == 'pending'): ?>
-                                                <a href="<?= base_url('sale/' . $payment->platform . '/' . $order->id) ?>" class="btn btn-sm btn-success">
+                                                <?php
+                                                // Check if status_gateway property exists before accessing it
+                                                $statusGateway = isset($payment->status_gateway) ? $payment->status_gateway : '0';
+                                                // If status_gateway == 0, use 'confirm', else use jenis
+                                                $platformRoute = ($statusGateway == '0')
+                                                    ? 'confirm'
+                                                    : (isset($payment->jenis) ? $payment->jenis : $payment->platform);
+                                                ?>
+                                                <a href="<?= base_url('sale/' . $platformRoute . '/' . $order->id) ?>" class="btn btn-sm btn-success">
                                                     <i class="fa fa-credit-card"></i> Bayar
                                                 </a>
                                             <?php endif; ?>

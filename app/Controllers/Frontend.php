@@ -143,6 +143,7 @@ class Frontend extends BaseController
             'Pengaturan'    => $this->pengaturan,
             'title_header'  => 'Events Listing',
             'categories'    => $kategoriOptions,
+            'platformOptions' => $platformOptions,
             'event'         => $events,
             'event_price'   => $event_price,
             'eventGallery'  => $eventGallery,
