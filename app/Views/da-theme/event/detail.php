@@ -1004,11 +1004,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">
                     <i class="fa fa-times"></i> Batal
                 </button>
                 <button type="button" class="btn btn-primary" id="confirmPurchase">
-                    <i class="fa fa-shopping-cart"></i> Konfirmasi Pembelian
+                    <i class="fa fa-shopping-cart"></i> Beli
                 </button>
             </div>
         </div>
