@@ -1004,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-dismiss="modal">
+                <button type="button" class="btn btn-primary" data-dismiss="modal" style="background-color: #dc3545; border-color: #dc3545;">
                     <i class="fa fa-times"></i> Batal
                 </button>
                 <button type="button" class="btn btn-primary" id="confirmPurchase">
