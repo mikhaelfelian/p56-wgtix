@@ -17,8 +17,8 @@ echo $this->section('content');
             <?= form_open('auth/register_store', ['class' => 'col-md-9 checkout-form', 'role' => 'form', 'id' => 'registerForm']) ?>
             <h3 class="checkout-heading">Informasi Pendaftaran</h3>
             <div class="row">
-                <div class="col-sm-6 form-group">
-                    <label for="first_name">Nama Depan</label>
+                <div class="col-sm-4 form-group">
+                    <label for="first_name">Nama Lengkap</label>
                     <?= form_input([
                         'name' => 'first_name',
                         'id' => 'first_name',
@@ -27,19 +27,7 @@ echo $this->section('content');
                         'value' => old('first_name')
                     ]) ?>
                 </div>
-                <div class="col-sm-6 form-group">
-                    <label for="last_name">Nama Belakang</label>
-                    <?= form_input([
-                        'name' => 'last_name',
-                        'id' => 'last_name',
-                        'class' => 'form-control',
-                        'required' => true,
-                        'value' => old('last_name')
-                    ]) ?>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-6 form-group">
+                <div class="col-sm-4 form-group">
                     <label for="username">Nama Pengguna <i>* Username</i></label>
                     <?= form_input([
                         'name' => 'username',
@@ -49,7 +37,7 @@ echo $this->section('content');
                         'value' => old('username')
                     ]) ?>
                 </div>
-                <div class="col-sm-6 form-group">
+                <div class="col-sm-4 form-group">
                     <label for="email">Alamat Email</label>
                     <?= form_input([
                         'name' => 'email',
@@ -99,7 +87,7 @@ echo $this->section('content');
             <h3 class="checkout-heading child2">Informasi Tambahan</h3>
             <div class="row">
                 <div class="col-sm-6 form-group">
-                    <label for="phone">Nomor Telepon *</label>
+                    <label for="phone">Nomor Whatsapp *</label>
                         <?= form_input([
                             'name' => 'phone',
                             'id' => 'phone',
@@ -111,12 +99,6 @@ echo $this->section('content');
                             'value' => old('phone'),
                             'maxlength' => '15'
                         ]) ?>   
-                </div>
-                <div class="col-sm-6 form-group">
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-6 form-group">
                 </div>
                 <div class="col-sm-6 form-group">
                     <div class="checkbox" style="margin-top: 30px;">
@@ -138,7 +120,8 @@ echo $this->section('content');
                 'id' => 'submitBtn',
                 'value' => 'Buat Akun',
                 'class' => 'btn btn-default place-order',
-            ]) ?>
+            ]) ?>  
+            <button type="button" name="btn_submit" id="submitBtn" value="Login" class="btn btn-default place-order" onclick="window.location.href='<?= base_url('auth/login') ?>'">Login</button>
             <?= form_close() ?>
         </div>
     </div>
