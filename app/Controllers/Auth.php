@@ -256,6 +256,7 @@ class Auth extends BaseController
         $tipe              = $this->request->getVar('tipe');
         $terms             = $this->request->getVar('terms');
         $recaptchaResponse = $this->request->getVar('g-recaptcha-response');
+        $return_url        = $this->request->getVar('return_url');
 
         // Check terms agreement
         if (!$terms) {
@@ -418,11 +419,18 @@ class Auth extends BaseController
         
         // User is automatically added to the default group (supervisor) by IonAuth
 
-        // Redirect ke halaman login setelah registrasi berhasil
-        return redirect()->to(base_url('/auth/login'))->with('toastr', [
-            'type' => 'success',
-            'message' => 'Registrasi berhasil! Silakan login.'
-        ]);
+        // Redirect ke return_url jika ada, jika tidak ke halaman login
+        if (!empty($return_url)) {
+            return redirect()->to($return_url)->with('toastr', [
+                'type' => 'success',
+                'message' => 'Registrasi berhasil! Silakan login.'
+            ]);
+        } else {
+            return redirect()->to('/auth/login')->with('toastr', [
+                'type' => 'success',
+                'message' => 'Registrasi berhasil! Silakan login.'
+            ]);
+        }
     }
     
     /**

@@ -15,6 +15,7 @@ echo $this->section('content');
     <div class="container">
         <div class="row">
             <?= form_open('auth/register_store', ['class' => 'col-md-9 checkout-form', 'role' => 'form', 'id' => 'registerForm']) ?>
+            <?= form_hidden('return_url', isset($_GET['return_url']) ? $_GET['return_url'] : '') ?>
             <h3 class="checkout-heading">Informasi Pendaftaran</h3>
             <div class="row">
                 <div class="col-sm-4 form-group">
@@ -121,7 +122,11 @@ echo $this->section('content');
                 'value' => 'Buat Akun',
                 'class' => 'btn btn-default place-order',
             ]) ?>  
-            <button type="button" name="btn_submit" id="submitBtn" value="Login" class="btn btn-default place-order" onclick="window.location.href='<?= base_url('auth/login') ?>'">Login</button>
+            <?php if (!empty($_GET['return_url'])): ?>
+                <button type="button" name="btn_submit" id="submitBtn" value="Login" class="btn btn-default place-order" onclick="window.location.href='<?= base_url('auth/login?return_url=' . urlencode($_GET['return_url'])) ?>'">Login</button>
+            <?php else: ?>
+                <button type="button" name="btn_submit" id="submitBtn" value="Login" class="btn btn-default place-order" onclick="window.location.href='<?= base_url('auth/login') ?>'">Login</button>
+            <?php endif; ?>
             <?= form_close() ?>
         </div>
     </div>

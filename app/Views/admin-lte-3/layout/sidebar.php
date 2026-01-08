@@ -302,7 +302,7 @@
                 </li>
 
                 <!-- Settings -->
-                <li class="nav-header">PENGATURAN</li>
+                <!-- <li class="nav-header">PENGATURAN</li>
                 <li class="nav-item has-treeview <?= isMenuActive('pengaturan') ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= isMenuActive('pengaturan') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-cog"></i>
@@ -312,24 +312,24 @@
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
-                        <!-- <li class="nav-item">
+                        <li class="nav-item">
                             <a href="<?= base_url('pengaturan/app') ?>"
                                 class="nav-link <?= isMenuActive('pengaturan/app') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-cogs nav-icon"></i>
                                 <p>Aplikasi</p>
                             </a>
-                        </li> -->
-                        <!-- <li class="nav-item">
+                        </li>
+                        <li class="nav-item">
                             <a href="<?= base_url('pengaturan/api-tokens') ?>"
                                 class="nav-link <?= isMenuActive('pengaturan/api-tokens') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-key nav-icon"></i>
                                 <p>API Tokens</p>
                             </a>
-                        </li> -->
+                        </li>
                     </ul>
-                </li>
+                </li> -->
             </ul>
         </nav>
         <!-- /.sidebar-menu -->
