@@ -6,7 +6,7 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  * Default route is Frontend::index
  */
-$routes->get('/', to: 'Frontend::index');
+$routes->get('/', to: 'Frontend::events');
 
 
 /*
