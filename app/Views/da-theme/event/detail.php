@@ -157,7 +157,8 @@ echo $this->section('content');
                                                         <?php endif; ?>
                                                     </td>
                                                     <td style="text-align: center; vertical-align: middle;">
-                                                        <?php if (isset($user_level) && $user_level && $user_level->name == 'user'): ?>
+                                                        
+                                                    <!--<?php if (isset($user_level) && $user_level && $user_level->name == 'user'): ?>
                                                             <button class="btn btn-primary btn-sm add-to-cart-btn"
                                                                 data-event-id="<?= $price->id_event ?>"
                                                                 data-price-id="<?= $price->id ?>"
@@ -171,6 +172,15 @@ echo $this->section('content');
                                                                 <i class="fa fa-sign-in"></i> Login untuk membeli
                                                             </a>
                                                         <?php endif; ?>
+                                                        -->
+                                                        <button class="btn btn-primary btn-sm add-to-cart-btn"
+                                                                data-event-id="<?= $price->id_event ?>"
+                                                                data-price-id="<?= $price->id ?>"
+                                                                data-price="<?= $price->harga ?>"
+                                                                data-description="<?= esc($price->keterangan) ?>"
+                                                            >
+                                                                <i class="fa fa-shopping-cart"></i> <span class="btn-text">Beli</span>
+                                                            </button>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
