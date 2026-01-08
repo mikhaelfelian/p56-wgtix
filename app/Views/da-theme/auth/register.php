@@ -99,16 +99,6 @@ echo $this->section('content');
             <h3 class="checkout-heading child2">Informasi Tambahan</h3>
             <div class="row">
                 <div class="col-sm-6 form-group">
-                    <label for="company">Instansi</label>
-                    <?= form_input([
-                        'name' => 'company',
-                        'id' => 'company',
-                        'class' => 'form-control',
-                        'placeholder' => 'masukkan instansi cth : PERCASI, PERBASI, PSMTI, dll',
-                        'value' => old('company')
-                    ]) ?>
-                </div>
-                <div class="col-sm-6 form-group">
                     <label for="phone">Nomor Telepon *</label>
                         <?= form_input([
                             'name' => 'phone',
@@ -122,18 +112,7 @@ echo $this->section('content');
                             'maxlength' => '15'
                         ]) ?>   
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-12 form-group">
-                    <label for="profile">Profil/Biografi</label>
-                    <?= form_textarea([
-                        'name' => 'profile',
-                        'id' => 'profile',
-                        'class' => 'form-control',
-                        'rows' => '3',
-                        'placeholder' => 'Ceritakan tentang diri Anda (maksimal 160 karakter)',
-                        'value' => old('profile')
-                    ]) ?>
+                <div class="col-sm-6 form-group">
                 </div>
             </div>
             <div class="row">
