@@ -14,7 +14,14 @@ use App\Models\TransJualModel;
 use App\Models\TransJualDetModel;
 use App\Models\TransJualPlatModel;
 use App\Models\PesertaModel;
+use App\Models\EventsHargaModel;
 use CodeIgniter\HTTP\ResponseInterface;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Font;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use App\Libraries\InvoicePdf;
@@ -27,6 +34,7 @@ class Sale extends BaseController
     protected $transJualDetModel;
     protected $transJualPlatModel;
     protected $pesertaModel;
+    protected $eventsHargaModel;
     protected $ionAuth;
 
     public function __construct()
@@ -35,6 +43,7 @@ class Sale extends BaseController
         $this->transJualDetModel   = new TransJualDetModel();
         $this->transJualPlatModel  = new TransJualPlatModel();
         $this->pesertaModel        = new PesertaModel();
+        $this->eventsHargaModel    = new EventsHargaModel();
         $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -354,65 +363,138 @@ class Sale extends BaseController
     /**
      * Export transaction data
      */
-    public function export($format = 'csv')
+    public function export($format = 'xlsx')
     {
         // Get date range from request
         $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
         $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
 
-        // Get sales data
-        $builder = $this->transJualModel->builder();
-        $builder->where('invoice_date >=', $startDate);
-        $builder->where('invoice_date <=', $endDate . ' 23:59:59');
-        $orders = $builder->orderBy('invoice_date', 'DESC')->get()->getResult();
+        // Get transaction details with joins
+        $builder = $this->transJualDetModel->builder();
+        $builder->select('tbl_trans_jual_det.*, 
+                         tbl_trans_jual.invoice_date,
+                         tbl_m_event_harga.keterangan as kategori,
+                         tbl_m_event_harga.harga as harga_satuan')
+                ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_jual_det.id_penjualan', 'left')
+                ->join('tbl_m_event_harga', 'tbl_m_event_harga.id = tbl_trans_jual_det.price_id', 'left')
+                ->where('tbl_trans_jual.invoice_date >=', $startDate)
+                ->where('tbl_trans_jual.invoice_date <=', $endDate . ' 23:59:59')
+                ->orderBy('tbl_trans_jual.invoice_date', 'ASC');
+        $transactionDetails = $builder->get()->getResult();
 
-        if ($format === 'csv') {
-            // Generate CSV export
-            $filename = 'sales_export_' . date('Y-m-d_H-i-s') . '.csv';
+        if ($format === 'xlsx' || $format === 'excel') {
+            // Create new Spreadsheet object
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
             
-            header('Content-Type: text/csv');
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            // Set headers
+            $headers = [
+                'NO.',
+                'TGL PENDAFTARAN',
+                'KATEGORI',
+                'JUMLAH PESERTA',
+                'HARSAT',
+                'TOTAL',
+                'KETERANGAN'
+            ];
             
-            $output = fopen('php://output', 'w');
+            // Set header row
+            $sheet->setCellValue('A1', $headers[0]);
+            $sheet->setCellValue('B1', $headers[1]);
+            $sheet->setCellValue('C1', $headers[2]);
+            $sheet->setCellValue('D1', $headers[3]);
+            $sheet->setCellValue('E1', $headers[4]);
+            $sheet->setCellValue('F1', $headers[5]);
+            $sheet->setCellValue('G1', $headers[6]);
             
-            // CSV headers
-            fputcsv($output, [
-                'Invoice No',
-                'Invoice Date',
-                'Customer',
-                'Payment Method',
-                'Payment Status',
-                'Order Status',
-                'Total Amount',
-                'Created At'
-            ]);
+            // Style header row
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4472C4'],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                    ],
+                ],
+            ];
+            $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
             
-            // CSV data
-            foreach ($orders as $order) {
-                // Get customer name using IonAuth
-                $customerName = 'Guest User';
-                if ($order->user_id) {
-                    $user = $this->ionAuth->user($order->user_id)->row();
-                    if ($user) {
-                        $customerName = $user->first_name . ' ' . $user->last_name . ' (' . $user->username . ')';
-                    } else {
-                        $customerName = 'User ID: ' . $order->user_id;
-                    }
+            // Populate data rows
+            $row = 2;
+            $no = 1;
+            foreach ($transactionDetails as $detail) {
+                // Format date as DD/MM/YYYY
+                $tglPendaftaran = '';
+                if (!empty($detail->invoice_date)) {
+                    $tglPendaftaran = tgl_indo2($detail->invoice_date);
                 }
                 
-                fputcsv($output, [
-                    $order->invoice_no,
-                    $order->invoice_date,
-                    $customerName,
-                    $order->payment_method,
-                    $order->payment_status,
-                    $order->status,
-                    $order->total_amount,
-                    $order->created_at
+                // Get category from tbl_m_event_harga.keterangan
+                $kategori = $detail->kategori ?? '';
+                
+                // Get quantity (jumlah peserta)
+                $jumlahPeserta = $detail->quantity ?? 1;
+                
+                // Get unit price (harsat) - use harga from event_harga or unit_price from detail
+                $harsat = $detail->harga_satuan ?? $detail->unit_price ?? 0;
+                
+                // Get total price
+                $total = $detail->total_price ?? 0;
+                
+                // Keterangan is empty
+                $keterangan = '';
+                
+                // Set cell values
+                $sheet->setCellValue('A' . $row, $no++);
+                $sheet->setCellValue('B' . $row, $tglPendaftaran);
+                $sheet->setCellValue('C' . $row, $kategori);
+                $sheet->setCellValue('D' . $row, $jumlahPeserta);
+                $sheet->setCellValue('E' . $row, $harsat);
+                $sheet->setCellValue('F' . $row, $total);
+                $sheet->setCellValue('G' . $row, $keterangan);
+                
+                // Format number columns (HARSAT and TOTAL)
+                $sheet->getStyle('E' . $row . ':F' . $row)->getNumberFormat()
+                    ->setFormatCode('#,##0');
+                
+                // Add borders to data rows
+                $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray([
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                        ],
+                    ],
                 ]);
+                
+                $row++;
             }
             
-            fclose($output);
+            // Auto-size columns
+            foreach (range('A', 'G') as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+            
+            // Set filename
+            $filename = 'sales_export_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            // Set headers for Excel download
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            
+            // Write file to output
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
             exit;
         }
 
