@@ -373,6 +373,7 @@ class Sale extends BaseController
         $builder = $this->transJualDetModel->builder();
         $builder->select('tbl_trans_jual_det.*, 
                          tbl_trans_jual.invoice_date,
+                         tbl_trans_jual.payment_status,
                          tbl_m_event_harga.keterangan as kategori,
                          tbl_m_event_harga.harga as harga_satuan')
                 ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_jual_det.id_penjualan', 'left')
@@ -381,41 +382,68 @@ class Sale extends BaseController
                 ->where('tbl_trans_jual.invoice_date <=', $endDate . ' 23:59:59')
                 ->orderBy('tbl_trans_jual.invoice_date', 'ASC');
         $transactionDetails = $builder->get()->getResult();
+        
+        // Process participants from item_data JSON
+        $participants = [];
+        foreach ($transactionDetails as $detail) {
+            if (!empty($detail->item_data)) {
+                $itemData = json_decode($detail->item_data, true);
+                if ($itemData && isset($itemData['participant_name'])) {
+                    $participants[] = [
+                        'nama' => $itemData['participant_name'] ?? '',
+                        'phone' => $itemData['participant_phone'] ?? '',
+                        'tgl_pendaftaran' => $detail->invoice_date ?? '',
+                        'payment_status' => $detail->payment_status ?? 'pending',
+                        'kategori' => $detail->kategori ?? '',
+                    ];
+                }
+            }
+        }
 
         if ($format === 'xlsx' || $format === 'excel') {
             // Create new Spreadsheet object
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
             
-            // Set headers
-            $headers = [
-                'NO.',
-                'TGL PENDAFTARAN',
-                'KATEGORI',
-                'JUMLAH PESERTA',
-                'HARSAT',
-                'TOTAL',
-                'KETERANGAN'
-            ];
+            // Define kategori columns
+            $kategoriColumns = ['1 K', '3 K', '5 K', '10 K', '3 K LANSIA', '5 K MASTER'];
             
-            // Set header row
-            $sheet->setCellValue('A1', $headers[0]);
-            $sheet->setCellValue('B1', $headers[1]);
-            $sheet->setCellValue('C1', $headers[2]);
-            $sheet->setCellValue('D1', $headers[3]);
-            $sheet->setCellValue('E1', $headers[4]);
-            $sheet->setCellValue('F1', $headers[5]);
-            $sheet->setCellValue('G1', $headers[6]);
+            // Title row
+            $sheet->setCellValue('A1', 'DAFTAR UPDATE PESERTA RUN PSMTI 2026');
+            $sheet->mergeCells('A1:L1');
+            $sheet->getStyle('A1')->applyFromArray([
+                'font' => ['bold' => true, 'size' => 14],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
             
-            // Style header row
+            // Header row 1 (main headers)
+            $sheet->setCellValue('A3', 'NO.');
+            $sheet->setCellValue('B3', 'NAMA');
+            $sheet->setCellValue('C3', 'TGL PENDAFTARAN');
+            $sheet->mergeCells('D3:E3');
+            $sheet->setCellValue('D3', 'BUKTI TRANSFER');
+            $sheet->mergeCells('F3:K3');
+            $sheet->setCellValue('F3', 'KATEGORI');
+            $sheet->setCellValue('L3', 'JML PESERTA');
+            
+            // Header row 2 (sub-headers)
+            $sheet->setCellValue('D4', 'ADA');
+            $sheet->setCellValue('E4', 'TIDAK');
+            $col = 'F';
+            foreach ($kategoriColumns as $kategori) {
+                $sheet->setCellValue($col . '4', $kategori);
+                $col++;
+            }
+            
+            // Style header rows
             $headerStyle = [
                 'font' => [
                     'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
+                    'color' => ['rgb' => '000000'],
                 ],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '4472C4'],
+                    'startColor' => ['rgb' => 'D9E1F2'],
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -427,60 +455,115 @@ class Sale extends BaseController
                     ],
                 ],
             ];
-            $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+            $sheet->getStyle('A3:L4')->applyFromArray($headerStyle);
             
             // Populate data rows
-            $row = 2;
+            $row = 5;
             $no = 1;
-            foreach ($transactionDetails as $detail) {
+            $summaryTotals = array_fill_keys($kategoriColumns, 0);
+            $totalJmlPeserta = 0;
+            
+            foreach ($participants as $participant) {
                 // Format date as DD/MM/YYYY
                 $tglPendaftaran = '';
-                if (!empty($detail->invoice_date)) {
-                    $tglPendaftaran = tgl_indo2($detail->invoice_date);
+                if (!empty($participant['tgl_pendaftaran'])) {
+                    $tglPendaftaran = tgl_indo2($participant['tgl_pendaftaran']);
                 }
                 
-                // Get category from tbl_m_event_harga.keterangan
-                $kategori = $detail->kategori ?? '';
+                // Determine BUKTI TRANSFER status
+                $buktiAda = ($participant['payment_status'] === 'paid') ? 'X' : '';
+                $buktiTidak = ($participant['payment_status'] !== 'paid') ? 'X' : '';
                 
-                // Get quantity (jumlah peserta)
-                $jumlahPeserta = $detail->quantity ?? 1;
-                
-                // Get unit price (harsat) - use harga from event_harga or unit_price from detail
-                $harsat = $detail->harga_satuan ?? $detail->unit_price ?? 0;
-                
-                // Get total price
-                $total = $detail->total_price ?? 0;
-                
-                // Keterangan is empty
-                $keterangan = '';
+                // Get kategori
+                $kategori = $participant['kategori'] ?? '';
                 
                 // Set cell values
                 $sheet->setCellValue('A' . $row, $no++);
-                $sheet->setCellValue('B' . $row, $tglPendaftaran);
-                $sheet->setCellValue('C' . $row, $kategori);
-                $sheet->setCellValue('D' . $row, $jumlahPeserta);
-                $sheet->setCellValue('E' . $row, $harsat);
-                $sheet->setCellValue('F' . $row, $total);
-                $sheet->setCellValue('G' . $row, $keterangan);
+                $sheet->setCellValue('B' . $row, $participant['nama']);
+                $sheet->setCellValue('C' . $row, $tglPendaftaran);
+                $sheet->setCellValue('D' . $row, $buktiAda);
+                $sheet->setCellValue('E' . $row, $buktiTidak);
                 
-                // Format number columns (HARSAT and TOTAL)
-                $sheet->getStyle('E' . $row . ':F' . $row)->getNumberFormat()
-                    ->setFormatCode('#,##0');
+                // Set kategori columns (show 1 in matching column, empty in others)
+                $col = 'F';
+                $kategoriFound = false;
+                foreach ($kategoriColumns as $kat) {
+                    if ($kategori === $kat) {
+                        $sheet->setCellValue($col . $row, 1);
+                        $summaryTotals[$kat]++;
+                        $kategoriFound = true;
+                    } else {
+                        $sheet->setCellValue($col . $row, '');
+                    }
+                    $col++;
+                }
                 
-                // Add borders to data rows
-                $sheet->getStyle('A' . $row . ':G' . $row)->applyFromArray([
+                // JML PESERTA (always 1 per participant)
+                $sheet->setCellValue('L' . $row, 1);
+                $totalJmlPeserta++;
+                
+                // Style data row
+                $dataRowStyle = [
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
                         ],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                ];
+                $sheet->getStyle('A' . $row . ':L' . $row)->applyFromArray($dataRowStyle);
+                
+                // NAMA column left-aligned
+                $sheet->getStyle('B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                
+                // JML PESERTA column yellow background
+                $sheet->getStyle('L' . $row)->applyFromArray([
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'FFE699'],
                     ],
                 ]);
                 
                 $row++;
             }
             
+            // Summary row
+            $summaryRow = $row;
+            $sheet->mergeCells('A' . $summaryRow . ':B' . $summaryRow);
+            $sheet->setCellValue('A' . $summaryRow, 'JUMLAH PESERTA');
+            
+            $col = 'F';
+            foreach ($kategoriColumns as $kat) {
+                $sheet->setCellValue($col . $summaryRow, $summaryTotals[$kat]);
+                $col++;
+            }
+            
+            $sheet->setCellValue('L' . $summaryRow, $totalJmlPeserta);
+            
+            // Style summary row
+            $summaryStyle = [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'D9E1F2'],
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                    ],
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ],
+            ];
+            $sheet->getStyle('A' . $summaryRow . ':L' . $summaryRow)->applyFromArray($summaryStyle);
+            
             // Auto-size columns
-            foreach (range('A', 'G') as $col) {
+            foreach (range('A', 'L') as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
             
