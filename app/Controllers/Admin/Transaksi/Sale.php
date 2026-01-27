@@ -369,15 +369,37 @@ class Sale extends BaseController
         $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
         $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
 
+        // Normalize kategori so it reliably matches the Excel headers (e.g. 1K == 1 K)
+        $normalizeKategori = static function ($value): string {
+            if ($value === null) {
+                return '';
+            }
+            $s = strtoupper(trim((string) $value));
+            // Collapse whitespace
+            $s = preg_replace('/\s+/', ' ', $s) ?? $s;
+            // Make "1K" / "10K" / "3 K" consistent: "<digits> K"
+            $s = preg_replace('/(\d+)\s*K\b/', '$1 K', $s) ?? $s;
+            return $s;
+        };
+
         // Get transaction details with joins
         $builder = $this->transJualDetModel->builder();
         $builder->select('tbl_trans_jual_det.*, 
                          tbl_trans_jual.invoice_date,
                          tbl_trans_jual.payment_status,
+                         tbl_ion_users.phone as user_phone,
                          tbl_m_event_harga.keterangan as kategori,
                          tbl_m_event_harga.harga as harga_satuan')
                 ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_jual_det.id_penjualan', 'left')
-                ->join('tbl_m_event_harga', 'tbl_m_event_harga.id = tbl_trans_jual_det.price_id', 'left')
+                ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.user_id', 'left')
+                // Ensure we join the correct pricing row for this event + price_id, and ignore soft-deleted prices
+                ->join(
+                    'tbl_m_event_harga',
+                    'tbl_m_event_harga.id = tbl_trans_jual_det.price_id'
+                        . ' AND tbl_m_event_harga.id_event = tbl_trans_jual_det.event_id'
+                        . ' AND tbl_m_event_harga.deleted_at IS NULL',
+                    'left'
+                )
                 ->where('tbl_trans_jual.invoice_date >=', $startDate)
                 ->where('tbl_trans_jual.invoice_date <=', $endDate . ' 23:59:59')
                 ->orderBy('tbl_trans_jual.invoice_date', 'ASC');
@@ -391,7 +413,8 @@ class Sale extends BaseController
                 if ($itemData && isset($itemData['participant_name'])) {
                     $participants[] = [
                         'nama' => $itemData['participant_name'] ?? '',
-                        'phone' => $itemData['participant_phone'] ?? '',
+                        // Prefer phone from tbl_ion_users (via tbl_trans_jual.user_id), fallback to item_data
+                        'phone' => $detail->user_phone ?? ($itemData['participant_phone'] ?? ''),
                         'tgl_pendaftaran' => $detail->invoice_date ?? '',
                         'payment_status' => $detail->payment_status ?? 'pending',
                         'kategori' => $detail->kategori ?? '',
@@ -407,6 +430,7 @@ class Sale extends BaseController
             
             // Define kategori columns
             $kategoriColumns = ['1 K', '3 K', '5 K', '10 K', '3 K LANSIA', '5 K MASTER'];
+            $kategoriColumnsNormalized = array_map($normalizeKategori, $kategoriColumns);
             
             // Title row
             $sheet->setCellValue('A1', 'DAFTAR UPDATE PESERTA RUN PSMTI 2026');
@@ -476,6 +500,7 @@ class Sale extends BaseController
                 
                 // Get kategori
                 $kategori = $participant['kategori'] ?? '';
+                $kategoriNormalized = $normalizeKategori($kategori);
                 
                 // Set cell values
                 $sheet->setCellValue('A' . $row, $no++);
@@ -486,12 +511,11 @@ class Sale extends BaseController
                 
                 // Set kategori columns (show 1 in matching column, empty in others)
                 $col = 'F';
-                $kategoriFound = false;
-                foreach ($kategoriColumns as $kat) {
-                    if ($kategori === $kat) {
+                foreach ($kategoriColumns as $idx => $kat) {
+                    $katNormalized = $kategoriColumnsNormalized[$idx] ?? $normalizeKategori($kat);
+                    if ($kategoriNormalized !== '' && $kategoriNormalized === $katNormalized) {
                         $sheet->setCellValue($col . $row, 1);
                         $summaryTotals[$kat]++;
-                        $kategoriFound = true;
                     } else {
                         $sheet->setCellValue($col . $row, '');
                     }
