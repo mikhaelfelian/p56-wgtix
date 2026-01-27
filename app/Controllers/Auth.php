@@ -283,15 +283,8 @@ class Auth extends BaseController
             'first_name' => [
                 'rules' => 'required|min_length[2]',
                 'errors' => [
-                    'required' => 'Nama depan wajib diisi',
-                    'min_length' => 'Nama depan minimal 2 karakter'
-                ]
-            ],
-            'last_name' => [
-                'rules' => 'required|min_length[2]',
-                'errors' => [
-                    'required' => 'Nama belakang wajib diisi',
-                    'min_length' => 'Nama belakang minimal 2 karakter'
+                    'required' => 'Nama wajib diisi',
+                    'min_length' => 'Nama minimal 2 karakter'
                 ]
             ],
             'username' => [
