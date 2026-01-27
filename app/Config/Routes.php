@@ -20,6 +20,9 @@ $routes->group('events', ['namespace' => 'App\Controllers'], function($routes) {
     $routes->get('(:segment)', 'Frontend::detail/$1');
 });
 
+$routes->get('psmtijatengrun2026', 'Frontend::detail/1-from-psmti-jawa-tengah-with-love-2026');
+
+
 
 
 // Auth routes
