@@ -219,7 +219,19 @@ echo $this->extend(theme_path('main')); ?>
                                             <td>
                                                 <?php if (isset($itemData['participant_name'])): ?>
                                                     <strong><?= esc($itemData['participant_name']) ?></strong><br>
-                                                    <small class="text-muted">Peserta #<?= $itemData['participant_number'] ?? 'N/A' ?></small>
+                                                    <small class="text-muted d-block">
+                                                        Peserta #<?= esc($itemData['participant_number'] ?? 'N/A') ?>
+                                                    </small>
+                                                    <?php if (!empty($itemData['participant_uk']) || !empty($itemData['participant_emg'])): ?>
+                                                        <small class="text-muted d-block mt-1">
+                                                            <?php if (!empty($itemData['participant_uk'])): ?>
+                                                                Ukuran Jersey: <?= esc(strtoupper($itemData['participant_uk'])) ?><br>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($itemData['participant_emg'])): ?>
+                                                                Kontak Darurat: <?= esc($itemData['participant_emg']) ?>
+                                                            <?php endif; ?>
+                                                        </small>
+                                                    <?php endif; ?>
                                                 <?php else: ?>
                                                     <span class="text-muted">Tidak ada info peserta</span>
                                                 <?php endif; ?>

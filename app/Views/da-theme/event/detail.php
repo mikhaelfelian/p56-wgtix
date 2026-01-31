@@ -470,6 +470,30 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             </div>
                         </div>
+                        <div class="row mt-2">
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label for="ukuran_${i}" class="form-label small">Ukuran Jersey <span class="text-danger">*</span></label>
+                                    <select class="form-control form-control-sm" id="ukuran_${i}" name="ukuran_${i}" required>
+                                        <option value="">Pilih Ukuran</option>
+                                        <option value="XS">XS</option>
+                                        <option value="S">S</option>
+                                        <option value="M">M</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                        <option value="XXL">XXL</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
+                                    <label for="emg_${i}" class="form-label small">Kontak Darurat <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-sm" id="emg_${i}" name="emg_${i}" 
+                                           placeholder="08xxxxxxxxxx" maxlength="15" pattern="^08[0-9]{8,13}$" required
+                                           title="Masukkan nomor darurat yang valid, contoh: 081234567890">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
                 fieldsContainer.append(fieldHtml);
@@ -505,6 +529,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const gender = $(`#gender_${i}`).val();
                 const phone = $(`#no_hp_${i}`).val().trim();
                 const address = $(`#alamat_${i}`).val().trim();
+                const jersey = $(`#ukuran_${i}`).val();
+                const emergency = $(`#emg_${i}`).val().trim();
                 
                 // Validate name
                 if (!name) {
@@ -537,13 +563,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     $(`#alamat_${i}`).removeClass('is-invalid');
                 }
+
+                // Validate jersey size
+                if (!jersey) {
+                    isValid = false;
+                    $(`#ukuran_${i}`).addClass('is-invalid');
+                } else {
+                    $(`#ukuran_${i}`).removeClass('is-invalid');
+                }
+
+                // Validate emergency contact
+                if (!emergency || !emergency.match(/^08[0-9]{8,13}$/)) {
+                    isValid = false;
+                    $(`#emg_${i}`).addClass('is-invalid');
+                } else {
+                    $(`#emg_${i}`).removeClass('is-invalid');
+                }
                 
                 // Collect participant data (without individual payment method)
                 participantData.push({
                     name: name,
                     gender: gender,
                     phone: phone,
-                    address: address
+                    address: address,
+                    jersey: jersey,
+                    emergency: emergency
                 });
             }
             
@@ -580,6 +624,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 participant: participantData.map((participant, index) => ({
                     participant_id: 0,
                     participant_name: participant.name,
+                    // store gender in same format used elsewhere in system (male/female)
+                    participant_gender: participant.gender === 'L' ? 'male' : (participant.gender === 'P' ? 'female' : null),
+                    participant_phone: participant.phone,
+                    participant_address: participant.address,
+                    participant_uk: participant.jersey,
+                    participant_emg: participant.emergency,
                     event_id: currentPurchaseData.eventId,
                     price_id: 1, // Default price ID
                     event_title: '<?= esc($event->event) ?>',

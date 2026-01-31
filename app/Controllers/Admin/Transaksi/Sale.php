@@ -15,6 +15,8 @@ use App\Models\TransJualDetModel;
 use App\Models\TransJualPlatModel;
 use App\Models\PesertaModel;
 use App\Models\EventsHargaModel;
+use App\Models\EventsModel;
+use App\Models\PlatformModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -35,6 +37,8 @@ class Sale extends BaseController
     protected $transJualPlatModel;
     protected $pesertaModel;
     protected $eventsHargaModel;
+    protected $eventsModel;
+    protected $platformModel;
     protected $ionAuth;
 
     public function __construct()
@@ -44,6 +48,8 @@ class Sale extends BaseController
         $this->transJualPlatModel  = new TransJualPlatModel();
         $this->pesertaModel        = new PesertaModel();
         $this->eventsHargaModel    = new EventsHargaModel();
+        $this->eventsModel         = new EventsModel();
+        $this->platformModel        = new PlatformModel();
         $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -62,9 +68,41 @@ class Sale extends BaseController
         }
 
         // Get orders with pagination
-        $this->transJualModel->orderBy('invoice_date', 'DESC');
-        $orders = $this->transJualModel->paginate(20);
+        $this->transJualModel->orderBy('invoice_date', 'ASC');
+        $orders = $this->transJualModel->paginate(50);
         $pager = $this->transJualModel->pager;
+
+        // Collect participant info per order from tbl_trans_jual_det.item_data (JSON fields participant_name, participant_phone)
+        $participantsByOrder = [];
+        $userPhonesByOrder   = [];
+        if (!empty($orders)) {
+            foreach ($orders as $order) {
+                $participants = [];
+                $details = $this->transJualDetModel
+                    ->where('id_penjualan', $order->id)
+                    ->findAll();
+
+                foreach ($details as $detail) {
+                    if (!empty($detail->item_data)) {
+                        $itemData = json_decode($detail->item_data, true) ?: [];
+                        if (!empty($itemData['participant_name'])) {
+                            $participants[] = [
+                                'name'  => $itemData['participant_name'],
+                                'phone' => $itemData['participant_phone'] ?? null,
+                            ];
+                        }
+                    }
+                }
+
+                $participantsByOrder[$order->id] = $participants;
+
+                // Fallback phone from tbl_ion_users (via IonAuth) for this order
+                if ($order->user_id && !isset($userPhonesByOrder[$order->id])) {
+                    $user = $this->ionAuth->user($order->user_id)->row();
+                    $userPhonesByOrder[$order->id] = $user->phone ?? null;
+                }
+            }
+        }
 
         // Get statistics for status filter buttons using fresh model instances
         $statsModel = new TransJualModel();
@@ -76,15 +114,178 @@ class Sale extends BaseController
             'cancelled' => $statsModel->where('payment_status', 'cancelled')->countAllResults(false),
         ];
 
+        // Get events and platforms for manual order form
+        // Use soft-delete filtering from the model (deleted_at is already handled)
+        $events    = $this->eventsModel->orderBy('event', 'ASC')->findAll();
+        $platforms = $this->platformModel->where('status', 1)->orderBy('nama', 'ASC')->findAll();
+
         $data = [
             'title' => 'Transaction Management',
             'orders' => $orders,
             'pager' => $pager,
             'current_status' => $status,
-            'stats' => $stats
+            'stats' => $stats,
+            'participantsByOrder' => $participantsByOrder,
+            'userPhonesByOrder'   => $userPhonesByOrder,
+            'events' => $events,
+            'platforms' => $platforms,
         ];
 
         return $this->view('admin-lte-3/transaksi/sale/orders', $data);
+    }
+
+    /**
+     * Create manual order
+     */
+    public function createManualOrder()
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $currentUser = $this->ionAuth->user()->row();
+        $userId = $currentUser->id;
+
+        // Validate required fields
+        $validation = \Config\Services::validation();
+        $validation->setRules([
+            'event_id' => 'required|integer',
+            'price_id' => 'required|integer',
+            'participant_name' => 'required|max_length[255]',
+            'participant_phone' => 'permit_empty|max_length[20]',
+            'participant_gender' => 'permit_empty|in_list[M,F]',
+            'participant_address' => 'permit_empty|max_length[500]',
+            'participant_uk' => 'permit_empty|max_length[10]',
+            'participant_emg' => 'permit_empty|max_length[20]',
+            'platform_id' => 'required|integer',
+            'total_amount' => 'required|decimal',
+        ]);
+
+        if (!$validation->run($this->request->getPost())) {
+            session()->setFlashdata('error', 'Validation failed: ' . implode(', ', $validation->getErrors()));
+            return redirect()->to('admin/transaksi/sale/orders');
+        }
+
+        try {
+            $this->db = \Config\Database::connect();
+            $this->db->transStart();
+
+            // Get event and price details
+            $event = $this->eventsModel->find($this->request->getPost('event_id'));
+            $price = $this->eventsHargaModel->find($this->request->getPost('price_id'));
+
+            if (!$event || !$price) {
+                throw new \Exception('Event or price not found');
+            }
+
+            // Generate invoice number
+            $invoiceNo = 'INV-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
+
+            // Create order header
+            $headerData = [
+                'invoice_no' => $invoiceNo,
+                'user_id' => $userId, // Set to current logged-in admin user
+                'session_id' => null,
+                'invoice_date' => date('Y-m-d H:i:s'),
+                'total_amount' => $this->request->getPost('total_amount'),
+                'payment_status' => $this->request->getPost('payment_status') ?? 'pending',
+                'payment_method' => $this->request->getPost('platform_id'),
+                'notes' => $this->request->getPost('notes') ?? 'Manual order created by admin',
+                'status' => 'active',
+            ];
+
+            $headerId = $this->transJualModel->insert($headerData);
+            if (!$headerId) {
+                throw new \Exception('Failed to create order header');
+            }
+
+            // Prepare participant data
+            $participant = [
+                'participant_id' => 0,
+                'participant_name' => $this->request->getPost('participant_name'),
+                'participant_gender' => $this->request->getPost('participant_gender'),
+                'participant_phone' => $this->request->getPost('participant_phone'),
+                'participant_address' => $this->request->getPost('participant_address'),
+                'participant_uk' => $this->request->getPost('participant_uk'),
+                'participant_emg' => $this->request->getPost('participant_emg'),
+                'id_user' => $userId,
+                'id_event' => $event->id,
+                'id_kategori' => $event->id_kategori ?? 0,
+                'id_platform' => $this->request->getPost('platform_id'),
+            ];
+
+            // Create order detail
+            $detailData = [
+                'id_penjualan' => $headerId,
+                'event_id' => $event->id,
+                'price_id' => $price->id,
+                'event_title' => $event->event,
+                'price_description' => $price->keterangan,
+                'quantity' => 1,
+                'unit_price' => $price->harga,
+                'total_price' => $this->request->getPost('total_amount'),
+                'item_data' => json_encode($participant),
+            ];
+
+            $this->transJualDetModel->insert($detailData);
+
+            // Create payment platform record
+            $platform = $this->platformModel->find($this->request->getPost('platform_id'));
+            if ($platform) {
+                $platData = [
+                    'id_penjualan' => $headerId,
+                    'id_platform' => $platform->id,
+                    'no_nota' => $invoiceNo,
+                    'platform' => strtolower($platform->jenis ?? 'manual'),
+                    'nominal' => $this->request->getPost('total_amount'),
+                    'keterangan' => 'Manual order',
+                ];
+                $this->transJualPlatModel->insert($platData);
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Transaction failed');
+            }
+
+            session()->setFlashdata('success', 'Manual order created successfully. Invoice: ' . $invoiceNo);
+            return redirect()->to('admin/transaksi/sale/orders');
+
+        } catch (\Exception $e) {
+            if ($this->db->transStatus() !== false) {
+                $this->db->transRollback();
+            }
+            session()->setFlashdata('error', 'Failed to create manual order: ' . $e->getMessage());
+            return redirect()->to('admin/transaksi/sale/orders');
+        }
+    }
+
+    /**
+     * Get event prices via AJAX
+     */
+    public function getEventPrices($eventId)
+    {
+        $prices = $this->eventsHargaModel
+            ->where('id_event', $eventId)
+            ->where('status', '1')
+            ->where('deleted_at', null)
+            ->orderBy('keterangan', 'ASC')
+            ->findAll();
+
+        $priceList = [];
+        foreach ($prices as $price) {
+            $priceList[] = [
+                'id' => $price->id,
+                'keterangan' => $price->keterangan,
+                'harga' => $price->harga,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'prices' => $priceList
+        ]);
     }
 
     /**
@@ -136,6 +337,12 @@ class Sale extends BaseController
             return redirect()->to('admin/transaksi/sale/orders');
         }
 
+        // Get user info once for this order (may be used for phone/email fallback)
+        $user = null;
+        if ($order->user_id) {
+            $user = $this->ionAuth->user($order->user_id)->row();
+        }
+
         $newPaymentStatus = $this->request->getPost('payment_status');
         $newOrderStatus = $this->request->getPost('order_status');
 
@@ -155,34 +362,47 @@ class Sale extends BaseController
 
         if ($newPaymentStatus === 'paid') {
             foreach ($sql as $s) {
-                $ps = json_decode($s->item_data);
+                // Safely decode item_data (handle both object and array structures)
+                $itemData = json_decode($s->item_data ?? '', true) ?: [];
+
+                $participantName   = $itemData['participant_name']   ?? '';
+                $participantPhone  = $itemData['participant_phone']  ?? null;
+                $participantEmail  = $itemData['participant_email']  ?? null;
+                $participantEvent  = $itemData['id_event']           ?? $s->event_id;
+                $participantKat    = $itemData['id_kategori']        ?? 0;
+                $participantPlat   = $itemData['id_platform']        ?? 0;
+                $participantIdOrig = $itemData['participant_id']     ?? 0;
 
                 $data = [
                     'id_penjualan'  => $invoiceId,
-                    'id_kategori'   => 0,
-                    'id_platform'   => 0,
+                    'id_kategori'   => $participantKat,
+                    'id_platform'   => $participantPlat,
                     'id_kelompok'   => 0,
-                    'id_event'      => $s->event_id,
+                    'id_event'      => $participantEvent,
                     'id_user'       => $order->user_id,
                     'kode'          => $this->pesertaModel->generateKode($s->event_id),
-                    'nama'          => $ps->participant_name,
+                    'nama'          => $participantName,
+                    'no_hp'         => $participantPhone ?? $user->phone,
+                    'email'         => $participantEmail ?? $user->email,
                 ];
 
-                if (!empty($ps->participant_id) && $ps->participant_id != 0) {
-                    $data['id'] = $ps->participant_id;
+                if (!empty($participantIdOrig) && $participantIdOrig != 0) {
+                    $data['id'] = $participantIdOrig;
                 }
 
                 $this->pesertaModel->save($data);
-                $lastPesertaId = (!empty($ps->participant_id) && $ps->participant_id != 0 ? $ps->participant_id : $this->pesertaModel->insertID());
+                $lastPesertaId = (!empty($participantIdOrig) && $participantIdOrig != 0 ? $participantIdOrig : $this->pesertaModel->insertID());
 
                 $peserta = [
                     "participant_id"      => $lastPesertaId,
-                    "participant_name"    => strtolower(ucwords($ps->participant_name)),
+                    "participant_name"    => strtolower(ucwords($participantName)),
                     "participant_number"  => $data['kode'],
+                    "participant_phone"   => $participantPhone ?? $user->phone,
+                    "participant_email"   => $participantEmail ?? $user->email,
                     "id_user"             => $order->user_id,
-                    "id_event"            => $ps->id_event,
-                    "id_kategori"         => $ps->id_kategori,
-                    "id_platform"         => $ps->id_platform,
+                    "id_event"            => $participantEvent,
+                    "id_kategori"         => $participantKat,
+                    "id_platform"         => $participantPlat,
                 ];
 
                 $this->transJualDetModel->update($s->id, ['item_data' => json_encode($peserta)]);
@@ -381,6 +601,17 @@ class Sale extends BaseController
             $s = preg_replace('/(\d+)\s*K\b/', '$1 K', $s) ?? $s;
             return $s;
         };
+        
+        // Helper function to get Excel column letter from number (1 = A, 27 = AA, etc.)
+        $getColumnLetter = static function ($colNum): string {
+            $letter = '';
+            while ($colNum > 0) {
+                $colNum--;
+                $letter = chr(65 + ($colNum % 26)) . $letter;
+                $colNum = intval($colNum / 26);
+            }
+            return $letter;
+        };
 
         // Get transaction details with joins
         $builder = $this->transJualDetModel->builder();
@@ -424,17 +655,46 @@ class Sale extends BaseController
         }
 
         if ($format === 'xlsx' || $format === 'excel') {
+            // Get unique kategori columns from tbl_m_event_harga
+            $kategoriResults = $this->eventsHargaModel
+                ->select('keterangan')
+                ->distinct(true)
+                ->where('deleted_at', null)
+                ->where('status', '1')
+                ->orderBy('keterangan', 'ASC')
+                ->findAll();
+            
+            // Extract kategori values and normalize
+            $kategoriColumns = [];
+            foreach ($kategoriResults as $row) {
+                if (!empty($row->keterangan)) {
+                    $kategoriColumns[] = $row->keterangan;
+                }
+            }
+            
+            // If no kategori found, use empty array (will create empty export)
+            if (empty($kategoriColumns)) {
+                $kategoriColumns = [];
+            }
+            
+            $kategoriColumnsNormalized = array_map($normalizeKategori, $kategoriColumns);
+            
+            // Calculate dynamic column ranges
+            // Columns: A=NO(1), B=NAMA(2), C=TGL(3), D=ADA(4), E=TIDAK(5), F+=KATEGORI(6+), Last=JML PESERTA
+            $kategoriStartColNum = 6; // Column F
+            $numKategoriCols = count($kategoriColumns);
+            $jmlPesertaColNum = $kategoriStartColNum + $numKategoriCols; // F + N = JML PESERTA column
+            $kategoriStartCol = $getColumnLetter($kategoriStartColNum);
+            $jmlPesertaCol = $getColumnLetter($jmlPesertaColNum);
+            $lastCol = $jmlPesertaCol;
+            
             // Create new Spreadsheet object
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
             
-            // Define kategori columns
-            $kategoriColumns = ['1 K', '3 K', '5 K', '10 K', '3 K LANSIA', '5 K MASTER'];
-            $kategoriColumnsNormalized = array_map($normalizeKategori, $kategoriColumns);
-            
             // Title row
             $sheet->setCellValue('A1', 'DAFTAR UPDATE PESERTA RUN PSMTI 2026');
-            $sheet->mergeCells('A1:L1');
+            $sheet->mergeCells('A1:' . $lastCol . '1');
             $sheet->getStyle('A1')->applyFromArray([
                 'font' => ['bold' => true, 'size' => 14],
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
@@ -446,17 +706,24 @@ class Sale extends BaseController
             $sheet->setCellValue('C3', 'TGL PENDAFTARAN');
             $sheet->mergeCells('D3:E3');
             $sheet->setCellValue('D3', 'BUKTI TRANSFER');
-            $sheet->mergeCells('F3:K3');
-            $sheet->setCellValue('F3', 'KATEGORI');
-            $sheet->setCellValue('L3', 'JML PESERTA');
+            if ($numKategoriCols > 0) {
+                $kategoriEndColNum = $kategoriStartColNum + $numKategoriCols - 1;
+                $kategoriEndCol = $getColumnLetter($kategoriEndColNum);
+                $sheet->mergeCells($kategoriStartCol . '3:' . $kategoriEndCol . '3');
+            } else {
+                $sheet->mergeCells($kategoriStartCol . '3:' . $kategoriStartCol . '3');
+            }
+            $sheet->setCellValue($kategoriStartCol . '3', 'KATEGORI');
+            $sheet->setCellValue($jmlPesertaCol . '3', 'JML PESERTA');
             
             // Header row 2 (sub-headers)
             $sheet->setCellValue('D4', 'ADA');
             $sheet->setCellValue('E4', 'TIDAK');
-            $col = 'F';
+            $colNum = $kategoriStartColNum;
             foreach ($kategoriColumns as $kategori) {
+                $col = $getColumnLetter($colNum);
                 $sheet->setCellValue($col . '4', $kategori);
-                $col++;
+                $colNum++;
             }
             
             // Style header rows
@@ -479,7 +746,7 @@ class Sale extends BaseController
                     ],
                 ],
             ];
-            $sheet->getStyle('A3:L4')->applyFromArray($headerStyle);
+            $sheet->getStyle('A3:' . $lastCol . '4')->applyFromArray($headerStyle);
             
             // Populate data rows
             $row = 5;
@@ -510,20 +777,21 @@ class Sale extends BaseController
                 $sheet->setCellValue('E' . $row, $buktiTidak);
                 
                 // Set kategori columns (show 1 in matching column, empty in others)
-                $col = 'F';
+                $colNum = $kategoriStartColNum;
                 foreach ($kategoriColumns as $idx => $kat) {
                     $katNormalized = $kategoriColumnsNormalized[$idx] ?? $normalizeKategori($kat);
+                    $col = $getColumnLetter($colNum);
                     if ($kategoriNormalized !== '' && $kategoriNormalized === $katNormalized) {
                         $sheet->setCellValue($col . $row, 1);
                         $summaryTotals[$kat]++;
                     } else {
                         $sheet->setCellValue($col . $row, '');
                     }
-                    $col++;
+                    $colNum++;
                 }
                 
                 // JML PESERTA (always 1 per participant)
-                $sheet->setCellValue('L' . $row, 1);
+                $sheet->setCellValue($jmlPesertaCol . $row, 1);
                 $totalJmlPeserta++;
                 
                 // Style data row
@@ -538,13 +806,13 @@ class Sale extends BaseController
                         'vertical' => Alignment::VERTICAL_CENTER,
                     ],
                 ];
-                $sheet->getStyle('A' . $row . ':L' . $row)->applyFromArray($dataRowStyle);
+                $sheet->getStyle('A' . $row . ':' . $lastCol . $row)->applyFromArray($dataRowStyle);
                 
                 // NAMA column left-aligned
                 $sheet->getStyle('B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                 
                 // JML PESERTA column yellow background
-                $sheet->getStyle('L' . $row)->applyFromArray([
+                $sheet->getStyle($jmlPesertaCol . $row)->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => 'FFE699'],
@@ -559,13 +827,14 @@ class Sale extends BaseController
             $sheet->mergeCells('A' . $summaryRow . ':B' . $summaryRow);
             $sheet->setCellValue('A' . $summaryRow, 'JUMLAH PESERTA');
             
-            $col = 'F';
+            $colNum = $kategoriStartColNum;
             foreach ($kategoriColumns as $kat) {
-                $sheet->setCellValue($col . $summaryRow, $summaryTotals[$kat]);
-                $col++;
+                $col = $getColumnLetter($colNum);
+                $sheet->setCellValue($col . $summaryRow, $summaryTotals[$kat] ?? 0);
+                $colNum++;
             }
             
-            $sheet->setCellValue('L' . $summaryRow, $totalJmlPeserta);
+            $sheet->setCellValue($jmlPesertaCol . $summaryRow, $totalJmlPeserta);
             
             // Style summary row
             $summaryStyle = [
@@ -584,10 +853,10 @@ class Sale extends BaseController
                     'vertical' => Alignment::VERTICAL_CENTER,
                 ],
             ];
-            $sheet->getStyle('A' . $summaryRow . ':L' . $summaryRow)->applyFromArray($summaryStyle);
+            $sheet->getStyle('A' . $summaryRow . ':' . $lastCol . $summaryRow)->applyFromArray($summaryStyle);
             
             // Auto-size columns
-            foreach (range('A', 'L') as $col) {
+            foreach (range('A', $lastCol) as $col) {
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
             
@@ -889,7 +1158,7 @@ class Sale extends BaseController
 
         // Customer info
         if ($user) {
-            $pdf->SetFont('helvetica', 'B', 8);
+            $pdf->SetFont('helvetica', 'B', 7);
             $pdf->SetXY($ticketX + 0.5, $currentY);
             // $pdf->Cell($ticketW - $sideStripW - 1, 0.4, 'Ticket Holder:', 0, 1, 'L');
             $currentY += 0.4;
@@ -923,7 +1192,7 @@ class Sale extends BaseController
         // Center "SCAN TO VERIFY" at the top of the QR block
         $pdf->SetFont('helvetica', 'B', 8);
         $pdf->SetXY($qrBoxX + 0.1, $qrBoxY - 0.2); // 0.2cm above the QR box
-        $pdf->Cell(4, 0.5, 'SCAN TO VERIFY', 0, 1, 'C');
+        $pdf->Cell(4.2, 0.5, 'SCAN TO VERIFY', 0, 1, 'C');
 
         // Display QR code if available, inside the white box at the exact box position (no shift)
         if (!empty($orderDetail->qrcode)) {
@@ -931,13 +1200,13 @@ class Sale extends BaseController
             if (file_exists($qrPath)) {
                 // Place QR image exactly inside the white box (no shift)
                 // Make the QR code box bigger and keep it proportional (square)
-                $biggerQrBoxW = 4.5;
-                $biggerQrBoxH = 4.5;
+                $biggerQrBoxW = 4;
+                $biggerQrBoxH = 4;
                 $biggerQrBoxX = $sideStripX + ($sideStripW - $biggerQrBoxW) / 2 - 1.35;
                 $biggerQrBoxY = $ticketY + $headerH + 0.2 - 1.2;
 
                 // Place QR image exactly at the bigger box position (with 0.2cm margin), no rectangle
-                $pdf->Image($qrPath, $biggerQrBoxX + 1, $biggerQrBoxY + 0.7, $biggerQrBoxW - 0.4, $biggerQrBoxH - 0.4, 'PNG');
+                $pdf->Image($qrPath, $biggerQrBoxX + 1, $biggerQrBoxY + 0.5, $biggerQrBoxW - 0.4, $biggerQrBoxH - 0.4, 'PNG');
             } else {
                 // QR placeholder in white box, centered
                 $pdf->SetFont('helvetica', '', 7);

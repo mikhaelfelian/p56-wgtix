@@ -431,6 +431,11 @@ class Sale extends BaseController{
                 $participant = [
                     'participant_id'    => $item['participant_id']    ?? 0,
                     'participant_name'  => $item['participant_name']  ?? '',
+                    'participant_gender'=> $item['participant_gender'] ?? null,
+                    'participant_phone' => $item['participant_phone']  ?? null,
+                    'participant_address' => $item['participant_address'] ?? null,
+                    'participant_uk'    => $item['participant_uk']    ?? null,
+                    'participant_emg'   => $item['participant_emg']   ?? null,
                     'id_user'           => $userId,
                     'id_event'          => $item['event_id']          ?? 0,
                     'id_kategori'       => $item['kategori_id']       ?? 0,
@@ -1766,6 +1771,9 @@ class Sale extends BaseController{
 
                 // Update participant
                 if ($this->pesertaModel->update($participantId, $participantData)) {
+                    // Also sync participant info into tbl_trans_jual_det.item_data
+                    $this->syncOrderItemDataWithParticipant($orderId, $eventId, $participantData);
+
                     return redirect()->to('sale/register-participant/' . $orderId)
                         ->with('toastr', [
                             'type' => 'success', 
@@ -1804,6 +1812,9 @@ class Sale extends BaseController{
                 // Insert participant
                 if ($this->pesertaModel->insert($participantData)) {
                     $newParticipantId = $this->pesertaModel->insertID();
+
+                    // Also sync participant info into tbl_trans_jual_det.item_data
+                    $this->syncOrderItemDataWithParticipant($orderId, $eventId, $participantData);
                     
                     // Update QR code with actual participant ID
                     $updatedQrData = json_encode([
@@ -1836,6 +1847,37 @@ class Sale extends BaseController{
                     'type' => 'error', 
                     'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
                 ]);
+        }
+    }
+
+    /**
+     * Sync basic participant info into tbl_trans_jual_det.item_data
+     * so tickets/exports that rely on item_data have the latest data.
+     */
+    private function syncOrderItemDataWithParticipant($orderId, $eventId, array $participantData): void
+    {
+        try {
+            $genderCode = $participantData['jns_klm'] ?? null;
+            $gender = $genderCode === 'L' ? 'male' : ($genderCode === 'P' ? 'female' : null);
+
+            $itemData = [
+                'participant_name'        => $participantData['nama']        ?? '',
+                'participant_email'       => $participantData['email']       ?? '',
+                'participant_phone'       => $participantData['no_hp']       ?? '',
+                'participant_gender'      => $gender,
+                'participant_birth_place' => $participantData['tmp_lahir']   ?? null,
+                'participant_birth_date'  => $participantData['tgl_lahir']   ?? null,
+                'participant_address'     => $participantData['alamat']      ?? null,
+            ];
+
+            // Update all detail items for this order + event with the latest participant info.
+            $this->transJualDetModel
+                ->where('id_penjualan', $orderId)
+                ->where('event_id', $eventId)
+                ->set(['item_data' => json_encode($itemData)])
+                ->update();
+        } catch (\Throwable $e) {
+            log_message('error', 'Failed to sync item_data for order ' . $orderId . ': ' . $e->getMessage());
         }
     }
 }
