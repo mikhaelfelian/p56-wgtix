@@ -17,6 +17,7 @@ use App\Models\PesertaModel;
 use App\Models\EventsHargaModel;
 use App\Models\EventsModel;
 use App\Models\PlatformModel;
+use App\Models\VKategoriModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -39,6 +40,7 @@ class Sale extends BaseController
     protected $eventsHargaModel;
     protected $eventsModel;
     protected $platformModel;
+    protected $kategoriModel;
     protected $ionAuth;
 
     public function __construct()
@@ -50,6 +52,7 @@ class Sale extends BaseController
         $this->eventsHargaModel    = new EventsHargaModel();
         $this->eventsModel         = new EventsModel();
         $this->platformModel        = new PlatformModel();
+        $this->kategoriModel        = new VKategoriModel();
         $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -83,12 +86,15 @@ class Sale extends BaseController
                     ->findAll();
 
                 foreach ($details as $detail) {
+                    $kat = $this->kategoriModel->find($detail->id);
+
                     if (!empty($detail->item_data)) {
                         $itemData = json_decode($detail->item_data, true) ?: [];
                         if (!empty($itemData['participant_name'])) {
                             $participants[] = [
                                 'name'  => $itemData['participant_name'],
                                 'phone' => $itemData['participant_phone'] ?? null,
+                                'category' => $kat->kategori,
                             ];
                         }
                     }

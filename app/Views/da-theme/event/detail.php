@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * Date: 2025-08-29
@@ -88,17 +89,17 @@ echo $this->section('content');
                             <div class="col-md-12">
                                 <div class="event-gallery-section">
                                     <h4><i class="fa fa-camera"></i> Event Gallery</h4>
-                                    
+
                                     <!-- Main Gallery Slider -->
                                     <div class="gallery-slider-wrapper">
                                         <div class="owl-carousel owl-theme gallery-slider" id="eventGallerySlider">
                                             <?php foreach ($eventGallery as $gallery): ?>
                                                 <div class="item">
                                                     <div class="gallery-item">
-                                                        <img src="<?= base_url('public/file/events/' . $gallery['id_event'] . '/gallery/' . $gallery['file']) ?>" 
-                                                             alt="<?= esc($gallery['deskripsi'] ?? 'Event Gallery') ?>" 
-                                                             class="img-responsive gallery-image"
-                                                             style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;">
+                                                        <img src="<?= base_url('public/file/events/' . $gallery['id_event'] . '/gallery/' . $gallery['file']) ?>"
+                                                            alt="<?= esc($gallery['deskripsi'] ?? 'Event Gallery') ?>"
+                                                            class="img-responsive gallery-image"
+                                                            style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;">
                                                         <?php if (!empty($gallery['deskripsi'])): ?>
                                                             <div class="gallery-caption">
                                                                 <p><?= esc($gallery['deskripsi']) ?></p>
@@ -113,17 +114,17 @@ echo $this->section('content');
                                                 </div>
                                             <?php endforeach; ?>
                                         </div>
-                                        
+
                                         <!-- Gallery Thumbnails -->
                                         <div class="gallery-thumbnails mt-3">
                                             <div class="owl-carousel owl-theme gallery-thumbs" id="eventGalleryThumbs">
                                                 <?php foreach ($eventGallery as $index => $gallery): ?>
                                                     <div class="item">
                                                         <div class="thumb-item <?= $index === 0 ? 'active' : '' ?>" data-slide="<?= $index ?>">
-                                                            <img src="<?= base_url('public/file/events/' . $gallery['id_event'] . '/gallery/' . $gallery['file']) ?>" 
-                                                                 alt="Thumbnail <?= $index + 1 ?>" 
-                                                                 class="img-responsive thumb-image"
-                                                                 style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;">
+                                                            <img src="<?= base_url('public/file/events/' . $gallery['id_event'] . '/gallery/' . $gallery['file']) ?>"
+                                                                alt="Thumbnail <?= $index + 1 ?>"
+                                                                class="img-responsive thumb-image"
+                                                                style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer;">
                                                             <?php if ($gallery['is_cover'] == 1): ?>
                                                                 <div class="thumb-badge">
                                                                     <i class="fa fa-star text-warning"></i>
@@ -157,14 +158,13 @@ echo $this->section('content');
                                                         <?php endif; ?>
                                                     </td>
                                                     <td style="text-align: center; vertical-align: middle;">
-                                                        
+
                                                         <?php if (isset($user_level) && $user_level && $user_level->name == 'user'): ?>
                                                             <button class="btn btn-primary btn-sm add-to-cart-btn"
                                                                 data-event-id="<?= $price->id_event ?>"
                                                                 data-price-id="<?= $price->id ?>"
                                                                 data-price="<?= $price->harga ?>"
-                                                                data-description="<?= esc($price->keterangan) ?>"
-                                                            >
+                                                                data-description="<?= esc($price->keterangan) ?>">
                                                                 <i class="fa fa-shopping-cart"></i> <span class="btn-text">Beli</span>
                                                             </button>
                                                         <?php else: ?>
@@ -172,7 +172,7 @@ echo $this->section('content');
                                                                 <i class="fa fa-sign-in"></i> Login untuk membeli
                                                             </a>
                                                         <?php endif; ?>
-                                                       
+
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>
@@ -215,7 +215,7 @@ echo $this->section('content');
                                 <div id="eventMap" style="height: 400px; width: 100%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"></div>
                                 <div class="map-info mt-2">
                                     <p class="text-muted">
-                                        <i class="fa fa-map-marker text-danger"></i> 
+                                        <i class="fa fa-map-marker text-danger"></i>
                                         <?= !empty($event->lokasi) ? esc($event->lokasi) : 'Event Location' ?>
                                     </p>
                                 </div>
@@ -230,40 +230,40 @@ echo $this->section('content');
 
 
 <script>
-(function() {
-    // Google Map Section
-    <?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
-    // Expose initEventMap globally to fix "initEventMap is not a function" error
-    window.initEventMap = function() {
-        var eventLocation = {
-        lat: parseFloat(<?= $event->latitude ?>),
-        lng: parseFloat(<?= $event->longitude ?>)
-    };
+    (function() {
+        // Google Map Section
+        <?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
+            // Expose initEventMap globally to fix "initEventMap is not a function" error
+            window.initEventMap = function() {
+                var eventLocation = {
+                    lat: parseFloat(<?= $event->latitude ?>),
+                    lng: parseFloat(<?= $event->longitude ?>)
+                };
 
-        var map = new google.maps.Map(document.getElementById("eventMap"), {
-        zoom: 15,
-        center: eventLocation,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        styles: [
-            {
-                featureType: "poi",
-                elementType: "labels",
-                stylers: [{ visibility: "off" }]
-            }
-        ]
-    });
+                var map = new google.maps.Map(document.getElementById("eventMap"), {
+                    zoom: 15,
+                    center: eventLocation,
+                    mapTypeId: google.maps.MapTypeId.ROADMAP,
+                    styles: [{
+                        featureType: "poi",
+                        elementType: "labels",
+                        stylers: [{
+                            visibility: "off"
+                        }]
+                    }]
+                });
 
-        var marker = new google.maps.Marker({
-        position: eventLocation,
-        map: map,
-        title: "<?= esc($event->event ?? 'Event Location') ?>",
-        icon: {
-            url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-            scaledSize: new google.maps.Size(40, 40)
-        }
-    });
+                var marker = new google.maps.Marker({
+                    position: eventLocation,
+                    map: map,
+                    title: "<?= esc($event->event ?? 'Event Location') ?>",
+                    icon: {
+                        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                        scaledSize: new google.maps.Size(40, 40)
+                    }
+                });
 
-        var infoWindowContent = `
+                var infoWindowContent = `
             <div style="padding: 10px; max-width: 250px;">
                 <h6 style="margin: 0 0 5px 0; color: #333;">
                     <i class="fa fa-calendar" style="color: #007bff;"></i> 
@@ -287,151 +287,165 @@ echo $this->section('content');
             </div>
         `;
 
-        var infoWindow = new google.maps.InfoWindow({
-            content: infoWindowContent
-    });
+                var infoWindow = new google.maps.InfoWindow({
+                    content: infoWindowContent
+                });
 
-        marker.addListener("click", function() {
-        infoWindow.open(map, marker);
-    });
+                marker.addListener("click", function() {
+                    infoWindow.open(map, marker);
+                });
 
-    infoWindow.open(map, marker);
-    };
-
-    // Use best-practice async loading for Google Maps JS API
-function loadGoogleMaps() {
-        // Only load if not already loaded
-        if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-            // Remove any previous script with same src to avoid duplicates
-            var existingScript = document.querySelector('script[data-gmaps="event"]');
-            if (existingScript) existingScript.remove();
-
-            var script = document.createElement('script');
-            script.src = 'https://maps.googleapis.com/maps/api/js?key=<?= getenv('GOOGLE_MAPS_API') ?>&callback=initEventMap&loading=async';
-        script.async = true;
-        script.defer = true;
-            script.setAttribute('data-gmaps', 'event');
-        document.head.appendChild(script);
-    } else {
-            // If already loaded, just call the function
-            window.initEventMap();
-    }
-}
-    <?php endif; ?>
-
-document.addEventListener('DOMContentLoaded', function() {
-        // Google Map
-        <?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
-    if (document.getElementById('eventMap')) {
-        loadGoogleMaps();
-    }
-        <?php endif; ?>
-    
-        // Gallery Slider
-    <?php if (!empty($eventGallery) && is_array($eventGallery)): ?>
-        // Main gallery slider
-    $('#eventGallerySlider').owlCarousel({
-        items: 1,
-        loop: true,
-        margin: 10,
-        nav: true,
-        dots: false,
-        autoplay: true,
-        autoplayTimeout: 5000,
-        navText: ['<i class="fa fa-chevron-left"></i>', '<i class="fa fa-chevron-right"></i>'],
-        responsive: {
-            0: { items: 1 },
-            768: { items: 1 },
-            1000: { items: 1 }
-        }
-    });
-
-        // Thumbnail slider
-    $('#eventGalleryThumbs').owlCarousel({
-        items: 6,
-        loop: false,
-        margin: 10,
-        nav: false,
-        dots: false,
-        responsive: {
-            0: { items: 3 },
-            480: { items: 4 },
-            768: { items: 5 },
-            1000: { items: 6 }
-        }
-    });
-
-        // Thumbnail click
-    $('.thumb-item').on('click', function() {
-        var slideIndex = $(this).data('slide');
-        $('#eventGallerySlider').trigger('to.owl.carousel', [slideIndex, 300]);
-        $('.thumb-item').removeClass('active');
-        $(this).addClass('active');
-    });
-
-    // Sync main slider with thumbnails
-    $('#eventGallerySlider').on('changed.owl.carousel', function(event) {
-        var current = event.item.index;
-        $('.thumb-item').removeClass('active');
-        $('.thumb-item').eq(current).addClass('active');
-    });
-    <?php endif; ?>
-
-        // CSRF hash
-        window.csrf_hash = '<?= csrf_hash() ?>';
-
-        // Participant Names Modal functionality
-        let currentPurchaseData = {};
-        
-        // Handle buy button click - show modal
-        $('.add-to-cart-btn').on('click', function(e) {
-            e.preventDefault();
-            
-            const eventId = $(this).data('event-id');
-            const priceId = $(this).data('price-id');
-            const price = $(this).data('price');
-            const description = $(this).data('description');
-            const quantity = $(this).closest('tr').find('.quantity').val() || 1;
-            
-            // Store current purchase data
-            currentPurchaseData = {
-                eventId: eventId,
-                priceId: priceId,
-                price: price,
-                description: description,
-                quantity: parseInt(quantity)
+                infoWindow.open(map, marker);
             };
-            
-            // Generate participant name fields
-            generateParticipantFields(quantity);
-            
-            // Show modal
-            $('#participantNamesModal').modal('show');
-        });
-        
-        // Generate participant name fields based on quantity
-        function generateParticipantFields(quantity) {
-            const fieldsContainer = $('#participantFields');
-            fieldsContainer.empty();
-            
-            for (let i = 1; i <= quantity; i++) {
-                // Prepare dropdown options for kategori and kelompok
-                let kategoriOptions = `<option value="">Pilih Kategori</option>`;
-                <?php if (!empty($kategori_list)): ?>
-                    <?php foreach ($kategori_list as $kategori): ?>
-                        kategoriOptions += `<option value="<?= esc($kategori->id) ?>"><?= esc($kategori->nama) ?></option>`;
-                    <?php endforeach; ?>
-                <?php endif; ?>
 
-                let kelompokOptions = `<option value="">Pilih Kelompok</option>`;
-                <?php if (!empty($kelompok_list)): ?>
-                    <?php foreach ($kelompok_list as $kelompok): ?>
-                        kelompokOptions += `<option value="<?= esc($kelompok->id) ?>"><?= esc($kelompok->nama) ?></option>`;
-                    <?php endforeach; ?>
-                <?php endif; ?>
+            // Use best-practice async loading for Google Maps JS API
+            function loadGoogleMaps() {
+                // Only load if not already loaded
+                if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                    // Remove any previous script with same src to avoid duplicates
+                    var existingScript = document.querySelector('script[data-gmaps="event"]');
+                    if (existingScript) existingScript.remove();
+
+                    var script = document.createElement('script');
+                    script.src = 'https://maps.googleapis.com/maps/api/js?key=<?= getenv('GOOGLE_MAPS_API') ?>&callback=initEventMap&loading=async';
+                    script.async = true;
+                    script.defer = true;
+                    script.setAttribute('data-gmaps', 'event');
+                    document.head.appendChild(script);
+                } else {
+                    // If already loaded, just call the function
+                    window.initEventMap();
+                }
+            }
+        <?php endif; ?>
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Google Map
+            <?php if (!empty($event->latitude) && !empty($event->longitude)): ?>
+                if (document.getElementById('eventMap')) {
+                    loadGoogleMaps();
+                }
+            <?php endif; ?>
+
+            // Gallery Slider
+            <?php if (!empty($eventGallery) && is_array($eventGallery)): ?>
+                // Main gallery slider
+                $('#eventGallerySlider').owlCarousel({
+                    items: 1,
+                    loop: true,
+                    margin: 10,
+                    nav: true,
+                    dots: false,
+                    autoplay: true,
+                    autoplayTimeout: 5000,
+                    navText: ['<i class="fa fa-chevron-left"></i>', '<i class="fa fa-chevron-right"></i>'],
+                    responsive: {
+                        0: {
+                            items: 1
+                        },
+                        768: {
+                            items: 1
+                        },
+                        1000: {
+                            items: 1
+                        }
+                    }
+                });
+
+                // Thumbnail slider
+                $('#eventGalleryThumbs').owlCarousel({
+                    items: 6,
+                    loop: false,
+                    margin: 10,
+                    nav: false,
+                    dots: false,
+                    responsive: {
+                        0: {
+                            items: 3
+                        },
+                        480: {
+                            items: 4
+                        },
+                        768: {
+                            items: 5
+                        },
+                        1000: {
+                            items: 6
+                        }
+                    }
+                });
+
+                // Thumbnail click
+                $('.thumb-item').on('click', function() {
+                    var slideIndex = $(this).data('slide');
+                    $('#eventGallerySlider').trigger('to.owl.carousel', [slideIndex, 300]);
+                    $('.thumb-item').removeClass('active');
+                    $(this).addClass('active');
+                });
+
+                // Sync main slider with thumbnails
+                $('#eventGallerySlider').on('changed.owl.carousel', function(event) {
+                    var current = event.item.index;
+                    $('.thumb-item').removeClass('active');
+                    $('.thumb-item').eq(current).addClass('active');
+                });
+            <?php endif; ?>
+
+            // CSRF hash
+            window.csrf_hash = '<?= csrf_hash() ?>';
+
+            // Participant Names Modal functionality
+            let currentPurchaseData = {};
+
+            // Handle buy button click - show modal
+            $('.add-to-cart-btn').on('click', function(e) {
+                e.preventDefault();
+
+                const eventId = $(this).data('event-id');
+                const priceId = $(this).data('price-id');
+                const price = $(this).data('price');
+                const description = $(this).data('description');
+                const quantity = $(this).closest('tr').find('.quantity').val() || 1;
+
+                // Store current purchase data
+                currentPurchaseData = {
+                    eventId: eventId,
+                    priceId: priceId,
+                    price: price,
+                    description: description,
+                    quantity: parseInt(quantity)
+                };
+
+                // Generate participant name fields
+                generateParticipantFields(quantity);
+
+                // Show modal
+                $('#participantNamesModal').modal('show');
+            });
+
+            // Generate participant name fields based on quantity
+            function generateParticipantFields(quantity) {
+                const fieldsContainer = $('#participantFields');
+                fieldsContainer.empty();
+
+                for (let i = 1; i <= quantity; i++) {
+                    // Prepare dropdown options for kategori and kelompok
+                    let kategoriOptions = `<option value="">Pilih Kategori</option>`;
+                    <?php if (!empty($kategori_list)): ?>
+                        <?php foreach ($kategori_list as $kategori): ?>
+                            kategoriOptions += `<option value="<?= esc($kategori->id) ?>"><?= esc($kategori->nama) ?></option>`;
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    let kelompokOptions = `<option value="">Pilih Kelompok</option>`;
+                    <?php if (!empty($kelompok_list)): ?>
+                        <?php foreach ($kelompok_list as $kelompok): ?>
+                            kelompokOptions += `<option value="<?= esc($kelompok->id) ?>"><?= esc($kelompok->nama) ?></option>`;
+                        <?php endforeach; ?>
+                    <?php endif; ?>
 
 
-                const fieldHtml = `
+                    const fieldHtml = `
                     <div class="participant-row mb-3 p-3 border rounded" style="background-color: #f8f9fa;">
                         <h6 class="mb-3 text-primary">
                             <i class="fa fa-user"></i> Peserta ${i}
@@ -474,15 +488,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="col-md-3">
                                 <div class="form-group mb-2">
                                     <label for="ukuran_${i}" class="form-label small">Ukuran Jersey <span class="text-danger">*</span></label>
-                                    <select class="form-control form-control-sm" id="ukuran_${i}" name="ukuran_${i}" required>
-                                        <option value="">Pilih Ukuran</option>
-                                        <option value="XS">XS</option>
-                                        <option value="S">S</option>
-                                        <option value="M">M</option>
-                                        <option value="L">L</option>
-                                        <option value="XL">XL</option>
-                                        <option value="XXL">XXL</option>
-                                    </select>
+                                        <select class="form-control form-control-sm" id="ukuran_${i}" name="ukuran_${i}" required>
+                                            <option value="">Pilih Ukuran</option>
+                                            <option value="XS">XS (59x44)</option>
+                                            <option value="S">S (67x47)</option>
+                                            <option value="M">M (70x49)</option>
+                                            <option value="L">L (72x51)</option>
+                                            <option value="XL">XL (74x53)</option>
+                                            <option value="XXL">XXL (76x56)</option>
+                                            <option value="3XL">3XL (78x58)</option>
+                                            <option value="4XL">4XL (80x60)</option>
+                                        </select>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -496,510 +512,535 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 `;
-                fieldsContainer.append(fieldHtml);
-            }
-            
-            // Add event listener for single payment method change
-            $('#payment_method').on('change', function() {
-                const selectedOption = $(this).find('option:selected');
-                const fee = selectedOption.data('fee') || 'Pilih metode pembayaran';
-                $('#payment_fee').text(fee);
-            });
-        }
-        
-        // Handle confirm purchase
-        $('#confirmPurchase').on('click', function() {
-            // Validate all fields
-            let isValid = true;
-            const participantData = [];
-            
-            // Get single payment method
-            const paymentMethod = $('#payment_method').val();
-            
-            // Validate payment method
-            if (!paymentMethod) {
-                isValid = false;
-                $('#payment_method').addClass('is-invalid');
-            } else {
-                $('#payment_method').removeClass('is-invalid');
-            }
-            
-            for (let i = 1; i <= currentPurchaseData.quantity; i++) {
-                const name = $(`#participant_${i}`).val().trim();
-                const gender = $(`#gender_${i}`).val();
-                const phone = $(`#no_hp_${i}`).val().trim();
-                const address = $(`#alamat_${i}`).val().trim();
-                const jersey = $(`#ukuran_${i}`).val();
-                const emergency = $(`#emg_${i}`).val().trim();
-                
-                // Validate name
-                if (!name) {
-                    isValid = false;
-                    $(`#participant_${i}`).addClass('is-invalid');
-                } else {
-                    $(`#participant_${i}`).removeClass('is-invalid');
-                }
-                
-                // Validate gender
-                if (!gender) {
-                    isValid = false;
-                    $(`#gender_${i}`).addClass('is-invalid');
-                } else {
-                    $(`#gender_${i}`).removeClass('is-invalid');
-                }
-                
-                // Validate phone
-                if (!phone || !phone.match(/^08[0-9]{8,13}$/)) {
-                    isValid = false;
-                    $(`#no_hp_${i}`).addClass('is-invalid');
-                } else {
-                    $(`#no_hp_${i}`).removeClass('is-invalid');
-                }
-                
-                // Validate address
-                if (!address) {
-                    isValid = false;
-                    $(`#alamat_${i}`).addClass('is-invalid');
-                } else {
-                    $(`#alamat_${i}`).removeClass('is-invalid');
+                    fieldsContainer.append(fieldHtml);
                 }
 
-                // Validate jersey size
-                if (!jersey) {
-                    isValid = false;
-                    $(`#ukuran_${i}`).addClass('is-invalid');
-                } else {
-                    $(`#ukuran_${i}`).removeClass('is-invalid');
-                }
-
-                // Validate emergency contact
-                if (!emergency || !emergency.match(/^08[0-9]{8,13}$/)) {
-                    isValid = false;
-                    $(`#emg_${i}`).addClass('is-invalid');
-                } else {
-                    $(`#emg_${i}`).removeClass('is-invalid');
-                }
-                
-                // Collect participant data (without individual payment method)
-                participantData.push({
-                    name: name,
-                    gender: gender,
-                    phone: phone,
-                    address: address,
-                    jersey: jersey,
-                    emergency: emergency
+                // Add event listener for single payment method change
+                $('#payment_method').on('change', function() {
+                    const selectedOption = $(this).find('option:selected');
+                    const fee = selectedOption.data('fee') || 'Pilih metode pembayaran';
+                    $('#payment_fee').text(fee);
                 });
             }
-            
-            if (!isValid) {
-                alert('Mohon lengkapi semua data peserta dengan benar!');
-                return;
-            }
-            
-            // Bypass cart and go directly to checkout
-            proceedToCheckout(participantData, paymentMethod);
-        });
-        
-        // Proceed directly to checkout function
-        function proceedToCheckout(participantData, paymentMethod) {
-            // Show loading state
-            $('#confirmPurchase').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
-            
-            // Generate invoice number
-            const invoiceNo = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
-            
-            // Calculate total
-            const total = currentPurchaseData.price * currentPurchaseData.quantity;
-            
-            // Prepare order data in the format expected by Sale controller
-            const orderData = {
-                no_nota: invoiceNo,
-                subtotal: total,
-                cart_data: JSON.stringify({
-                    event_id: currentPurchaseData.eventId,
-                    quantity: currentPurchaseData.quantity,
-                    price: currentPurchaseData.price,
-                    total: total
-                }),
-                participant: participantData.map((participant, index) => ({
-                    participant_id: 0,
-                    participant_name: participant.name,
-                    // store gender in same format used elsewhere in system (male/female)
-                    participant_gender: participant.gender === 'L' ? 'male' : (participant.gender === 'P' ? 'female' : null),
-                    participant_phone: participant.phone,
-                    participant_address: participant.address,
-                    participant_uk: participant.jersey,
-                    participant_emg: participant.emergency,
-                    event_id: currentPurchaseData.eventId,
-                    price_id: 1, // Default price ID
-                    event_title: '<?= esc($event->event) ?>',
-                    price_description: 'Event Registration',
-                    quantity: 1,
-                    unit_price: currentPurchaseData.price,
-                    total_price: currentPurchaseData.price,
-                    kategori_id: 0, // Default category
-                    platform_id: paymentMethod
-                })),
-                cart_payments: [{
-                    platform_id: paymentMethod,
-                    amount: total,
-                    note: 'Event Registration - ' + participantData.length + ' participants'
-                }]
-            };
-            
-            // Submit directly to Sale controller store method
-            $.ajax({
-                url: '<?= base_url('checkout') ?>',
-                type: 'POST',
-                data: {
-                    order_data: JSON.stringify(orderData)
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Redirect to checkout success page or order detail
-                        window.location.href = response.redirect_url || '<?= base_url('sale/orders') ?>';
+
+            // Handle confirm purchase
+            $('#confirmPurchase').on('click', function() {
+                // Validate all fields
+                let isValid = true;
+                const participantData = [];
+
+                // Get single payment method
+                const paymentMethod = $('#payment_method').val();
+
+                // Validate payment method
+                if (!paymentMethod) {
+                    isValid = false;
+                    $('#payment_method').addClass('is-invalid');
+                } else {
+                    $('#payment_method').removeClass('is-invalid');
+                }
+
+                for (let i = 1; i <= currentPurchaseData.quantity; i++) {
+                    const name = $(`#participant_${i}`).val().trim();
+                    const gender = $(`#gender_${i}`).val();
+                    const phone = $(`#no_hp_${i}`).val().trim();
+                    const address = $(`#alamat_${i}`).val().trim();
+                    const jersey = $(`#ukuran_${i}`).val();
+                    const emergency = $(`#emg_${i}`).val().trim();
+
+                    // Validate name
+                    if (!name) {
+                        isValid = false;
+                        $(`#participant_${i}`).addClass('is-invalid');
                     } else {
-                        alert('Error: ' + (response.message || 'Failed to process checkout'));
+                        $(`#participant_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Validate gender
+                    if (!gender) {
+                        isValid = false;
+                        $(`#gender_${i}`).addClass('is-invalid');
+                    } else {
+                        $(`#gender_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Validate phone
+                    if (!phone || !phone.match(/^08[0-9]{8,13}$/)) {
+                        isValid = false;
+                        $(`#no_hp_${i}`).addClass('is-invalid');
+                    } else {
+                        $(`#no_hp_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Validate address
+                    if (!address) {
+                        isValid = false;
+                        $(`#alamat_${i}`).addClass('is-invalid');
+                    } else {
+                        $(`#alamat_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Validate jersey size
+                    if (!jersey) {
+                        isValid = false;
+                        $(`#ukuran_${i}`).addClass('is-invalid');
+                    } else {
+                        $(`#ukuran_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Validate emergency contact
+                    if (!emergency || !emergency.match(/^08[0-9]{8,13}$/)) {
+                        isValid = false;
+                        $(`#emg_${i}`).addClass('is-invalid');
+                    } else {
+                        $(`#emg_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Collect participant data (without individual payment method)
+                    participantData.push({
+                        name: name,
+                        gender: gender,
+                        phone: phone,
+                        address: address,
+                        jersey: jersey,
+                        emergency: emergency
+                    });
+                }
+
+                if (!isValid) {
+                    alert('Mohon lengkapi semua data peserta dengan benar!');
+                    return;
+                }
+
+                // Bypass cart and go directly to checkout
+                proceedToCheckout(participantData, paymentMethod);
+            });
+
+            // Proceed directly to checkout function
+            function proceedToCheckout(participantData, paymentMethod) {
+                // Show loading state
+                $('#confirmPurchase').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+
+                // Generate invoice number
+                const invoiceNo = 'INV-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+                // Calculate total
+                const total = currentPurchaseData.price * currentPurchaseData.quantity;
+
+                // Prepare order data in the format expected by Sale controller
+                const orderData = {
+                    no_nota: invoiceNo,
+                    subtotal: total,
+                    cart_data: JSON.stringify({
+                        event_id: currentPurchaseData.eventId,
+                        quantity: currentPurchaseData.quantity,
+                        price: currentPurchaseData.price,
+                        total: total
+                    }),
+                    participant: participantData.map((participant, index) => ({
+                        participant_id: 0,
+                        participant_name: participant.name,
+                        // store gender in same format used elsewhere in system (male/female)
+                        participant_gender: participant.gender === 'L' ? 'male' : (participant.gender === 'P' ? 'female' : null),
+                        participant_phone: participant.phone,
+                        participant_address: participant.address,
+                        participant_uk: participant.jersey,
+                        participant_emg: participant.emergency,
+                        event_id: currentPurchaseData.eventId,
+                        price_id: 1, // Default price ID
+                        event_title: '<?= esc($event->event) ?>',
+                        price_description: 'Event Registration',
+                        quantity: 1,
+                        unit_price: currentPurchaseData.price,
+                        total_price: currentPurchaseData.price,
+                        kategori_id: 0, // Default category
+                        platform_id: paymentMethod
+                    })),
+                    cart_payments: [{
+                        platform_id: paymentMethod,
+                        amount: total,
+                        note: 'Event Registration - ' + participantData.length + ' participants'
+                    }]
+                };
+
+                // Submit directly to Sale controller store method
+                $.ajax({
+                    url: '<?= base_url('checkout') ?>',
+                    type: 'POST',
+                    data: {
+                        order_data: JSON.stringify(orderData)
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Redirect to checkout success page or order detail
+                            window.location.href = response.redirect_url || '<?= base_url('sale/orders') ?>';
+                        } else {
+                            alert('Error: ' + (response.message || 'Failed to process checkout'));
+                            $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Checkout error:', error);
+                        console.error('Response:', xhr.responseText);
+                        console.error('Status:', xhr.status);
+                        alert('Error processing checkout. Status: ' + xhr.status + '. Please try again.');
                         $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
                     }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Checkout error:', error);
-                    console.error('Response:', xhr.responseText);
-                    console.error('Status:', xhr.status);
-                    alert('Error processing checkout. Status: ' + xhr.status + '. Please try again.');
-                    $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
-                }
-            });
-        }
-        
-        // Add to cart function with participant data
-        function addToCartWithParticipants(participantData) {
-            // Show loading state
-            $('#confirmPurchase').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
-            
-            // Prepare CSRF data
-            var csrfData = {};
-            var csrfToken = '<?= csrf_token() ?>';
-            var csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
-            csrfData[csrfToken] = csrfHash;
+                });
+            }
 
-            // Make AJAX request to add to cart
-            $.ajax({
-                url: '<?= base_url('cart/add') ?>',
-                type: 'POST',
-                data: $.extend({
-                    event_id: currentPurchaseData.eventId,
-                    price_id: currentPurchaseData.priceId,
-                    quantity: currentPurchaseData.quantity,
-                    price: currentPurchaseData.price,
-                    participant_data: participantData,
-                    event_title: '<?= esc($event->event ?? 'Event') ?>',
-                    event_image: '<?= $event->foto ?? '' ?>',
-                    price_description: currentPurchaseData.description,
-                    event_date: '<?= $event->tgl_masuk ?? '' ?>',
-                    event_location: '<?= $event->lokasi ?? 'TBA' ?>'
-                }, csrfData),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Show success message
-                        if (typeof toastr !== 'undefined') {
-                            toastr.success(response.message || 'Tiket berhasil ditambahkan ke keranjang!');
+            // Add to cart function with participant data
+            function addToCartWithParticipants(participantData) {
+                // Show loading state
+                $('#confirmPurchase').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
+
+                // Prepare CSRF data
+                var csrfData = {};
+                var csrfToken = '<?= csrf_token() ?>';
+                var csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
+                csrfData[csrfToken] = csrfHash;
+
+                // Make AJAX request to add to cart
+                $.ajax({
+                    url: '<?= base_url('cart/add') ?>',
+                    type: 'POST',
+                    data: $.extend({
+                        event_id: currentPurchaseData.eventId,
+                        price_id: currentPurchaseData.priceId,
+                        quantity: currentPurchaseData.quantity,
+                        price: currentPurchaseData.price,
+                        participant_data: participantData,
+                        event_title: '<?= esc($event->event ?? 'Event') ?>',
+                        event_image: '<?= $event->foto ?? '' ?>',
+                        price_description: currentPurchaseData.description,
+                        event_date: '<?= $event->tgl_masuk ?? '' ?>',
+                        event_location: '<?= $event->lokasi ?? 'TBA' ?>'
+                    }, csrfData),
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Show success message
+                            if (typeof toastr !== 'undefined') {
+                                toastr.success(response.message || 'Tiket berhasil ditambahkan ke keranjang!');
+                            } else {
+                                alert('Tiket berhasil ditambahkan ke keranjang!');
+                            }
+
+                            // Close modal
+                            $('#participantNamesModal').modal('hide');
+
+                            // Reset form
+                            $('#participantNamesForm')[0].reset();
+
+                            // Update cart counter
+                            updateCartCounter();
+
+                            // Update CSRF hash
+                            if (response.csrf_hash) {
+                                $('input[name="<?= csrf_token() ?>"]').val(response.csrf_hash);
+                                window.csrf_hash = response.csrf_hash;
+                            }
                         } else {
-                            alert('Tiket berhasil ditambahkan ke keranjang!');
+                            if (typeof toastr !== 'undefined') {
+                                toastr.error(response.message || 'Gagal menambahkan ke keranjang');
+                            } else {
+                                alert('Error: ' + (response.message || 'Gagal menambahkan ke keranjang'));
+                            }
                         }
-                        
-                        // Close modal
-                        $('#participantNamesModal').modal('hide');
-                        
-                        // Reset form
-                        $('#participantNamesForm')[0].reset();
-                        
-                        // Update cart counter
-                        updateCartCounter();
-                        
-                        // Update CSRF hash
-                        if (response.csrf_hash) {
-                            $('input[name="<?= csrf_token() ?>"]').val(response.csrf_hash);
-                            window.csrf_hash = response.csrf_hash;
+                    },
+                    error: function(xhr) {
+                        var errorMsg = 'Terjadi kesalahan saat menambahkan ke keranjang';
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.message) errorMsg = response.message;
+                        } catch (e) {
+                            console.log('Could not parse error response');
                         }
-                    } else {
+
                         if (typeof toastr !== 'undefined') {
-                            toastr.error(response.message || 'Gagal menambahkan ke keranjang');
+                            toastr.error(errorMsg);
                         } else {
-                            alert('Error: ' + (response.message || 'Gagal menambahkan ke keranjang'));
+                            alert(errorMsg);
                         }
+                    },
+                    complete: function() {
+                        // Reset button state
+                        $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Konfirmasi Pembelian');
                     }
-                },
-                error: function(xhr) {
-                    var errorMsg = 'Terjadi kesalahan saat menambahkan ke keranjang';
-                    try {
-                        var response = JSON.parse(xhr.responseText);
-                        if (response.message) errorMsg = response.message;
-                    } catch(e) {
-                        console.log('Could not parse error response');
-                    }
-                    
-                    if (typeof toastr !== 'undefined') {
-                    toastr.error(errorMsg);
-                    } else {
-                        alert(errorMsg);
-                    }
-                },
-                complete: function() {
-                    // Reset button state
-                    $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Konfirmasi Pembelian');
-                }
+                });
+            }
+
+            // Remove validation class on input
+            $(document).on('input', '#participantFields input', function() {
+                $(this).removeClass('is-invalid');
             });
-        }
-        
-        // Remove validation class on input
-        $(document).on('input', '#participantFields input', function() {
-            $(this).removeClass('is-invalid');
+
+            // Update cart counter
+            function updateCartCounter() {
+                $.ajax({
+                    url: '<?= base_url('cart/getCount') ?>',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            $('.cart-counter').text(response.count);
+                            if (response.count > 0) {
+                                $('.cart-counter').show();
+                            } else {
+                                $('.cart-counter').hide();
+                            }
+                        }
+                    }
+                });
+            }
+
+            updateCartCounter();
         });
-
-        // Update cart counter
-        function updateCartCounter() {
-            $.ajax({
-                url: '<?= base_url('cart/getCount') ?>',
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        $('.cart-counter').text(response.count);
-                        if (response.count > 0) {
-                            $('.cart-counter').show();
-                        } else {
-                            $('.cart-counter').hide();
-                        }
-                    }
-                }
-            });
-        }
-
-        updateCartCounter();
-    });
-})();
+    })();
 </script>
 
 <style>
-/* Event Gallery Styles */
-.event-gallery-section {
-    margin-bottom: 30px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-.event-gallery-section h4 {
-    color: #333;
-    margin-bottom: 20px;
-    font-weight: 600;
-    border-bottom: 2px solid #007bff;
-    padding-bottom: 10px;
-}
-.gallery-slider-wrapper {
-    position: relative;
-}
-.gallery-item {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.gallery-image {
-    transition: transform 0.3s ease;
-}
-.gallery-item:hover .gallery-image {
-    transform: scale(1.05);
-}
-.gallery-caption {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.7));
-    color: white;
-    padding: 20px 15px 15px;
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
-}
-.gallery-item:hover .gallery-caption {
-    transform: translateY(0);
-}
-.gallery-caption p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.4;
-}
-.gallery-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 10;
-}
-.gallery-badge .badge {
-    background: #007bff;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 11px;
-}
-.gallery-thumbnails {
-    margin-top: 15px;
-}
-.thumb-item {
-    position: relative;
-    border: 2px solid transparent;
-    border-radius: 6px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-.thumb-item:hover,
-.thumb-item.active {
-    border-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0,123,255,0.3);
-}
-.thumb-image {
-    transition: opacity 0.3s ease;
-}
-.thumb-item:hover .thumb-image {
-    opacity: 0.8;
-}
-.thumb-badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: rgba(0,0,0,0.7);
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.thumb-badge i {
-    font-size: 8px;
-}
-/* Owl Carousel Custom Navigation */
-.gallery-slider .owl-nav {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    transform: translateY(-50%);
-}
-.gallery-slider .owl-nav button {
-    position: absolute;
-    background: rgba(0,0,0,0.5) !important;
-    color: white !important;
-    border: none !important;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 16px;
-    transition: all 0.3s ease;
-}
-.gallery-slider .owl-nav button:hover {
-    background: rgba(0,123,255,0.8) !important;
-    transform: scale(1.1);
-}
-.gallery-slider .owl-nav .owl-prev {
-    left: 10px;
-}
-.gallery-slider .owl-nav .owl-next {
-    right: 10px;
-}
-/* Participant Form Styles */
-.participant-row {
-    border: 1px solid #dee2e6;
-    background-color: #f8f9fa;
-    transition: all 0.3s ease;
-}
-
-.participant-row:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border-color: #007bff;
-}
-
-.participant-row h6 {
-    font-weight: 600;
-    margin-bottom: 15px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #007bff;
-}
-
-.form-label.small {
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.form-control-sm {
-    font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
-}
-
-.form-control.is-invalid {
-    border-color: #dc3545;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-}
-
-/* Payment method styling */
-.payment-method-section {
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    padding: 10px;
-    margin-top: 10px;
-}
-
-.payment-fee-display {
-    background-color: #e9ecef !important;
-    color: #495057;
-    font-weight: 500;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+    /* Event Gallery Styles */
     .event-gallery-section {
-        padding: 15px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
-    .gallery-image {
-        height: 200px !important;
-    }
-    .thumb-image {
-        width: 60px !important;
-        height: 45px !important;
-    }
-    
-    /* Stack fields vertically on mobile */
-    .participant-row .row > div {
-        margin-bottom: 10px;
-    }
-    
-    /* Make gender dropdown full width on mobile */
-    .participant-row .col-md-3 {
-        margin-bottom: 10px;
-    }
-}
 
-@media (max-width: 576px) {
-    .participant-row {
-        padding: 15px !important;
+    .event-gallery-section h4 {
+        color: #333;
+        margin-bottom: 20px;
+        font-weight: 600;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
     }
-    
-    .participant-row h6 {
-        font-size: 1rem;
-        margin-bottom: 10px;
+
+    .gallery-slider-wrapper {
+        position: relative;
     }
-    
-    /* Stack all fields in single column on very small screens */
-    .participant-row .col-md-3 {
+
+    .gallery-item {
+        position: relative;
+        overflow: hidden;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .gallery-image {
+        transition: transform 0.3s ease;
+    }
+
+    .gallery-item:hover .gallery-image {
+        transform: scale(1.05);
+    }
+
+    .gallery-caption {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+        color: white;
+        padding: 20px 15px 15px;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+    }
+
+    .gallery-item:hover .gallery-caption {
+        transform: translateY(0);
+    }
+
+    .gallery-caption p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    .gallery-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+    }
+
+    .gallery-badge .badge {
+        background: #007bff;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 11px;
+    }
+
+    .gallery-thumbnails {
+        margin-top: 15px;
+    }
+
+    .thumb-item {
+        position: relative;
+        border: 2px solid transparent;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .thumb-item:hover,
+    .thumb-item.active {
+        border-color: #007bff;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    .thumb-image {
+        transition: opacity 0.3s ease;
+    }
+
+    .thumb-item:hover .thumb-image {
+        opacity: 0.8;
+    }
+
+    .thumb-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .thumb-badge i {
+        font-size: 8px;
+    }
+
+    /* Owl Carousel Custom Navigation */
+    .gallery-slider .owl-nav {
+        position: absolute;
+        top: 50%;
         width: 100%;
-        margin-bottom: 15px;
+        transform: translateY(-50%);
     }
-}
+
+    .gallery-slider .owl-nav button {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.5) !important;
+        color: white !important;
+        border: none !important;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .gallery-slider .owl-nav button:hover {
+        background: rgba(0, 123, 255, 0.8) !important;
+        transform: scale(1.1);
+    }
+
+    .gallery-slider .owl-nav .owl-prev {
+        left: 10px;
+    }
+
+    .gallery-slider .owl-nav .owl-next {
+        right: 10px;
+    }
+
+    /* Participant Form Styles */
+    .participant-row {
+        border: 1px solid #dee2e6;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+
+    .participant-row:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-color: #007bff;
+    }
+
+    .participant-row h6 {
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #007bff;
+    }
+
+    .form-label.small {
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .form-control-sm {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    /* Payment method styling */
+    .payment-method-section {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+
+    .payment-fee-display {
+        background-color: #e9ecef !important;
+        color: #495057;
+        font-weight: 500;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .event-gallery-section {
+            padding: 15px;
+        }
+
+        .gallery-image {
+            height: 200px !important;
+        }
+
+        .thumb-image {
+            width: 60px !important;
+            height: 45px !important;
+        }
+
+        /* Stack fields vertically on mobile */
+        .participant-row .row>div {
+            margin-bottom: 10px;
+        }
+
+        /* Make gender dropdown full width on mobile */
+        .participant-row .col-md-3 {
+            margin-bottom: 10px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .participant-row {
+            padding: 15px !important;
+        }
+
+        .participant-row h6 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        /* Stack all fields in single column on very small screens */
+        .participant-row .col-md-3 {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+    }
 </style>
 
 <!-- Participant Names Modal -->
@@ -1017,13 +1058,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="modal-body">
                 <form id="participantNamesForm">
                     <div class="alert alert-info">
-                        <i class="fa fa-info-circle"></i> 
+                        <i class="fa fa-info-circle"></i>
                         Masukkan nama lengkap untuk setiap peserta sesuai dengan jumlah tiket yang dibeli.
                     </div>
                     <div id="participantFields">
                         <!-- Participant name fields will be generated here -->
                     </div>
-                    
+
                     <!-- Single Payment Method Section -->
                     <div class="payment-method-section mt-4 p-3 border rounded" style="background-color: #f8f9fa;">
                         <h6 class="mb-3 text-primary">
@@ -1037,7 +1078,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <option value="">Pilih Metode Pembayaran</option>
                                         <?php if (!empty($platformOptions)): ?>
                                             <?php foreach ($platformOptions as $platform): ?>
-                                                <option value="<?= esc($platform->id) ?>" data-fee="<?= esc($platform->nama).' '.esc($platform->nama_rekening).' - '.esc($platform->nomor_rekening) ?>"><?= esc($platform->nama) ?> - <?= esc($platform->nama_rekening) ?></option>
+                                                <option value="<?= esc($platform->id) ?>" data-fee="<?= esc($platform->nama) . ' ' . esc($platform->nama_rekening) . ' - ' . esc($platform->nomor_rekening) ?>"><?= esc($platform->nama) ?> - <?= esc($platform->nama_rekening) ?></option>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                     </select>

@@ -226,7 +226,8 @@ echo $this->extend(theme_path('main')); ?>
                                                                 / <a href="<?= esc($waHref) ?>" target="_blank">
                                                                     <?= esc($rawPhone) ?>
                                                                 </a>
-                                                            <?php endif; ?>
+                                                            <?php endif; ?> / 
+                                                            <?= esc($p['category'] ?? '') ?>
                                                             <br/>
                                                         <?php endforeach; ?>
                                                     </small>
