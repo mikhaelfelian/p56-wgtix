@@ -124,26 +124,50 @@ echo $this->extend(theme_path('main')); ?>
                     </div>
                     <div class="card-body">
                         <div class="btn-group">
-                            <a href="<?= base_url('admin/transaksi/sale/orders/all') ?>" 
+                            <?php
+                            $searchParam = !empty($search) ? '?search=' . urlencode($search) : '';
+                            ?>
+                            <a href="<?= base_url('admin/transaksi/sale/orders/all' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'all' ? 'btn-primary' : 'btn-outline-primary' ?>">
                                 Semua Pesanan (<?= $stats['all'] ?>)
                             </a>
-                            <a href="<?= base_url('admin/transaksi/sale/orders/pending') ?>" 
+                            <a href="<?= base_url('admin/transaksi/sale/orders/pending' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'pending' ? 'btn-warning' : 'btn-outline-warning' ?>">
                                 Menunggu (<?= $stats['pending'] ?>)
                             </a>
-                            <a href="<?= base_url('admin/transaksi/sale/orders/paid') ?>" 
+                            <a href="<?= base_url('admin/transaksi/sale/orders/paid' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'paid' ? 'btn-success' : 'btn-outline-success' ?>">
                                 Lunas (<?= $stats['paid'] ?>)
                             </a>
-                            <a href="<?= base_url('admin/transaksi/sale/orders/failed') ?>" 
+                            <a href="<?= base_url('admin/transaksi/sale/orders/failed' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'failed' ? 'btn-danger' : 'btn-outline-danger' ?>">
                                 Gagal (<?= $stats['failed'] ?>)
                             </a>
-                            <a href="<?= base_url('admin/transaksi/sale/orders/cancelled') ?>" 
+                            <a href="<?= base_url('admin/transaksi/sale/orders/cancelled' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'cancelled' ? 'btn-secondary' : 'btn-outline-secondary' ?>">
                                 Dibatalkan (<?= $stats['cancelled'] ?>)
                             </a>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <form method="GET" action="<?= base_url('admin/transaksi/sale/orders/' . $current_status) ?>" class="form-inline">
+                                <div class="input-group" style="width: 300px;">
+                                    <input type="text" name="search" class="form-control" 
+                                           placeholder="Cari nama peserta..." 
+                                           value="<?= esc($search ?? '') ?>"
+                                           autocomplete="off">
+                                    <div class="input-group-append">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search"></i> Cari
+                                        </button>
+                                        <?php if (!empty($search)): ?>
+                                            <a href="<?= base_url('admin/transaksi/sale/orders/' . $current_status) ?>" class="btn btn-secondary">
+                                                <i class="fas fa-times"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                         
                         <div class="float-right">
@@ -168,10 +192,11 @@ echo $this->extend(theme_path('main')); ?>
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <?= ucfirst($current_status) ?> Pesanan
-                            <?php if ($current_status !== 'all'): ?>
-                                <span class="badge badge-secondary"><?= count($orders) ?> hasil</span>
+                            <?= ucfirst($current_status === 'all' ? 'Semua' : $current_status) ?> Pesanan
+                            <?php if (!empty($search)): ?>
+                                <span class="badge badge-info">Pencarian: "<?= esc($search) ?>"</span>
                             <?php endif; ?>
+                            <span class="badge badge-secondary"><?= count($orders) ?> hasil</span>
                         </h3>
                     </div>
                     <div class="card-body table-responsive p-0">
@@ -323,7 +348,8 @@ echo $this->extend(theme_path('main')); ?>
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <?= form_open('admin/transaksi/sale/create-manual-order', ['id' => 'manualOrderForm']) ?>
+            <?= form_open('admin/transaksi/sale/create-manual-order', ['id' => 'manualOrderForm', 'enctype' => 'multipart/form-data']) ?>
+            <input type="hidden" name="uploaded_files" id="uploaded_files" value="" />
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -382,12 +408,11 @@ echo $this->extend(theme_path('main')); ?>
                             <label for="participant_uk">Ukuran Jersey</label>
                             <select class="form-control" id="participant_uk" name="participant_uk">
                                 <option value="">Pilih Ukuran</option>
-                                <option value="XS">XS</option>
-                                <option value="S">S</option>
-                                <option value="M">M</option>
-                                <option value="L">L</option>
-                                <option value="XL">XL</option>
-                                <option value="XXL">XXL</option>
+                                <?php if (!empty($ukuranOptions)): ?>
+                                    <?php foreach ($ukuranOptions as $id => $label): ?>
+                                        <option value="<?= esc($id) ?>"><?= esc($label) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </select>
                         </div>
                     </div>
@@ -443,6 +468,29 @@ echo $this->extend(theme_path('main')); ?>
                             <input type="text" class="form-control" id="notes" name="notes" placeholder="Catatan opsional">
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label style="font-weight: 600; color: #333; margin-bottom: 10px;">
+                                <i class="fa fa-upload" style="margin-right: 8px; color: #667eea;"></i>
+                                Upload Attachment
+                            </label>
+                            <div id="manual-order-dropzone" class="dropzone" style="border: 2px dashed #667eea; border-radius: 10px; background: white; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                                <div class="dz-message" style="margin: 20px 0;">
+                                    <div style="font-size: 48px; color: #667eea; margin-bottom: 15px;">
+                                        <i class="fa fa-cloud-upload"></i>
+                                    </div>
+                                    <h4 style="color: #667eea; font-weight: 600; margin-bottom: 10px; font-size: 16px;">Drop files here or click to upload</h4>
+                                    <p style="color: #999; margin: 0; font-size: 14px;">
+                                        Upload payment receipt, bank transfer proof, or documents<br>
+                                        <small>Supported formats: JPG, PNG, PDF (Max size: 5MB)</small>
+                                    </p>
+                                </div>
+                            </div>
+                            <small class="text-muted" style="display: block; margin-top: 8px;">
+                                <i class="fa fa-info-circle"></i> Optional: Upload payment proof or related documents
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -456,8 +504,229 @@ echo $this->extend(theme_path('main')); ?>
 
 <?= $this->endSection() ?>
 
+<?= $this->section('css') ?>
+<!-- Dropzone CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
+<style>
+/* Custom Dropzone Styling */
+.dropzone {
+    border: 2px dashed #667eea !important;
+    border-radius: 10px !important;
+    background: white !important;
+    transition: all 0.3s ease !important;
+}
+
+.dropzone:hover {
+    border-color: #764ba2 !important;
+    background: #f8f9ff !important;
+}
+
+.dropzone.dz-drag-hover {
+    border-color: #56ab2f !important;
+    background: #f0fff4 !important;
+}
+
+.dropzone .dz-preview {
+    margin: 10px;
+    border-radius: 8px;
+    border: 1px solid #e0e6ed;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dropzone .dz-preview .dz-image {
+    border-radius: 8px 8px 0 0;
+}
+
+.dropzone .dz-preview .dz-details {
+    padding: 10px;
+}
+
+.dropzone .dz-preview .dz-progress {
+    background: #e0e6ed;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.dropzone .dz-preview .dz-progress .dz-upload {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dropzone .dz-preview.dz-success .dz-success-mark {
+    color: #56ab2f;
+}
+
+.dropzone .dz-preview.dz-error .dz-error-mark {
+    color: #e74c3c;
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('js') ?>
+<!-- Dropzone JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
 <script>
+// Disable Dropzone auto-discovery
+Dropzone.autoDiscover = false;
+
+// Track uploaded files for manual order
+var uploadedFiles = [];
+
+// Initialize Dropzone for manual order form
+var manualOrderDropzone = null;
+
+$(document).ready(function() {
+    // Initialize Dropzone when modal is shown
+    $('#manualOrderModal').on('shown.bs.modal', function() {
+        if (!manualOrderDropzone) {
+            manualOrderDropzone = new Dropzone("#manual-order-dropzone", {
+                url: "<?= base_url('admin/transaksi/sale/upload-temp') ?>",
+                paramName: "file",
+                maxFilesize: 5, // MB
+                acceptedFiles: ".jpg,.jpeg,.png,.pdf",
+                addRemoveLinks: true,
+                dictDefaultMessage: '',
+                maxFiles: 5,
+                parallelUploads: 1,
+                uploadMultiple: false,
+                timeout: 10000, // 10 seconds timeout
+                retries: 0,
+                headers: {
+                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+                },
+                
+                init: function() {
+                    var dropzone = this;
+                    
+                    this.on("sending", function(file, xhr, formData) {
+                        // Add CSRF token to form data
+                        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                    });
+                    
+                    this.on("success", function(file, response) {
+                        // Handle both string and object responses
+                        var parsedResponse;
+                        if (typeof response === 'string') {
+                            try {
+                                parsedResponse = JSON.parse(response);
+                            } catch (e) {
+                                console.error('Failed to parse response:', e);
+                                this.emit("error", file, 'Invalid server response');
+                                return;
+                            }
+                        } else if (typeof response === 'object' && response !== null) {
+                            parsedResponse = response;
+                        } else {
+                            console.error('Invalid response type:', typeof response);
+                            this.emit("error", file, 'Invalid server response type');
+                            return;
+                        }
+                        
+                        if (parsedResponse && parsedResponse.success === true) {
+                            // Add file to uploaded files array
+                            uploadedFiles.push({
+                                filename: parsedResponse.filename,
+                                original_name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                temp_path: parsedResponse.temp_path || ''
+                            });
+                            
+                            // Update hidden field
+                            $('#uploaded_files').val(JSON.stringify(uploadedFiles));
+                            
+                            // Add success styling
+                            $(file.previewElement).addClass('dz-success');
+                            
+                            console.log('File uploaded successfully:', parsedResponse);
+                        } else {
+                            console.error('Upload failed - server returned:', parsedResponse);
+                            var errorMessage = 'Upload failed';
+                            if (parsedResponse && parsedResponse.message) {
+                                errorMessage = parsedResponse.message;
+                            }
+                            this.emit("error", file, errorMessage);
+                        }
+                    });
+                    
+                    this.on("error", function(file, errorMessage) {
+                        console.error('Upload error:', errorMessage);
+                        
+                        // Show error styling
+                        $(file.previewElement).addClass('dz-error');
+                        
+                        // Show error message
+                        var message = 'Upload failed. Please try again.';
+                        
+                        if (typeof errorMessage === 'string' && errorMessage.trim() !== '') {
+                            message = errorMessage;
+                        } else if (errorMessage && typeof errorMessage === 'object' && errorMessage.message) {
+                            message = errorMessage.message;
+                        } else if (errorMessage && typeof errorMessage === 'object') {
+                            message = JSON.stringify(errorMessage);
+                        }
+                        
+                        console.log('Showing error message:', message);
+                        alert('Upload Error: ' + message);
+                    });
+                    
+                    this.on("removedfile", function(file) {
+                        // Remove file from uploaded files array
+                        uploadedFiles = uploadedFiles.filter(function(uploadedFile) {
+                            return uploadedFile.original_name !== file.name;
+                        });
+                        
+                        // Update hidden field
+                        $('#uploaded_files').val(JSON.stringify(uploadedFiles));
+                        
+                        console.log('File removed:', file.name);
+                    });
+                    
+                    this.on("maxfilesexceeded", function(file) {
+                        alert("Maximum 5 files allowed");
+                        this.removeFile(file);
+                    });
+                },
+                
+                // Custom preview template
+                previewTemplate: `
+                    <div class="dz-preview dz-file-preview">
+                        <div class="dz-image">
+                            <img data-dz-thumbnail />
+                        </div>
+                        <div class="dz-details">
+                            <div class="dz-size"><span data-dz-size></span></div>
+                            <div class="dz-filename"><span data-dz-name></span></div>
+                        </div>
+                        <div class="dz-progress">
+                            <span class="dz-upload" data-dz-uploadprogress></span>
+                        </div>
+                        <div class="dz-error-message"><span data-dz-errormessage></span></div>
+                        <div class="dz-success-mark">
+                            <i class="fa fa-check-circle" style="color: #56ab2f; font-size: 20px;"></i>
+                        </div>
+                        <div class="dz-error-mark">
+                            <i class="fa fa-times-circle" style="color: #e74c3c; font-size: 20px;"></i>
+                        </div>
+                        <div class="dz-remove" data-dz-remove style="cursor: pointer; color: #e74c3c; font-size: 12px; text-align: center; padding: 5px;">
+                            <i class="fa fa-trash"></i> Remove
+                        </div>
+                    </div>
+                `
+            });
+        }
+    });
+    
+    // Reset Dropzone when modal is hidden
+    $('#manualOrderModal').on('hidden.bs.modal', function() {
+        if (manualOrderDropzone) {
+            manualOrderDropzone.removeAllFiles(true);
+            uploadedFiles = [];
+            $('#uploaded_files').val('');
+        }
+    });
+});
+
 function updateStatus(orderId, newStatus) {
     if (confirm('Apakah Anda yakin ingin memperbarui status pesanan ini?')) {
         // Create a form and submit it

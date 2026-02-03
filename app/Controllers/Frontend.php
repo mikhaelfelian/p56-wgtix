@@ -18,6 +18,7 @@ use App\Models\KelompokPesertaModel;
 use App\Models\EventsModel;
 use App\Models\EventsHargaModel;
 use App\Models\EventsGaleriModel;
+use App\Models\UkuranModel;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
@@ -30,6 +31,7 @@ class Frontend extends BaseController
     protected $eventsModel;
     protected $eventsHargaModel;
     protected $eventsGaleriModel;
+    protected $ukuranModel;
     public function __construct()
     {
         parent::__construct();
@@ -40,6 +42,7 @@ class Frontend extends BaseController
         $this->eventsModel = new EventsModel();
         $this->eventsHargaModel = new EventsHargaModel();
         $this->eventsGaleriModel = new EventsGaleriModel();
+        $this->ukuranModel = new UkuranModel();
     }
 
     /**
@@ -137,6 +140,7 @@ class Frontend extends BaseController
 
         $event_price = $this->eventsHargaModel->getEventPricing($id);
         $eventGallery = $this->eventsGaleriModel->getActiveGalleryByEvent($id);
+        $ukuranOptions = $this->ukuranModel->getDropdownOptions();
 
         $data = [
             'title'         => $this->pengaturan->judul,
@@ -147,6 +151,7 @@ class Frontend extends BaseController
             'event'         => $events,
             'event_price'   => $event_price,
             'eventGallery'  => $eventGallery,
+            'ukuranOptions' => $ukuranOptions,
             'pager'         => $pager,
             // Add this data to every view
             'footer_text'   => 'Copyright &copy; ' . date('Y') . ' Your Organization. All rights reserved.',

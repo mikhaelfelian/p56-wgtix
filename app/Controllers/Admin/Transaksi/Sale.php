@@ -18,6 +18,7 @@ use App\Models\EventsHargaModel;
 use App\Models\EventsModel;
 use App\Models\PlatformModel;
 use App\Models\VKategoriModel;
+use App\Models\UkuranModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -41,6 +42,7 @@ class Sale extends BaseController
     protected $eventsModel;
     protected $platformModel;
     protected $kategoriModel;
+    protected $ukuranModel;
     protected $ionAuth;
 
     public function __construct()
@@ -53,6 +55,7 @@ class Sale extends BaseController
         $this->eventsModel         = new EventsModel();
         $this->platformModel        = new PlatformModel();
         $this->kategoriModel        = new VKategoriModel();
+        $this->ukuranModel          = new UkuranModel();
         $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -61,19 +64,87 @@ class Sale extends BaseController
      */
     public function orders($status = 'all')
     {
+        // Get search parameter
+        $search = $this->request->getGet('search');
+        $search = !empty($search) ? trim($search) : null;
+
+        // Create a fresh model instance for querying
+        $ordersModel = new TransJualModel();
 
         // Build query conditions for the model
         if ($status !== 'all') {
             $validStatuses = ['pending', 'paid', 'failed', 'cancelled'];
             if (in_array($status, $validStatuses)) {
-                $this->transJualModel->where('payment_status', $status);
+                $ordersModel->where('tbl_trans_jual.payment_status', $status);
             }
         }
 
+        // Add search filter if provided
+        $hasSearchJoin = false;
+        if (!empty($search)) {
+            // Join with order details table to search in JSON item_data
+            $ordersModel->join('tbl_trans_jual_det', 'tbl_trans_jual_det.id_penjualan = tbl_trans_jual.id', 'left')
+                ->groupStart()
+                    ->like("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_name'))", $search)
+                    ->orLike("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_phone'))", $search)
+                ->groupEnd()
+                ->groupBy('tbl_trans_jual.id');
+            $hasSearchJoin = true;
+        }
+
         // Get orders with pagination
-        $this->transJualModel->orderBy('invoice_date', 'ASC');
-        $orders = $this->transJualModel->paginate(50);
-        $pager = $this->transJualModel->pager;
+        $ordersModel->orderBy('tbl_trans_jual.invoice_date', 'DESC');
+        
+        // Configure pager path before pagination
+        $pager = service('pager');
+        $pagerPath = 'admin/transaksi/sale/orders';
+        if ($status !== 'all') {
+            $pagerPath .= '/' . $status;
+        }
+        $pager->setPath($pagerPath, 'orders');
+        
+        // When using groupBy with joins, we need to handle pagination manually
+        // because countAllResults() counts before grouping
+        if ($hasSearchJoin) {
+            // Get total count of distinct orders
+            $countModel = new TransJualModel();
+            if ($status !== 'all') {
+                $validStatuses = ['pending', 'paid', 'failed', 'cancelled'];
+                if (in_array($status, $validStatuses)) {
+                    $countModel->where('tbl_trans_jual.payment_status', $status);
+                }
+            }
+            $countModel->join('tbl_trans_jual_det', 'tbl_trans_jual_det.id_penjualan = tbl_trans_jual.id', 'left')
+                ->groupStart()
+                    ->like("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_name'))", $search)
+                    ->orLike("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_phone'))", $search)
+                ->groupEnd()
+                ->groupBy('tbl_trans_jual.id');
+            
+            // Count distinct orders - when using groupBy, count the grouped results
+            // Get all matching order IDs, then count unique ones
+            $orderIds = $countModel->select('tbl_trans_jual.id')
+                ->distinct()
+                ->get()
+                ->getResult();
+            $totalCount = count($orderIds);
+            
+            // Get current page
+            $page = $this->request->getGet('page_orders') ?? $this->request->getGet('page') ?? 1;
+            $perPage = 10;
+            $offset = ($page - 1) * $perPage;
+            
+            // Get orders with limit and offset - use get() for queries with joins/groupBy
+            $orders = $ordersModel->get($perPage, $offset)->getResult();
+            
+            // Manually store pagination data
+            $pager->store('orders', (int)$page, $perPage, $totalCount, 0);
+        } else {
+            // Normal pagination without search/join
+            $orders = $ordersModel->paginate(10, 'orders');
+            $pager = $ordersModel->pager;
+            $pager->setPath($pagerPath, 'orders');
+        }
 
         // Collect participant info per order from tbl_trans_jual_det.item_data (JSON fields participant_name, participant_phone)
         $participantsByOrder = [];
@@ -110,31 +181,33 @@ class Sale extends BaseController
             }
         }
 
-        // Get statistics for status filter buttons using fresh model instances
-        $statsModel = new TransJualModel();
+        // Get statistics for status filter buttons using fresh model instances for each count
         $stats = [
-            'all' => $statsModel->countAll(),
-            'pending' => $statsModel->where('payment_status', 'pending')->countAllResults(false),
-            'paid' => $statsModel->where('payment_status', 'paid')->countAllResults(false),
-            'failed' => $statsModel->where('payment_status', 'failed')->countAllResults(false),
-            'cancelled' => $statsModel->where('payment_status', 'cancelled')->countAllResults(false),
+            'all' => (new TransJualModel())->countAll(),
+            'pending' => (new TransJualModel())->where('payment_status', 'pending')->countAllResults(false),
+            'paid' => (new TransJualModel())->where('payment_status', 'paid')->countAllResults(false),
+            'failed' => (new TransJualModel())->where('payment_status', 'failed')->countAllResults(false),
+            'cancelled' => (new TransJualModel())->where('payment_status', 'cancelled')->countAllResults(false),
         ];
 
         // Get events and platforms for manual order form
         // Use soft-delete filtering from the model (deleted_at is already handled)
         $events    = $this->eventsModel->orderBy('event', 'ASC')->findAll();
         $platforms = $this->platformModel->where('status', 1)->orderBy('nama', 'ASC')->findAll();
+        $ukuranOptions = $this->ukuranModel->getDropdownOptions();
 
         $data = [
             'title' => 'Transaction Management',
             'orders' => $orders,
             'pager' => $pager,
             'current_status' => $status,
+            'search' => $search,
             'stats' => $stats,
             'participantsByOrder' => $participantsByOrder,
             'userPhonesByOrder'   => $userPhonesByOrder,
             'events' => $events,
             'platforms' => $platforms,
+            'ukuranOptions' => $ukuranOptions,
         ];
 
         return $this->view('admin-lte-3/transaksi/sale/orders', $data);
@@ -237,6 +310,7 @@ class Sale extends BaseController
 
             // Create payment platform record
             $platform = $this->platformModel->find($this->request->getPost('platform_id'));
+            $paymentPlatformId = null;
             if ($platform) {
                 $platData = [
                     'id_penjualan' => $headerId,
@@ -246,7 +320,70 @@ class Sale extends BaseController
                     'nominal' => $this->request->getPost('total_amount'),
                     'keterangan' => 'Manual order',
                 ];
-                $this->transJualPlatModel->insert($platData);
+                $paymentPlatformId = $this->transJualPlatModel->insert($platData);
+            }
+
+            // Handle uploaded files - move from temp to order directory
+            $uploadedFilesJson = $this->request->getPost('uploaded_files');
+            if (!empty($uploadedFilesJson)) {
+                $uploadedFiles = json_decode($uploadedFilesJson, true);
+                if (is_array($uploadedFiles) && !empty($uploadedFiles)) {
+                    $sessionId = session_id();
+                    $tempPath = FCPATH . 'file/sale/temp/' . $sessionId . '/';
+                    $orderPath = FCPATH . 'file/sale/' . $headerId . '/';
+                    
+                    // Create order directory if it doesn't exist
+                    if (!is_dir($orderPath)) {
+                        mkdir($orderPath, 0755, true);
+                    }
+                    
+                    $movedFiles = [];
+                    foreach ($uploadedFiles as $fileInfo) {
+                        $tempFile = $tempPath . $fileInfo['filename'];
+                        $orderFile = $orderPath . $fileInfo['filename'];
+                        
+                        // Move file from temp to order directory
+                        if (file_exists($tempFile)) {
+                            if (rename($tempFile, $orderFile)) {
+                                $movedFiles[] = [
+                                    'filename' => $fileInfo['filename'],
+                                    'original_name' => $fileInfo['original_name'] ?? $fileInfo['filename'],
+                                    'size' => $fileInfo['size'] ?? 0,
+                                    'type' => $fileInfo['type'] ?? 'application/octet-stream',
+                                    'extension' => pathinfo($fileInfo['filename'], PATHINFO_EXTENSION),
+                                    'uploaded_at' => date('Y-m-d H:i:s')
+                                ];
+                                log_message('info', 'Moved file from temp to order: ' . $fileInfo['filename']);
+                            } else {
+                                log_message('error', 'Failed to move file: ' . $fileInfo['filename']);
+                            }
+                        }
+                    }
+                    
+                    // Update payment platform record with file information
+                    if (!empty($movedFiles) && $paymentPlatformId) {
+                        $paymentPlatform = $this->transJualPlatModel->find($paymentPlatformId);
+                        if ($paymentPlatform) {
+                            $existingFoto = !empty($paymentPlatform->foto) ? json_decode($paymentPlatform->foto, true) : [];
+                            if (!is_array($existingFoto)) {
+                                $existingFoto = [];
+                            }
+                            
+                            // Merge existing files with new files
+                            $allFiles = array_merge($existingFoto, $movedFiles);
+                            
+                            $this->transJualPlatModel->update($paymentPlatformId, [
+                                'foto' => json_encode($allFiles),
+                                'updated_at' => date('Y-m-d H:i:s')
+                            ]);
+                            
+                            log_message('info', 'Updated payment platform with ' . count($movedFiles) . ' files');
+                        }
+                    }
+                    
+                    // Clean up temp directory (optional - can be done via cron job)
+                    // For now, we'll leave temp files for potential recovery
+                }
             }
 
             $this->db->transComplete();
@@ -264,6 +401,143 @@ class Sale extends BaseController
             }
             session()->setFlashdata('error', 'Failed to create manual order: ' . $e->getMessage());
             return redirect()->to('admin/transaksi/sale/orders');
+        }
+    }
+
+    /**
+     * Upload temporary files for manual order (before order creation)
+     */
+    public function uploadTemp()
+    {
+        // Check if user is logged in
+        if (!$this->ionAuth->loggedIn()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ]);
+        }
+
+        // Check if file was uploaded
+        $file = $this->request->getFile('file');
+        
+        if (!$file) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No file uploaded'
+            ]);
+        }
+
+        // Check for upload errors
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File size exceeds server limit',
+                UPLOAD_ERR_FORM_SIZE => 'File size exceeds form limit',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+            ];
+            
+            $errorCode = $file->getError();
+            $message = isset($errorMessages[$errorCode]) ? $errorMessages[$errorCode] : 'Unknown upload error';
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $message . ' (Error code: ' . $errorCode . ')'
+            ]);
+        }
+
+        // Validate file using extension
+        $extension = strtolower($file->getClientExtension());
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+        $maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!in_array($extension, $allowedExtensions)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid file type. Only JPG, PNG, and PDF files are allowed.'
+            ]);
+        }
+
+        if ($file->getSize() > $maxSize) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'File size too large. Maximum size is 5MB.'
+            ]);
+        }
+
+        try {
+            // Create temporary upload directory using session ID
+            $sessionId = session_id();
+            $baseUploadPath = FCPATH . 'file/sale/temp/' . $sessionId . '/';
+            
+            log_message('info', 'Creating temporary upload directory: ' . $baseUploadPath);
+            
+            // Create directory if it doesn't exist
+            if (!is_dir($baseUploadPath)) {
+                if (!mkdir($baseUploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create directory: ' . $baseUploadPath);
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Failed to create upload directory'
+                    ]);
+                }
+                log_message('info', 'Directory created successfully: ' . $baseUploadPath);
+            }
+
+            // Generate unique filename
+            $extension = strtolower($file->getClientExtension());
+            $newName = uniqid('temp_') . '_' . time() . '.' . $extension;
+
+            log_message('info', 'Moving file: ' . $newName . ' (Size: ' . $file->getSize() . ' bytes)');
+
+            // Check if temp file exists before moving
+            if (!file_exists($file->getTempName())) {
+                log_message('error', 'Temporary file does not exist: ' . $file->getTempName());
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Temporary file not found. Please try again.'
+                ]);
+            }
+
+            // Move file to temporary upload directory
+            if ($file->move($baseUploadPath, $newName)) {
+                log_message('info', 'File moved successfully: ' . $newName);
+                
+                // Determine MIME type based on extension
+                $mimeTypes = [
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'pdf' => 'application/pdf'
+                ];
+                $mimeType = isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'application/octet-stream';
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'File uploaded successfully',
+                    'filename' => $newName,
+                    'original_name' => $file->getClientName(),
+                    'size' => $file->getSize(),
+                    'type' => $mimeType,
+                    'extension' => $extension,
+                    'temp_path' => 'file/sale/temp/' . $sessionId . '/' . $newName
+                ]);
+            } else {
+                log_message('error', 'Failed to move file: ' . $file->getErrorString());
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to save file: ' . $file->getErrorString()
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', 'Upload exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ]);
         }
     }
 

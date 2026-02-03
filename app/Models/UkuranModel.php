@@ -177,12 +177,12 @@ class UkuranModel extends Model
         foreach ($ukuran as $item) {
             $label = $item->ukuran;
             if (!empty($item->kode)) {
-                $label = "({$item->kode}) {$item->ukuran}";
+                $label = "{$item->kode} ({$item->deskripsi})";
             }
             if ($item->harga > 0) {
                 $label .= " (+Rp " . number_format($item->harga, 0, ',', '.') . ")";
             }
-            $options[$item->id] = $label;
+            $options[$item->kode] = $label;
         }
         
         return $options;

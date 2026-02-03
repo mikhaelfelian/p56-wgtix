@@ -97,7 +97,8 @@ class Filters extends BaseFilters
                 'checkout',
                 'sale/upload-payment-proof/*',
                 'sale/tripay/callback',
-                'sale/test-callback'
+                'sale/test-callback',
+                'admin/transaksi/sale/upload-temp'
             ]],
         ],
         'after' => [

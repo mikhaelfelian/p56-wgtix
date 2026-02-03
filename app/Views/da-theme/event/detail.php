@@ -444,6 +444,13 @@ echo $this->section('content');
                         <?php endforeach; ?>
                     <?php endif; ?>
 
+                    let ukuranOptions = `<option value="">Pilih Ukuran</option>`;
+                    <?php if (!empty($ukuranOptions)): ?>
+                        <?php foreach ($ukuranOptions as $id => $label): ?>
+                            ukuranOptions += `<option value="<?= esc($id) ?>"><?= esc($label) ?></option>`;
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
 
                     const fieldHtml = `
                     <div class="participant-row mb-3 p-3 border rounded" style="background-color: #f8f9fa;">
@@ -489,15 +496,7 @@ echo $this->section('content');
                                 <div class="form-group mb-2">
                                     <label for="ukuran_${i}" class="form-label small">Ukuran Jersey <span class="text-danger">*</span></label>
                                         <select class="form-control form-control-sm" id="ukuran_${i}" name="ukuran_${i}" required>
-                                            <option value="">Pilih Ukuran</option>
-                                            <option value="XS">XS (59x44)</option>
-                                            <option value="S">S (67x47)</option>
-                                            <option value="M">M (70x49)</option>
-                                            <option value="L">L (72x51)</option>
-                                            <option value="XL">XL (74x53)</option>
-                                            <option value="XXL">XXL (76x56)</option>
-                                            <option value="3XL">3XL (78x58)</option>
-                                            <option value="4XL">4XL (80x60)</option>
+                                            ${ukuranOptions}
                                         </select>
                                 </div>
                             </div>
@@ -647,9 +646,9 @@ echo $this->section('content');
                         participant_uk: participant.jersey,
                         participant_emg: participant.emergency,
                         event_id: currentPurchaseData.eventId,
-                        price_id: 1, // Default price ID
+                        price_id: currentPurchaseData.priceId, // Use the actual selected price ID
                         event_title: '<?= esc($event->event) ?>',
-                        price_description: 'Event Registration',
+                        price_description: currentPurchaseData.description,
                         quantity: 1,
                         unit_price: currentPurchaseData.price,
                         total_price: currentPurchaseData.price,

@@ -318,6 +318,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
         $routes->get('detail/(:num)', 'Sale::detail/$1');
         $routes->post('update-status/(:num)', 'Sale::updateStatus/$1');
         $routes->post('create-manual-order', 'Sale::createManualOrder');
+        $routes->post('upload-temp', 'Sale::uploadTemp');
         $routes->get('get-event-prices/(:num)', 'Sale::getEventPrices/$1');
         $routes->get('reports', 'Sale::reports');
         $routes->get('export', 'Sale::export');
