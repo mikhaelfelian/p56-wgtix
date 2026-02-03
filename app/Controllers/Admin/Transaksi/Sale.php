@@ -134,16 +134,20 @@ class Sale extends BaseController
             $perPage = 10;
             $offset = ($page - 1) * $perPage;
             
-            // Get orders with limit and offset - use get() for queries with joins/groupBy
-            $orders = $ordersModel->get($perPage, $offset)->getResult();
+            // Get orders with limit and offset - explicitly select columns from tbl_trans_jual
+            // This ensures we get complete order objects with all properties when using groupBy
+            $orders = $ordersModel->select('tbl_trans_jual.*')
+                ->get($perPage, $offset)
+                ->getResult();
             
             // Manually store pagination data
             $pager->store('orders', (int)$page, $perPage, $totalCount, 0);
         } else {
             // Normal pagination without search/join
+            // Path is already set above, so paginate() will use it
             $orders = $ordersModel->paginate(10, 'orders');
             $pager = $ordersModel->pager;
-            $pager->setPath($pagerPath, 'orders');
+            // Path is already configured, no need to set it again
         }
 
         // Collect participant info per order from tbl_trans_jual_det.item_data (JSON fields participant_name, participant_phone)
@@ -157,15 +161,43 @@ class Sale extends BaseController
                     ->findAll();
 
                 foreach ($details as $detail) {
-                    $kat = $this->kategoriModel->find($detail->id);
+                    // Get kategori from price_id via eventsHargaModel (same as export method)
+                    $kategori = '';
+                    if (!empty($detail->price_id)) {
+                        $priceInfo = $this->eventsHargaModel
+                            ->where('id', $detail->price_id)
+                            ->where('id_event', $detail->event_id)
+                            ->where('deleted_at', null)
+                            ->first();
+                        if ($priceInfo && isset($priceInfo->keterangan)) {
+                            $kategori = $priceInfo->keterangan;
+                        }
+                    }
 
                     if (!empty($detail->item_data)) {
-                        $itemData = json_decode($detail->item_data, true) ?: [];
-                        if (!empty($itemData['participant_name'])) {
+                        $itemData = json_decode($detail->item_data, true);
+                        
+                        // Handle JSON decode errors
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            log_message('error', 'JSON decode error for order detail ' . $detail->id . ': ' . json_last_error_msg());
+                            continue;
+                        }
+                        
+                        if (empty($itemData)) {
+                            $itemData = [];
+                        }
+                        
+                        $participantName = $itemData['participant_name'] ?? '';
+                        $participantPhone = $itemData['participant_phone'] ?? '';
+                        
+                        // Only process if we have a participant name
+                        if (!empty($participantName)) {
+                            // Don't filter participants in PHP - SQL query already filtered the orders
+                            // Just show all participants from orders that matched the search
                             $participants[] = [
-                                'name'  => $itemData['participant_name'],
-                                'phone' => $itemData['participant_phone'] ?? null,
-                                'category' => $kat->kategori,
+                                'name'  => $participantName,
+                                'phone' => !empty($participantPhone) ? $participantPhone : null,
+                                'category' => $kategori,
                             ];
                         }
                     }
@@ -865,9 +897,12 @@ class Sale extends BaseController
      */
     public function export($format = 'xlsx')
     {
-        // Get date range from request
-        $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
+        // Get filters from request
+        $startDate = $this->request->getGet('start_date');
+        $endDate = $this->request->getGet('end_date');
+        $status = $this->request->getGet('status') ?? 'all';
+        $search = $this->request->getGet('search');
+        $search = !empty($search) ? trim($search) : null;
 
         // Normalize kategori so it reliably matches the Excel headers (e.g. 1K == 1 K)
         $normalizeKategori = static function ($value): string {
@@ -910,10 +945,31 @@ class Sale extends BaseController
                         . ' AND tbl_m_event_harga.id_event = tbl_trans_jual_det.event_id'
                         . ' AND tbl_m_event_harga.deleted_at IS NULL',
                     'left'
-                )
-                ->where('tbl_trans_jual.invoice_date >=', $startDate)
-                ->where('tbl_trans_jual.invoice_date <=', $endDate . ' 23:59:59')
-                ->orderBy('tbl_trans_jual.invoice_date', 'ASC');
+                );
+        
+        // Apply status filter if provided and not 'all'
+        if ($status !== 'all') {
+            $validStatuses = ['pending', 'paid', 'failed', 'cancelled'];
+            if (in_array($status, $validStatuses)) {
+                $builder->where('tbl_trans_jual.payment_status', $status);
+            }
+        }
+        
+        // Apply search filter if provided
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_name'))", $search)
+                ->orLike("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_phone'))", $search)
+                ->groupEnd();
+        }
+        
+        // Apply date filter if dates are explicitly provided
+        if (!empty($startDate) && !empty($endDate)) {
+            $builder->where('tbl_trans_jual.invoice_date >=', $startDate)
+                    ->where('tbl_trans_jual.invoice_date <=', $endDate . ' 23:59:59');
+        }
+        
+        $builder->orderBy('tbl_trans_jual.invoice_date', 'ASC');
         $transactionDetails = $builder->get()->getResult();
         
         // Process participants from item_data JSON
@@ -981,9 +1037,36 @@ class Sale extends BaseController
             ]);
             
             // Header row 1 (main headers)
+            // Merge A3:A4 for NO. column, vertically center and horizontally center the content
             $sheet->setCellValue('A3', 'NO.');
+            $sheet->mergeCells('A3:A4');
+            $sheet->getStyle('A3:A4')->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ]
+            ]);
+            
+            // Merge B3:B4 for NAMA column, as per instruction, with vertical and horizontal center
             $sheet->setCellValue('B3', 'NAMA');
+            $sheet->mergeCells('B3:B4');
+            $sheet->getStyle('B3:B4')->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ]
+            ]);
+            
+            // Merge C3:C4 for TGL PENDAFTARAN column, as per instruction, with vertical and horizontal center
             $sheet->setCellValue('C3', 'TGL PENDAFTARAN');
+            $sheet->mergeCells('C3:C4');
+            $sheet->getStyle('C3:C4')->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ]
+            ]);
+            
             $sheet->mergeCells('D3:E3');
             $sheet->setCellValue('D3', 'BUKTI TRANSFER');
             if ($numKategoriCols > 0) {
@@ -994,7 +1077,16 @@ class Sale extends BaseController
                 $sheet->mergeCells($kategoriStartCol . '3:' . $kategoriStartCol . '3');
             }
             $sheet->setCellValue($kategoriStartCol . '3', 'KATEGORI');
+
+            // Merge jmlPesertaCol (e.g., J3:J4 if J is the lastCol) as per instruction, center and middle
             $sheet->setCellValue($jmlPesertaCol . '3', 'JML PESERTA');
+            $sheet->mergeCells($jmlPesertaCol . '3:' . $jmlPesertaCol . '4');
+            $sheet->getStyle($jmlPesertaCol . '3:' . $jmlPesertaCol . '4')->applyFromArray([
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
+                ]
+            ]);
             
             // Header row 2 (sub-headers)
             $sheet->setCellValue('D4', 'ADA');
@@ -1051,7 +1143,7 @@ class Sale extends BaseController
                 
                 // Set cell values
                 $sheet->setCellValue('A' . $row, $no++);
-                $sheet->setCellValue('B' . $row, $participant['nama']);
+                $sheet->setCellValue('B' . $row, ucwords($participant['nama']));
                 $sheet->setCellValue('C' . $row, $tglPendaftaran);
                 $sheet->setCellValue('D' . $row, $buktiAda);
                 $sheet->setCellValue('E' . $row, $buktiTidak);

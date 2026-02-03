@@ -129,7 +129,7 @@ echo $this->extend(theme_path('main')); ?>
                             ?>
                             <a href="<?= base_url('admin/transaksi/sale/orders/all' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'all' ? 'btn-primary' : 'btn-outline-primary' ?>">
-                                Semua Pesanan (<?= $stats['all'] ?>)
+                                Semua (<?= $stats['all'] ?>)
                             </a>
                             <a href="<?= base_url('admin/transaksi/sale/orders/pending' . $searchParam) ?>" 
                                class="btn <?= $current_status === 'pending' ? 'btn-warning' : 'btn-outline-warning' ?>">
@@ -177,7 +177,20 @@ echo $this->extend(theme_path('main')); ?>
                             <a href="<?= base_url('admin/transaksi/sale/reports') ?>" class="btn btn-info">
                                 <i class="fas fa-chart-bar"></i> Laporan
                             </a>
-                            <a href="<?= base_url('admin/transaksi/sale/export') ?>" class="btn btn-success">
+                            <?php
+                            $exportParams = [];
+                            if ($current_status !== 'all') {
+                                $exportParams['status'] = $current_status;
+                            }
+                            if (!empty($search)) {
+                                $exportParams['search'] = $search;
+                            }
+                            $exportUrl = base_url('admin/transaksi/sale/export');
+                            if (!empty($exportParams)) {
+                                $exportUrl .= '?' . http_build_query($exportParams);
+                            }
+                            ?>
+                            <a href="<?= $exportUrl ?>" class="btn btn-success">
                                 <i class="fas fa-download"></i> Ekspor
                             </a>
                         </div>
@@ -203,24 +216,48 @@ echo $this->extend(theme_path('main')); ?>
                         <table class="table table-hover text-nowrap">
                             <thead>
                                 <tr>
+                                    <th>No.</th>
                                     <th>No Invoice</th>
-                                    <th>Tanggal</th>
-                                    <th>Pelanggan</th>
-                                    <th>Jumlah</th>
-                                    <th>Status Pembayaran</th>
-                                    <th>Status Pesanan</th>
+                                    <th>Partisipan</th>
+                                    <th>Nominal</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php
+                                // Setup number for current page data, use pager if available
+                                $startNumber = 1;
+                                if (isset($pager) && method_exists($pager, 'getCurrentPage') && method_exists($pager, 'getPerPage')) {
+                                    $currentPage = $pager->getCurrentPage('orders');
+                                    $perPage = $pager->getPerPage('orders');
+                                    $startNumber = $perPage * ($currentPage - 1) + 1;
+                                }
+                                ?>
                                 <?php if (!empty($orders)): ?>
+                                    <?php $number = $startNumber; ?>
                                     <?php foreach ($orders as $order): ?>
                                         <tr>
+                                            <td><?= $number++ ?></td>
                                             <td>
                                                 <strong><?= esc($order->invoice_no) ?></strong><br>
                                                 <small class="text-muted"><?= date('d/m/Y H:i', strtotime($order->invoice_date)) ?></small>
+                                                
+                                                <?php
+                                                $orderStatusColor = [
+                                                    'active' => 'primary',
+                                                    'cancelled' => 'secondary',
+                                                    'completed' => 'success'
+                                                ];
+                                                $orderLabel = [
+                                                    'active' => 'Aktif',
+                                                    'cancelled' => 'Dibatalkan',
+                                                    'completed' => 'Selesai'
+                                                ];
+                                                $orderColor = $orderStatusColor[$order->status] ?? 'info';
+                                                ?>
+                                                <br/>
+                                                <span class="badge badge-<?= $orderColor ?>"><?= $orderLabel[$order->status] ?? ucfirst($order->status) ?></span>
                                             </td>
-                                            <td><?= date('d/m/Y', strtotime($order->invoice_date)) ?></td>
                                             <td>
                                                 <?php
                                                 $participants = $participantsByOrder[$order->id] ?? [];
@@ -258,8 +295,8 @@ echo $this->extend(theme_path('main')); ?>
                                                     </small>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><strong>Rp <?= number_format($order->total_amount, 0, ',', '.') ?></strong></td>
                                             <td>
+                                                <strong>Rp <?= number_format($order->total_amount, 0, ',', '.') ?></strong>
                                                 <?php
                                                 $statusColor = [
                                                     'pending' => 'warning',
@@ -275,23 +312,8 @@ echo $this->extend(theme_path('main')); ?>
                                                     'cancelled' => 'Dibatalkan'
                                                 ];
                                                 ?>
+                                                <br/>
                                                 <span class="badge badge-<?= $color ?>"><?= $statusLabel[$order->payment_status] ?? ucfirst($order->payment_status) ?></span>
-                                            </td>
-                                            <td>
-                                                <?php
-                                                $orderStatusColor = [
-                                                    'active' => 'primary',
-                                                    'cancelled' => 'secondary',
-                                                    'completed' => 'success'
-                                                ];
-                                                $orderLabel = [
-                                                    'active' => 'Aktif',
-                                                    'cancelled' => 'Dibatalkan',
-                                                    'completed' => 'Selesai'
-                                                ];
-                                                $orderColor = $orderStatusColor[$order->status] ?? 'info';
-                                                ?>
-                                                <span class="badge badge-<?= $orderColor ?>"><?= $orderLabel[$order->status] ?? ucfirst($order->status) ?></span>
                                             </td>
                                             <td>
                                                 <div class="btn-group">
@@ -326,7 +348,7 @@ echo $this->extend(theme_path('main')); ?>
                     </div>
                     
                     <!-- Pagination -->
-                    <?php if ($pager->getPageCount() > 1): ?>
+                    <?php if ($pager->getPageCount('orders') > 1): ?>
                     <div class="card-footer clearfix">
                         <?= $pager->links('orders', 'adminlte_pagination') ?>
                     </div>
