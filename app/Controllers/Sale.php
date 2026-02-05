@@ -18,6 +18,7 @@ use App\Models\CartModel;
 use App\Models\PesertaModel;
 use App\Models\KategoriModel;
 use App\Models\KelompokPesertaModel;
+use App\Models\EventsHargaModel;
 use App\Libraries\InvoicePdf;
 use App\Libraries\TicketPdf;
 use App\Libraries\DotMatrixInvoicePdf;
@@ -31,6 +32,7 @@ class Sale extends BaseController{
     protected $pesertaModel;
     protected $kategoriModel;
     protected $kelompokModel;
+    protected $eventsHargaModel;
     protected $ionAuth;
     protected $db;
 
@@ -45,6 +47,7 @@ class Sale extends BaseController{
         $this->pesertaModel = new PesertaModel();
         $this->kategoriModel = new KategoriModel();
         $this->kelompokModel = new KelompokPesertaModel();
+        $this->eventsHargaModel = new EventsHargaModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
         $this->db = \Config\Database::connect();
     }
@@ -426,16 +429,74 @@ class Sale extends BaseController{
             $headerId = $this->transJualModel->insert($headerData);
             $lastId = $this->db->insertID();
             
+            // Create KTP upload directory if needed
+            $ktpUploadPath = FCPATH . 'file/sale/ktp/' . $lastId . '/';
+            if (!is_dir($ktpUploadPath)) {
+                if (!mkdir($ktpUploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create KTP upload directory: ' . $ktpUploadPath);
+                    throw new \Exception('Failed to create upload directory');
+                }
+            }
+            
             // 2. Save to tbl_trans_jual_det (detail items)
+            $participantIndex = 0;
             foreach ($data['participant'] as $item) {
+                // Handle KTP file upload for this participant
+                $ktpFilePath = null;
+                $ktpFile = $this->request->getFile("ktp_file_{$participantIndex}");
+                
+                if ($ktpFile && $ktpFile->isValid() && !$ktpFile->hasMoved()) {
+                    // Validate file type
+                    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+                    $extension = strtolower($ktpFile->getClientExtension());
+                    
+                    if (in_array($extension, $allowedExtensions)) {
+                        // Validate file size (5MB)
+                        $maxSize = 5 * 1024 * 1024; // 5MB
+                        if ($ktpFile->getSize() <= $maxSize) {
+                            // Generate unique filename
+                            $newName = 'ktp_' . $participantIndex . '_' . uniqid() . '_' . time() . '.' . $extension;
+                            
+                            // Move file to KTP directory
+                            if ($ktpFile->move($ktpUploadPath, $newName)) {
+                                $ktpFilePath = 'file/sale/ktp/' . $lastId . '/' . $newName;
+                                log_message('info', 'KTP file uploaded successfully: ' . $ktpFilePath);
+                            } else {
+                                log_message('error', 'Failed to move KTP file for participant ' . $participantIndex);
+                            }
+                        } else {
+                            log_message('error', 'KTP file too large for participant ' . $participantIndex);
+                        }
+                    } else {
+                        log_message('error', 'Invalid KTP file type for participant ' . $participantIndex);
+                    }
+                }
+                
+                // Get kode from tbl_m_event_harga and add to unit_price and total_price
+                $kode = 0;
+                if (!empty($item['price_id'])) {
+                    $priceInfo = $this->eventsHargaModel->find($item['price_id']);
+                    if ($priceInfo && isset($priceInfo->kode)) {
+                        $kode = (int)$priceInfo->kode;
+                    }
+                }
+                
+                // Add kode to unit_price and total_price
+                $unitPrice = (float)($item['unit_price'] ?? 0);
+                $totalPrice = (float)($item['total_price'] ?? 0);
+                $unitPriceWithKode = $unitPrice + $kode;
+                $totalPriceWithKode = $totalPrice + $kode;
+                
                 $participant = [
                     'participant_id'    => $item['participant_id']    ?? 0,
                     'participant_name'  => $item['participant_name']  ?? '',
                     'participant_gender'=> $item['participant_gender'] ?? null,
+                    'participant_birth_date' => $item['participant_birth_date'] ?? null,
                     'participant_phone' => $item['participant_phone']  ?? null,
                     'participant_address' => $item['participant_address'] ?? null,
                     'participant_uk'    => $item['participant_uk']    ?? null,
                     'participant_emg'   => $item['participant_emg']   ?? null,
+                    'participant_ktp_file' => $ktpFilePath,
                     'id_user'           => $userId,
                     'id_event'          => $item['event_id']          ?? 0,
                     'id_kategori'       => $item['kategori_id']       ?? 0,
@@ -449,14 +510,15 @@ class Sale extends BaseController{
                     'event_title'       => $item['event_title']      ?? '',
                     'price_description' => $item['price_description']?? '',
                     'quantity'          => $item['quantity']         ?? 1,
-                    'unit_price'        => $item['unit_price']       ?? 0,
-                    'total_price'       => $item['total_price']      ?? 0,
+                    'unit_price'        => $unitPriceWithKode,
+                    'total_price'       => $totalPriceWithKode,
                     'item_data'         => json_encode($participant),
                     'created_at'        => date('Y-m-d H:i:s'),
                     'updated_at'        => date('Y-m-d H:i:s')
                 ];
                 
                 $this->transJualDetModel->insert($detailData);
+                $participantIndex++;
             }
             
             // 3. Save to tbl_trans_jual_plat (payment platforms)

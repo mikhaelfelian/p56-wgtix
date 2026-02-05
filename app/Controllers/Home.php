@@ -12,6 +12,8 @@
 namespace App\Controllers;
 
 use App\Models\EventsModel;
+use App\Models\VPesertaTransModel;
+use App\Models\TransJualDetModel;
 
 class Home extends BaseController
 {
@@ -44,5 +46,50 @@ class Home extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/home', $data);
+    }
+
+    public function test()
+    {
+        $vPesertaTransModel = new VPesertaTransModel();
+        $transJualDetModel = new TransJualDetModel();
+        
+        // Get all records from v_peserta_trans where paid_date IS NOT NULL, ordered by paid_date ASC
+        $records = $vPesertaTransModel
+            ->where('paid_date IS NOT', null)
+            ->orderBy('paid_date', 'ASC')
+            ->findAll();
+        
+        $updated = 0;
+        $errors = [];
+        $sortNum = 1;
+        
+        foreach ($records as $record) {
+            try {
+                // Update sort_num in tbl_trans_jual_det using the id from the view
+                // The view's 'd.id' corresponds to tbl_trans_jual_det.id
+                $success = $transJualDetModel->update($record->id, [
+                    'sort_num' => $sortNum
+                ]);
+                
+                if ($success) {
+                    $updated++;
+                    $sortNum++;
+                } else {
+                    $errors[] = "Failed to update record ID: {$record->id}";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Error updating record ID {$record->id}: " . $e->getMessage();
+            }
+        }
+        
+        $result = [
+            'success' => true,
+            'total_records' => count($records),
+            'updated' => $updated,
+            'next_sort_num' => $sortNum,
+            'errors' => $errors
+        ];
+        
+        return $this->response->setJSON($result);
     }
 }

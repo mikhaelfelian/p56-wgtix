@@ -597,9 +597,9 @@ class Sale extends BaseController
             $pdf->SetXY(10, 93);
             $pdf->Cell(140, 6, $itemData['participant_name'], 0, 1, 'L');
             
-            if (isset($itemData['participant_number'])) {
+            if (isset($orderDetail->sort_num)) {
                 $pdf->SetXY(10, 101);
-                $pdf->Cell(140, 6, 'Participant #: ' . $itemData['participant_number'], 0, 1, 'L');
+                $pdf->Cell(140, 6, 'Participant #: ' . $orderDetail->sort_num, 0, 1, 'L');
             }
         }
         

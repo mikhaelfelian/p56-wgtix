@@ -19,6 +19,7 @@ use App\Models\EventsModel;
 use App\Models\PlatformModel;
 use App\Models\VKategoriModel;
 use App\Models\UkuranModel;
+use App\Models\VPesertaTransModel;
 use CodeIgniter\HTTP\ResponseInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -43,6 +44,7 @@ class Sale extends BaseController
     protected $platformModel;
     protected $kategoriModel;
     protected $ukuranModel;
+    protected $vPesertaTransModel;
     protected $ionAuth;
 
     public function __construct()
@@ -56,6 +58,7 @@ class Sale extends BaseController
         $this->platformModel        = new PlatformModel();
         $this->kategoriModel        = new VKategoriModel();
         $this->ukuranModel          = new UkuranModel();
+        $this->vPesertaTransModel   = new VPesertaTransModel();
         $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -263,6 +266,7 @@ class Sale extends BaseController
             'event_id' => 'required|integer',
             'price_id' => 'required|integer',
             'participant_name' => 'required|max_length[255]',
+            'participant_birthdate' => 'required|valid_date',
             'participant_phone' => 'permit_empty|max_length[20]',
             'participant_gender' => 'permit_empty|in_list[M,F]',
             'participant_address' => 'permit_empty|max_length[500]',
@@ -310,21 +314,92 @@ class Sale extends BaseController
                 throw new \Exception('Failed to create order header');
             }
 
+            // Create KTP upload directory if needed
+            $ktpUploadPath = FCPATH . 'file/sale/ktp/' . $headerId . '/';
+            if (!is_dir($ktpUploadPath)) {
+                if (!mkdir($ktpUploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create KTP upload directory: ' . $ktpUploadPath);
+                    throw new \Exception('Failed to create KTP upload directory');
+                }
+            }
+
+            // Handle KTP file upload
+            $ktpFilePath = null;
+            $ktpFileJson = $this->request->getPost('ktp_file');
+            if (!empty($ktpFileJson)) {
+                $ktpFileInfo = json_decode($ktpFileJson, true);
+                if (is_array($ktpFileInfo) && !empty($ktpFileInfo['filename'])) {
+                    $sessionId = session_id();
+                    $tempPath = FCPATH . 'file/sale/temp/' . $sessionId . '/';
+                    $tempFile = $tempPath . $ktpFileInfo['filename'];
+                    
+                    if (file_exists($tempFile)) {
+                        // Validate file type
+                        $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+                        $extension = strtolower(pathinfo($ktpFileInfo['filename'], PATHINFO_EXTENSION));
+                        
+                        if (in_array($extension, $allowedExtensions)) {
+                            // Validate file size (5MB)
+                            $maxSize = 5 * 1024 * 1024; // 5MB
+                            $fileSize = filesize($tempFile);
+                            
+                            if ($fileSize <= $maxSize) {
+                                // Generate unique filename
+                                $newName = 'ktp_' . uniqid() . '_' . time() . '.' . $extension;
+                                $ktpFile = $ktpUploadPath . $newName;
+                                
+                                // Move file from temp to KTP directory
+                                if (rename($tempFile, $ktpFile)) {
+                                    $ktpFilePath = 'file/sale/ktp/' . $headerId . '/' . $newName;
+                                    log_message('info', 'KTP file moved successfully: ' . $ktpFilePath);
+                                } else {
+                                    log_message('error', 'Failed to move KTP file from temp to KTP directory');
+                                }
+                            } else {
+                                log_message('error', 'KTP file too large: ' . $fileSize . ' bytes');
+                            }
+                        } else {
+                            log_message('error', 'Invalid KTP file type: ' . $extension);
+                        }
+                    } else {
+                        log_message('error', 'KTP temp file not found: ' . $tempFile);
+                    }
+                }
+            }
+
             // Prepare participant data
             $participant = [
                 'participant_id' => 0,
                 'participant_name' => $this->request->getPost('participant_name'),
                 'participant_gender' => $this->request->getPost('participant_gender'),
+                'participant_birth_date' => $this->request->getPost('participant_birthdate'),
                 'participant_phone' => $this->request->getPost('participant_phone'),
                 'participant_address' => $this->request->getPost('participant_address'),
                 'participant_uk' => $this->request->getPost('participant_uk'),
                 'participant_emg' => $this->request->getPost('participant_emg'),
+                'participant_ktp_file' => $ktpFilePath,
                 'id_user' => $userId,
                 'id_event' => $event->id,
                 'id_kategori' => $event->id_kategori ?? 0,
                 'id_platform' => $this->request->getPost('platform_id'),
             ];
 
+            // Get kode from tbl_m_event_harga and add to unit_price and total_price
+            $kode = 0;
+            if ($price && isset($price->kode)) {
+                $kode = (int)$price->kode;
+            }
+            
+            // Add kode to unit_price and total_price
+            $unitPrice = (float)$price->harga;
+            $totalPrice = (float)$this->request->getPost('total_amount');
+            $unitPriceWithKode = $unitPrice + $kode;
+            $totalPriceWithKode = $totalPrice + $kode;
+            
+            // Calculate next sort_num from v_peserta_trans
+            $maxSortNum = $this->vPesertaTransModel->selectMax('sort_num')->first();
+            $nextSortNum = ($maxSortNum && isset($maxSortNum->sort_num)) ? ((int)$maxSortNum->sort_num + 1) : 1;
+            
             // Create order detail
             $detailData = [
                 'id_penjualan' => $headerId,
@@ -332,9 +407,10 @@ class Sale extends BaseController
                 'price_id' => $price->id,
                 'event_title' => $event->event,
                 'price_description' => $price->keterangan,
+                'sort_num' => $nextSortNum,
                 'quantity' => 1,
-                'unit_price' => $price->harga,
-                'total_price' => $this->request->getPost('total_amount'),
+                'unit_price' => $unitPriceWithKode,
+                'total_price' => $totalPriceWithKode,
                 'item_data' => json_encode($participant),
             ];
 
@@ -657,6 +733,7 @@ class Sale extends BaseController
 
         $newPaymentStatus = $this->request->getPost('payment_status');
         $newOrderStatus = $this->request->getPost('order_status');
+        $note = $this->request->getPost('note');
 
         $updateData = [
             'updated_at' => date('Y-m-d H:i:s')
@@ -670,9 +747,21 @@ class Sale extends BaseController
             $updateData['status'] = $newOrderStatus;
         }
 
+        if ($note !== null) {
+            $updateData['note'] = $note;
+        }
+
         $sql = $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll();
 
         if ($newPaymentStatus === 'paid') {
+            // Calculate next sort_num from v_peserta_trans (only paid orders)
+            $maxSortNum = $this->vPesertaTransModel
+                ->where('paid_date IS NOT', null)
+                ->orderBy('paid_date', 'ASC')
+                ->selectMax('sort_num')
+                ->first();
+            $nextSortNum = ($maxSortNum && isset($maxSortNum->sort_num)) ? ((int)$maxSortNum->sort_num + 1) : 1;
+            
             foreach ($sql as $s) {
                 // Safely decode item_data (handle both object and array structures)
                 $itemData = json_decode($s->item_data ?? '', true) ?: [];
@@ -717,7 +806,13 @@ class Sale extends BaseController
                     "id_platform"         => $participantPlat,
                 ];
 
-                $this->transJualDetModel->update($s->id, ['item_data' => json_encode($peserta)]);
+                // Update sort_num for each order detail
+                $currentSortNum = $nextSortNum;
+                $this->transJualDetModel->update($s->id, [
+                    'item_data' => json_encode($peserta),
+                    'sort_num' => $currentSortNum
+                ]);
+                $nextSortNum++; // Increment for next detail in this order
             }
         } elseif ($newPaymentStatus === 'pending') {
             // Delete peserta with this invoiceId
@@ -1603,7 +1698,7 @@ class Sale extends BaseController
         // Ticket ID and count
         $pdf->SetFont('helvetica', '', 18);
         $pdf->SetXY(2.5, $qrBoxY - 0.24);
-        $pdf->Cell($sideStripW - 1.50, 0.4,  ($itemData['participant_number'] != 0 ? $itemData['participant_number'] : ''), 0, 1, 'L');
+        $pdf->Cell($sideStripW - 1.50, 0.4,  ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
         $pdf->SetFont('helvetica', 'B', 18);
         $pdf->SetXY(8.45, $qrBoxY - 0.2);
         $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($itemData['participant_name']), 0, 1, 'L');

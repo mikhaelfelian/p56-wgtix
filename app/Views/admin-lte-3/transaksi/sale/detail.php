@@ -68,29 +68,27 @@ echo $this->extend(theme_path('main')); ?>
                                 <table class="table table-sm rounded-0">
                                     <?php if ($user): ?>
                                         <tr>
-                                            <td><strong>Pelanggan:</strong></td>
-                                            <td><?= esc($user->first_name . ' ' . $user->last_name) ?></td>
+                                            <td><strong>Nama:</strong></td>
+                                            <td><?= esc(trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? ''))) ?: '-' ?></td>
                                         </tr>
                                         <tr>
                                             <td><strong>Username:</strong></td>
-                                            <td><?= esc($user->username) ?></td>
+                                            <td><?= strtolower($user->username ?? '-') ?></td>
                                         </tr>
                                         <tr>
                                             <td><strong>Email:</strong></td>
-                                            <td><?= esc($user->email) ?></td>
+                                            <td><?= esc($user->email ?? '-') ?></td>
                                         </tr>
+                                        <?php if (!empty($user->phone)): ?>
                                         <tr>
-                                            <td><strong>User ID:</strong></td>
-                                            <td><?= $order->user_id ?></td>
+                                            <td><strong>Telepon:</strong></td>
+                                            <td><?= esc($user->phone) ?></td>
                                         </tr>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <tr>
                                             <td><strong>Pelanggan:</strong></td>
                                             <td><span class="text-muted">Pengguna Tamu</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>User ID:</strong></td>
-                                            <td><?= $order->user_id ?: 'N/A' ?></td>
                                         </tr>
                                     <?php endif; ?>
                                 </table>
@@ -103,7 +101,7 @@ echo $this->extend(theme_path('main')); ?>
 
         <!-- Manajemen Status -->
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card rounded-0">
                     <div class="card-header rounded-0">
                         <h3 class="card-title">Status Pembayaran</h3>
@@ -135,13 +133,13 @@ echo $this->extend(theme_path('main')); ?>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary rounded-0">
-                                <i class="fas fa-save"></i> Update Status
+                                <i class="fas fa-save"></i> Update
                             </button>
                         </form>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card rounded-0">
                     <div class="card-header rounded-0">
                         <h3 class="card-title">Status Pesanan</h3>
@@ -171,9 +169,21 @@ echo $this->extend(theme_path('main')); ?>
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary rounded-0">
-                                <i class="fas fa-save"></i> Update Status
+                                <i class="fas fa-save"></i> Update
                             </button>
                         </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card rounded-0">
+                    <div class="card-header rounded-0">
+                        <h3 class="card-title">Catatan</h3>
+                    </div>
+                    <div class="card-body rounded-0">
+                        <div class="form-group">
+                            <p><?= nl2br(esc($order->notes ?? '-')) ?></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -191,7 +201,7 @@ echo $this->extend(theme_path('main')); ?>
                             <thead>
                                 <tr>
                                     <th>Event</th>
-                                    <th>Deskripsi Harga</th>
+                                    <th>Deskripsi</th>
                                     <th>Info Peserta</th>
                                     <th>Jumlah</th>
                                     <th>Harga Satuan</th>
@@ -220,17 +230,45 @@ echo $this->extend(theme_path('main')); ?>
                                                 <?php if (isset($itemData['participant_name'])): ?>
                                                     <strong><?= esc($itemData['participant_name']) ?></strong><br>
                                                     <small class="text-muted d-block">
-                                                        Peserta #<?= esc($itemData['participant_number'] ?? 'N/A') ?>
+                                                        Peserta #<?= esc($detail->sort_num ?? 'N/A') ?>
                                                     </small>
+                                                    <?php if (!empty($itemData['participant_birth_date'])): ?>
+                                                        <small class="text-muted d-block mt-1">
+                                                            Tanggal Lahir: <?= esc($itemData['participant_birth_date']) ?><br>
+                                                        </small>
+                                                    <?php endif; ?>
                                                     <?php if (!empty($itemData['participant_uk']) || !empty($itemData['participant_emg'])): ?>
                                                         <small class="text-muted d-block mt-1">
                                                             <?php if (!empty($itemData['participant_uk'])): ?>
                                                                 Ukuran Jersey: <?= esc(strtoupper($itemData['participant_uk'])) ?><br>
                                                             <?php endif; ?>
                                                             <?php if (!empty($itemData['participant_emg'])): ?>
-                                                                Kontak Darurat: <?= esc($itemData['participant_emg']) ?>
+                                                                Kontak Darurat: <?= esc($itemData['participant_emg']) ?><br>
                                                             <?php endif; ?>
                                                         </small>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($itemData['participant_ktp_file'])): ?>
+                                                        <?php
+                                                        $ktpPath = $itemData['participant_ktp_file'];
+                                                        // KTP path format: file/sale/ktp/{orderId}/{filename}
+                                                        $ktpUrl = base_url('public/' . $ktpPath);
+                                                        $ktpExt = strtolower(pathinfo($ktpPath, PATHINFO_EXTENSION));
+                                                        $isKtpImage = in_array($ktpExt, ['jpg', 'jpeg', 'png', 'gif']);
+                                                        ?>
+                                                        <div class="mt-2">
+                                                            <small class="text-muted d-block mb-1">
+                                                                <i class="fas fa-id-card text-success"></i> KTP:
+                                                            </small>
+                                                            <?php if ($isKtpImage): ?>
+                                                                <a href="<?= $ktpUrl ?>" target="_blank" data-toggle="lightbox" data-gallery="ktp-gallery" data-title="KTP - <?= esc($itemData['participant_name']) ?>">
+                                                                    <img src="<?= $ktpUrl ?>" alt="KTP" style="width:60px;height:40px;object-fit:cover;border:1px solid #ddd;" class="rounded">
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <a href="<?= $ktpUrl ?>" target="_blank" class="btn btn-sm btn-outline-danger rounded-0" title="Lihat KTP">
+                                                                    <i class="fas fa-file-pdf"></i> KTP PDF
+                                                                </a>
+                                                            <?php endif; ?>
+                                                        </div>
                                                     <?php endif; ?>
                                                 <?php else: ?>
                                                     <span class="text-muted">Tidak ada info peserta</span>

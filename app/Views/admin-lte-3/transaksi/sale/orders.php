@@ -372,6 +372,7 @@ echo $this->extend(theme_path('main')); ?>
             </div>
             <?= form_open('admin/transaksi/sale/create-manual-order', ['id' => 'manualOrderForm', 'enctype' => 'multipart/form-data']) ?>
             <input type="hidden" name="uploaded_files" id="uploaded_files" value="" />
+            <input type="hidden" name="ktp_file" id="ktp_file" value="" />
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -427,6 +428,13 @@ echo $this->extend(theme_path('main')); ?>
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
+                            <label for="participant_birthdate">Tanggal Lahir <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="participant_birthdate" name="participant_birthdate" 
+                                   required max="<?= date('Y-m-d') ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
                             <label for="participant_uk">Ukuran Jersey</label>
                             <select class="form-control" id="participant_uk" name="participant_uk">
                                 <option value="">Pilih Ukuran</option>
@@ -438,6 +446,9 @@ echo $this->extend(theme_path('main')); ?>
                             </select>
                         </div>
                     </div>
+                </div>
+
+                <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="participant_emg">Kontak Darurat</label>
@@ -449,6 +460,28 @@ echo $this->extend(theme_path('main')); ?>
                 <div class="form-group">
                     <label for="participant_address">Alamat</label>
                     <textarea class="form-control" id="participant_address" name="participant_address" rows="2"></textarea>
+                </div>
+
+                <div class="form-group" id="ktp_upload_section" style="display: none;">
+                    <label style="font-weight: 600; color: #333; margin-bottom: 10px;">
+                        <i class="fa fa-id-card" style="margin-right: 8px; color: #28a745;"></i>
+                        Upload KTP <span class="text-danger">*</span>
+                    </label>
+                    <div id="ktp-dropzone" class="dropzone" style="border: 2px dashed #28a745; border-radius: 10px; background: white; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease;">
+                        <div class="dz-message" style="margin: 20px 0;">
+                            <div style="font-size: 48px; color: #28a745; margin-bottom: 15px;">
+                                <i class="fa fa-cloud-upload"></i>
+                            </div>
+                            <h4 style="color: #28a745; font-weight: 600; margin-bottom: 10px; font-size: 16px;">Drop KTP file here or click to upload</h4>
+                            <p style="color: #999; margin: 0; font-size: 14px;">
+                                Upload KTP (Kartu Tanda Penduduk) peserta<br>
+                                <small>Supported formats: JPG, PNG, PDF (Max size: 5MB)</small>
+                            </p>
+                        </div>
+                    </div>
+                    <small class="text-muted" style="display: block; margin-top: 8px;">
+                        <i class="fa fa-info-circle"></i> <span id="ktp_requirement_text">Wajib untuk peserta usia 40 tahun ke atas</span>
+                    </small>
                 </div>
 
                 <hr>
@@ -593,9 +626,11 @@ Dropzone.autoDiscover = false;
 
 // Track uploaded files for manual order
 var uploadedFiles = [];
+var uploadedKtpFile = null;
 
 // Initialize Dropzone for manual order form
 var manualOrderDropzone = null;
+var ktpDropzone = null;
 
 $(document).ready(function() {
     // Initialize Dropzone when modal is shown
@@ -737,6 +772,143 @@ $(document).ready(function() {
                 `
             });
         }
+        
+        // Initialize KTP Dropzone
+        if (!ktpDropzone) {
+            ktpDropzone = new Dropzone("#ktp-dropzone", {
+                url: "<?= base_url('admin/transaksi/sale/upload-temp') ?>",
+                paramName: "file",
+                maxFilesize: 5, // MB
+                acceptedFiles: ".jpg,.jpeg,.png,.pdf",
+                addRemoveLinks: true,
+                dictDefaultMessage: '',
+                maxFiles: 1, // Only one KTP file allowed
+                parallelUploads: 1,
+                uploadMultiple: false,
+                timeout: 10000, // 10 seconds timeout
+                retries: 0,
+                headers: {
+                    'X-CSRF-TOKEN': '<?= csrf_hash() ?>'
+                },
+                
+                init: function() {
+                    var dropzone = this;
+                    
+                    this.on("sending", function(file, xhr, formData) {
+                        // Add CSRF token to form data
+                        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                    });
+                    
+                    this.on("success", function(file, response) {
+                        // Handle both string and object responses
+                        var parsedResponse;
+                        if (typeof response === 'string') {
+                            try {
+                                parsedResponse = JSON.parse(response);
+                            } catch (e) {
+                                console.error('Failed to parse response:', e);
+                                this.emit("error", file, 'Invalid server response');
+                                return;
+                            }
+                        } else if (typeof response === 'object' && response !== null) {
+                            parsedResponse = response;
+                        } else {
+                            console.error('Invalid response type:', typeof response);
+                            this.emit("error", file, 'Invalid server response type');
+                            return;
+                        }
+                        
+                        if (parsedResponse && parsedResponse.success === true) {
+                            // Store KTP file info
+                            uploadedKtpFile = {
+                                filename: parsedResponse.filename,
+                                original_name: file.name,
+                                size: file.size,
+                                type: file.type,
+                                temp_path: parsedResponse.temp_path || ''
+                            };
+                            
+                            // Update hidden field
+                            $('#ktp_file').val(JSON.stringify(uploadedKtpFile));
+                            
+                            // Add success styling
+                            $(file.previewElement).addClass('dz-success');
+                            
+                            console.log('KTP file uploaded successfully:', parsedResponse);
+                        } else {
+                            console.error('KTP upload failed - server returned:', parsedResponse);
+                            var errorMessage = 'Upload failed';
+                            if (parsedResponse && parsedResponse.message) {
+                                errorMessage = parsedResponse.message;
+                            }
+                            this.emit("error", file, errorMessage);
+                        }
+                    });
+                    
+                    this.on("error", function(file, errorMessage) {
+                        console.error('KTP upload error:', errorMessage);
+                        
+                        // Show error styling
+                        $(file.previewElement).addClass('dz-error');
+                        
+                        // Show error message
+                        var message = 'Upload failed. Please try again.';
+                        
+                        if (typeof errorMessage === 'string' && errorMessage.trim() !== '') {
+                            message = errorMessage;
+                        } else if (errorMessage && typeof errorMessage === 'object' && errorMessage.message) {
+                            message = errorMessage.message;
+                        } else if (errorMessage && typeof errorMessage === 'object') {
+                            message = JSON.stringify(errorMessage);
+                        }
+                        
+                        console.log('Showing error message:', message);
+                        alert('KTP Upload Error: ' + message);
+                    });
+                    
+                    this.on("removedfile", function(file) {
+                        // Clear KTP file info
+                        uploadedKtpFile = null;
+                        
+                        // Update hidden field
+                        $('#ktp_file').val('');
+                        
+                        console.log('KTP file removed:', file.name);
+                    });
+                    
+                    this.on("maxfilesexceeded", function(file) {
+                        alert("Only one KTP file allowed. Please remove the existing file first.");
+                        this.removeFile(file);
+                    });
+                },
+                
+                // Custom preview template
+                previewTemplate: `
+                    <div class="dz-preview dz-file-preview">
+                        <div class="dz-image">
+                            <img data-dz-thumbnail />
+                        </div>
+                        <div class="dz-details">
+                            <div class="dz-size"><span data-dz-size></span></div>
+                            <div class="dz-filename"><span data-dz-name></span></div>
+                        </div>
+                        <div class="dz-progress">
+                            <span class="dz-upload" data-dz-uploadprogress></span>
+                        </div>
+                        <div class="dz-error-message"><span data-dz-errormessage></span></div>
+                        <div class="dz-success-mark">
+                            <i class="fa fa-check-circle" style="color: #56ab2f; font-size: 20px;"></i>
+                        </div>
+                        <div class="dz-error-mark">
+                            <i class="fa fa-times-circle" style="color: #e74c3c; font-size: 20px;"></i>
+                        </div>
+                        <div class="dz-remove" data-dz-remove style="cursor: pointer; color: #e74c3c; font-size: 12px; text-align: center; padding: 5px;">
+                            <i class="fa fa-trash"></i> Remove
+                        </div>
+                    </div>
+                `
+            });
+        }
     });
     
     // Reset Dropzone when modal is hidden
@@ -746,6 +918,79 @@ $(document).ready(function() {
             uploadedFiles = [];
             $('#uploaded_files').val('');
         }
+        if (ktpDropzone) {
+            ktpDropzone.removeAllFiles(true);
+            uploadedKtpFile = null;
+            $('#ktp_file').val('');
+        }
+    });
+    
+    // Function to calculate age from birthdate
+    function calculateAge(birthdate) {
+        const today = new Date();
+        const birth = new Date(birthdate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age;
+    }
+    
+    // Handle birthdate change to calculate age and show/hide KTP upload
+    $('#participant_birthdate').on('change', function() {
+        const birthdate = $(this).val();
+        const ktpSection = $('#ktp_upload_section');
+        const ktpRequirementText = $('#ktp_requirement_text');
+        
+        if (birthdate) {
+            const age = calculateAge(birthdate);
+            
+            if (age >= 40) {
+                ktpSection.show();
+                ktpRequirementText.text('Wajib untuk peserta usia 40 tahun ke atas (Usia: ' + age + ' tahun)');
+                // Make KTP required by adding a data attribute or validation
+                ktpSection.find('#ktp-dropzone').attr('data-required', 'true');
+            } else {
+                ktpSection.hide();
+                // Clear KTP file if age < 40
+                if (ktpDropzone) {
+                    ktpDropzone.removeAllFiles(true);
+                    uploadedKtpFile = null;
+                    $('#ktp_file').val('');
+                }
+                ktpSection.find('#ktp-dropzone').removeAttr('data-required');
+            }
+        } else {
+            ktpSection.hide();
+            ktpSection.find('#ktp-dropzone').removeAttr('data-required');
+        }
+    });
+    
+    // Add form validation before submit
+    $('#manualOrderForm').on('submit', function(e) {
+        const birthdate = $('#participant_birthdate').val();
+        const ktpSection = $('#ktp_upload_section');
+        const isKtpRequired = ktpSection.is(':visible') && ktpSection.find('#ktp-dropzone').attr('data-required') === 'true';
+        
+        // Validate birthdate
+        if (!birthdate) {
+            e.preventDefault();
+            alert('Tanggal lahir wajib diisi!');
+            $('#participant_birthdate').focus();
+            return false;
+        }
+        
+        // Validate KTP if required (age >= 40)
+        if (isKtpRequired && (!uploadedKtpFile || !$('#ktp_file').val())) {
+            e.preventDefault();
+            const age = calculateAge(birthdate);
+            alert('Upload KTP wajib untuk peserta usia 40 tahun ke atas. Usia peserta: ' + age + ' tahun.');
+            ktpSection.find('#ktp-dropzone').focus();
+            return false;
+        }
+        
+        return true;
     });
 });
 

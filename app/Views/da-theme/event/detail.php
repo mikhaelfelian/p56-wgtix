@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * Date: 2025-08-29
@@ -477,6 +476,13 @@ echo $this->section('content');
                             </div>
                             <div class="col-md-3">
                                 <div class="form-group mb-2">
+                                    <label for="birthdate_${i}" class="form-label small">Tanggal Lahir <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control form-control-sm" id="birthdate_${i}" name="birthdate_${i}" 
+                                           required max="<?= date('Y-m-d') ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group mb-2">
                                     <label for="no_hp_${i}" class="form-label small">No. HP <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control form-control-sm" id="no_hp_${i}" name="no_hp_${i}" 
                                            placeholder="085741220427" maxlength="15" pattern="^08[0-9]{8,13}$" required
@@ -509,9 +515,38 @@ echo $this->section('content');
                                 </div>
                             </div>
                         </div>
+                        <div class="row mt-2" id="ktp_upload_row_${i}" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="ktp_file_${i}" class="form-label small">Upload KTP <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control form-control-sm" id="ktp_file_${i}" name="ktp_file_${i}" 
+                                           accept="image/*,.pdf" data-participant-index="${i}">
+                                    <small class="text-muted">Format: JPG, PNG, PDF (Max 5MB). Wajib untuk peserta usia 40 tahun ke atas.</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 `;
                     fieldsContainer.append(fieldHtml);
+                    
+                    // Add event listener for birthdate change to calculate age and show/hide KTP upload
+                    $(document).on('change', `#birthdate_${i}`, function() {
+                        const birthdate = $(this).val();
+                        if (birthdate) {
+                            const age = calculateAge(birthdate);
+                            const ktpRow = $(`#ktp_upload_row_${i}`);
+                            const ktpInput = $(`#ktp_file_${i}`);
+                            
+                            if (age >= 40) {
+                                ktpRow.show();
+                                ktpInput.prop('required', true);
+                            } else {
+                                ktpRow.hide();
+                                ktpInput.prop('required', false);
+                                ktpInput.val(''); // Clear file if age < 40
+                            }
+                        }
+                    });
                 }
 
                 // Add event listener for single payment method change
@@ -520,6 +555,18 @@ echo $this->section('content');
                     const fee = selectedOption.data('fee') || 'Pilih metode pembayaran';
                     $('#payment_fee').text(fee);
                 });
+            }
+
+            // Function to calculate age from birthdate
+            function calculateAge(birthdate) {
+                const today = new Date();
+                const birth = new Date(birthdate);
+                let age = today.getFullYear() - birth.getFullYear();
+                const monthDiff = today.getMonth() - birth.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                    age--;
+                }
+                return age;
             }
 
             // Handle confirm purchase
@@ -542,10 +589,12 @@ echo $this->section('content');
                 for (let i = 1; i <= currentPurchaseData.quantity; i++) {
                     const name = $(`#participant_${i}`).val().trim();
                     const gender = $(`#gender_${i}`).val();
+                    const birthdate = $(`#birthdate_${i}`).val();
                     const phone = $(`#no_hp_${i}`).val().trim();
                     const address = $(`#alamat_${i}`).val().trim();
                     const jersey = $(`#ukuran_${i}`).val();
                     const emergency = $(`#emg_${i}`).val().trim();
+                    const ktpFile = $(`#ktp_file_${i}`)[0].files[0];
 
                     // Validate name
                     if (!name) {
@@ -561,6 +610,50 @@ echo $this->section('content');
                         $(`#gender_${i}`).addClass('is-invalid');
                     } else {
                         $(`#gender_${i}`).removeClass('is-invalid');
+                    }
+
+                    // Validate birthdate
+                    if (!birthdate) {
+                        isValid = false;
+                        $(`#birthdate_${i}`).addClass('is-invalid');
+                    } else {
+                        $(`#birthdate_${i}`).removeClass('is-invalid');
+                        
+                        // Check age and validate KTP if needed
+                        const age = calculateAge(birthdate);
+                        if (age >= 40) {
+                            if (!ktpFile) {
+                                isValid = false;
+                                $(`#ktp_file_${i}`).addClass('is-invalid');
+                                alert(`Peserta ${i} berusia ${age} tahun. Upload KTP wajib untuk peserta usia 40 tahun ke atas.`);
+                            } else {
+                                // Validate file type
+                                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                                const fileType = ktpFile.type;
+                                const fileName = ktpFile.name.toLowerCase();
+                                const isValidType = allowedTypes.includes(fileType) || 
+                                                    fileName.endsWith('.jpg') || 
+                                                    fileName.endsWith('.jpeg') || 
+                                                    fileName.endsWith('.png') || 
+                                                    fileName.endsWith('.pdf');
+                                
+                                // Validate file size (5MB)
+                                const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                                if (!isValidType) {
+                                    isValid = false;
+                                    $(`#ktp_file_${i}`).addClass('is-invalid');
+                                    alert(`File KTP peserta ${i} tidak valid. Hanya format JPG, PNG, atau PDF yang diizinkan.`);
+                                } else if (ktpFile.size > maxSize) {
+                                    isValid = false;
+                                    $(`#ktp_file_${i}`).addClass('is-invalid');
+                                    alert(`File KTP peserta ${i} terlalu besar. Maksimal ukuran file adalah 5MB.`);
+                                } else {
+                                    $(`#ktp_file_${i}`).removeClass('is-invalid');
+                                }
+                            }
+                        } else {
+                            $(`#ktp_file_${i}`).removeClass('is-invalid');
+                        }
                     }
 
                     // Validate phone
@@ -599,10 +692,12 @@ echo $this->section('content');
                     participantData.push({
                         name: name,
                         gender: gender,
+                        birthdate: birthdate,
                         phone: phone,
                         address: address,
                         jersey: jersey,
-                        emergency: emergency
+                        emergency: emergency,
+                        ktpFile: ktpFile || null
                     });
                 }
 
@@ -641,6 +736,7 @@ echo $this->section('content');
                         participant_name: participant.name,
                         // store gender in same format used elsewhere in system (male/female)
                         participant_gender: participant.gender === 'L' ? 'male' : (participant.gender === 'P' ? 'female' : null),
+                        participant_birth_date: participant.birthdate,
                         participant_phone: participant.phone,
                         participant_address: participant.address,
                         participant_uk: participant.jersey,
@@ -653,7 +749,8 @@ echo $this->section('content');
                         unit_price: currentPurchaseData.price,
                         total_price: currentPurchaseData.price,
                         kategori_id: 0, // Default category
-                        platform_id: paymentMethod
+                        platform_id: paymentMethod,
+                        has_ktp: participant.ktpFile ? true : false
                     })),
                     cart_payments: [{
                         platform_id: paymentMethod,
@@ -662,13 +759,29 @@ echo $this->section('content');
                     }]
                 };
 
+                // Create FormData for multipart/form-data submission
+                const formData = new FormData();
+                formData.append('order_data', JSON.stringify(orderData));
+                
+                // Add CSRF token
+                const csrfToken = '<?= csrf_token() ?>';
+                const csrfHash = window.csrf_hash || '<?= csrf_hash() ?>';
+                formData.append(csrfToken, csrfHash);
+                
+                // Add KTP files for each participant
+                participantData.forEach((participant, index) => {
+                    if (participant.ktpFile) {
+                        formData.append(`ktp_file_${index}`, participant.ktpFile);
+                    }
+                });
+
                 // Submit directly to Sale controller store method
                 $.ajax({
                     url: '<?= base_url('checkout') ?>',
                     type: 'POST',
-                    data: {
-                        order_data: JSON.stringify(orderData)
-                    },
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
@@ -676,7 +789,7 @@ echo $this->section('content');
                             window.location.href = response.redirect_url || '<?= base_url('sale/orders') ?>';
                         } else {
                             alert('Error: ' + (response.message || 'Failed to process checkout'));
-                            $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
+                            $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Beli');
                         }
                     },
                     error: function(xhr, status, error) {
@@ -684,7 +797,7 @@ echo $this->section('content');
                         console.error('Response:', xhr.responseText);
                         console.error('Status:', xhr.status);
                         alert('Error processing checkout. Status: ' + xhr.status + '. Please try again.');
-                        $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Confirm Purchase');
+                        $('#confirmPurchase').prop('disabled', false).html('<i class="fa fa-shopping-cart"></i> Beli');
                     }
                 });
             }

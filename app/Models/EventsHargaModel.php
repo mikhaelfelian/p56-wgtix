@@ -7,6 +7,10 @@
  * Date: January 22, 2025
  * Github: github.com/mikhaelfelian
  * Description: Model for managing event pricing data
+ *
+ * 
+ * ALTER TABLE `tbl_m_event_harga`
+ *   ADD COLUMN `kode` INT(11) UNSIGNED NULL DEFAULT '0' AFTER `id_event`;
  */
 
 namespace App\Models;
@@ -25,6 +29,7 @@ class EventsHargaModel extends Model
 
     protected $allowedFields = [
         'id_event',
+        'kode',         // Added new kode column (INT UNSIGNED, NULL, DEFAULT 0)
         'keterangan',
         'harga',
         'status'
@@ -40,6 +45,7 @@ class EventsHargaModel extends Model
     // Validation
     protected $validationRules = [
         'id_event' => 'required|integer',
+        'kode'     => 'permit_empty|integer',
         'harga'    => 'required|decimal',
         'status'   => 'required|in_list[0,1]'
     ];
@@ -288,6 +294,7 @@ class EventsHargaModel extends Model
     {
         return $this->select('tbl_m_event_harga.harga, 
                              tbl_m_event_harga.status,
+                             tbl_m_event_harga.kode,
                              tbl_m_event.event as event_name,
                              tbl_m_event.tgl_masuk,
                              tbl_m_event.lokasi,

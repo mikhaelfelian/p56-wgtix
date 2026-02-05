@@ -30,6 +30,15 @@ class CreateTblMEventHarga20250807193526 extends Migration
                 'null'       => false,
                 'comment'    => 'Relasi ke tbl_m_events'
             ],
+            // Adding the new column `kode` as per the instruction
+            'kode' => [
+                'type'        => 'INT',
+                'constraint'  => 11,
+                'unsigned'    => true,
+                'null'        => true,
+                'default'     => 0,
+                'comment'     => 'Kode harga (opsional)'
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => false,
