@@ -402,16 +402,16 @@ class Sale extends BaseController
             
             // Create order detail
             $detailData = [
-                'id_penjualan' => $headerId,
-                'event_id' => $event->id,
-                'price_id' => $price->id,
-                'event_title' => $event->event,
+                'id_penjualan'      => $headerId,
+                'event_id'          => $event->id,
+                'price_id'          => $price->id,
+                'event_title'       => $event->event,
                 'price_description' => $price->keterangan,
-                'sort_num' => $nextSortNum,
-                'quantity' => 1,
-                'unit_price' => $unitPriceWithKode,
-                'total_price' => $totalPriceWithKode,
-                'item_data' => json_encode($participant),
+                'sort_num'          => 0,
+                'quantity'          => 1,
+                'unit_price'        => $unitPriceWithKode,
+                'total_price'       => $totalPriceWithKode,
+                'item_data'         => json_encode($participant),
             ];
 
             $this->transJualDetModel->insert($detailData);
