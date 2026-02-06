@@ -472,213 +472,167 @@ class Sale extends BaseController
             'id' => $invoiceId,
             'user_id' => $user->id // Security check
         ])->first();
-        
+
         if (!$order) {
             session()->setFlashdata('error', 'Order not found or access denied');
             return redirect()->to('sale/orders');
         }
 
         // Get all order details (each represents a participant/ticket)
-        $orderDetails = $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll();
-        
+        $orderDetails = $this->transJualDetModel
+            ->where('id_penjualan', $invoiceId)
+            ->findAll();
+
         if (empty($orderDetails)) {
             session()->setFlashdata('error', 'No tickets found for this order');
             return redirect()->to('sale/order/' . $invoiceId);
         }
 
         try {
-            // Create a master PDF to combine all individual tickets
-            $masterPdf = new \TCPDF('L', 'mm', array(210, 148.5), true, 'UTF-8', false);
-            $masterPdf->SetCreator('WGTIX System');
-            $masterPdf->SetAuthor('WGTIX Event Management');
-            $masterPdf->SetTitle('Event Tickets - Invoice #' . $order->invoice_no);
-            $masterPdf->SetMargins(0, 0, 0);
-            $masterPdf->SetAutoPageBreak(FALSE);
+            // Use the same dimensions and orientation as the admin PDF for consistency
+            $pdf = new \TCPDF('L', 'mm', array(210, 74), true, 'UTF-8', false); // E-Ticket size
+            $pdf->SetCreator('WGTIX System');
+            $pdf->SetAuthor('WGTIX Event Management');
+            $pdf->SetTitle('Event Tickets - Invoice #' . $order->invoice_no);
+            $pdf->SetMargins(0, 0, 0);
+            $pdf->SetAutoPageBreak(false);
 
-            // Generate individual ticket for each order detail/participant
-            foreach ($orderDetails as $index => $orderDetail) {
+            foreach ($orderDetails as $idx => $orderDetail) {
+                // Decode participant data
+                $itemData = json_decode($orderDetail->item_data, true) ?: [];
+
                 // Event info
                 $event = (object)[
-                    'title' => $orderDetail->event_title ?: 'Event',
-                    'date' => $order->invoice_date,
+                    'title'    => $orderDetail->event_title ?: 'Event',
+                    'date'     => $order->invoice_date,
                     'location' => 'Event Venue'
                 ];
 
-                // Create individual ticket PDF
-                $ticketPdf = new TicketPdf($orderDetail, $order, $user, $event);
-                $ticketContent = $ticketPdf->generateTicket();
-                
-                // Add page to master PDF
-                $masterPdf->AddPage();
-                
-                // Import the individual ticket content
-                // We need to recreate the ticket content in the master PDF
-                $this->drawTicketInMasterPdf($masterPdf, $orderDetail, $order, $user, $event, $index + 1, count($orderDetails));
+                $pdf->AddPage();
+
+                // --- Start: Draw header and colored strip (mirroring admin code) ---
+                $sideStripW = 5.8;
+                $sideStripX = 1.8;
+                $ticketX = 2.2;
+                $ticketW = 202 - 3.6 - $sideStripW;
+                $ticketH = 69.5;
+                $ticketY = 2.2;
+                $qrBoxX = $sideStripX + $sideStripW + $ticketW - 31.5;
+                $qrBoxY = $ticketY + 13.8;
+
+                // Ticket background
+                $pdf->SetFillColor(255, 255, 255);
+                $pdf->Rect($sideStripX, $ticketY, $ticketW + $sideStripW, $ticketH, 'F');
+
+                // Stripe (colored)
+                $pdf->SetFillColor(30, 82, 132);
+                $pdf->Rect($sideStripX, $ticketY, $sideStripW, $ticketH, 'F');
+
+                // --- End: header/strip ---
+
+                // Header content
+                $pdf->SetFont('helvetica', 'B', 8.5);
+                $pdf->SetTextColor(255,255,255);
+                $pdf->SetXY($sideStripX + 0.2, $ticketY + 0.4);
+                $pdf->Cell($sideStripW - 0.4, 0.5, "WGTIX", 0, 1, 'L');
+                $pdf->SetXY(16.5, 3.2);
+                $pdf->SetFont('helvetica', 'B', 17);
+                $pdf->SetTextColor(30, 82, 132);
+                $pdf->Cell(140, 7, strtoupper($event->title), 0, 1, 'L');
+                $pdf->SetFont('helvetica', '', 8.5);
+                $pdf->SetTextColor(50, 50, 50);
+                $pdf->SetXY(16.7, 9.8);
+                $pdf->Cell(60, 5, 'Date: ' . date('d F Y', strtotime($order->invoice_date)), 0, 0, 'L');
+                $pdf->SetXY(60.7, 9.8);
+                $pdf->Cell(60, 5, 'Time: 09:00 - 17:00 WIB', 0, 0, 'L');
+                $pdf->SetXY(107.4, 9.8);
+                $pdf->Cell(60, 5, 'Location: ' . $event->location, 0, 1, 'L');
+                $pdf->SetXY($ticketX + 0.2, $ticketY + 15.8);
+                $pdf->SetFont('helvetica', 'B', 10.5);
+                $pdf->SetTextColor(30, 82, 132);
+                $pdf->Cell(60, 4, 'Participant Name:', 0, 1, 'L');
+                $pdf->SetFont('helvetica', '', 10.5);
+                $pdf->SetTextColor(50, 50, 50);
+                $pdf->SetXY($ticketX + 0.2, $ticketY + 19.8);
+                $pdf->Cell(60, 4, strtoupper($itemData['participant_name'] ?? '-'), 0, 1, 'L');
+                if (!empty($orderDetail->sort_num)) {
+                    $pdf->SetFont('helvetica', '', 8.5);
+                    $pdf->SetTextColor(100, 100, 100);
+                    $pdf->SetXY($ticketX + 0.2, $ticketY + 23.5);
+                    $pdf->Cell(60, 4, 'Participant #: ' . $orderDetail->sort_num, 0, 1, 'L');
+                }
+                $pdf->SetFont('helvetica', '', 8.5);
+                $pdf->SetTextColor(70, 70, 70);
+                $pdf->SetXY($ticketX + 0.2, $ticketY + 28.5);
+                $pdf->Cell(60, 4, 'Ticket Holder: ' . $user->first_name . ' ' . $user->last_name, 0, 1, 'L');
+                $pdf->SetXY($ticketX + 0.2, $ticketY + 33);
+                $pdf->Cell(60, 4, $user->email, 0, 1, 'L');
+
+                $pdf->SetFont('helvetica', '', 8.5);
+                $pdf->SetXY($ticketX + 0.2, $ticketY + 37.5);
+                $pdf->Cell(60, 4, 'Kategori: ' . ($orderDetail->price_description ?: 'General'), 0, 1, 'L');
+
+                $pdf->SetFont('helvetica', 'B', 11.5);
+                $pdf->SetTextColor(140, 30, 30);
+                $pdf->SetXY($ticketX + 0.2, $ticketY + 44.2);
+                $pdf->Cell(60, 6, 'Price: Rp ' . number_format($orderDetail->total_price, 0, ',', '.'), 0, 1, 'L');
+
+                // QR Code
+                $pdf->SetFont('helvetica', 'B', 9);
+                $pdf->SetTextColor(30, 82, 132);
+                $pdf->SetXY($qrBoxX+0.5, $ticketY + 0.6);
+                $pdf->Cell(30, 4, 'SCAN TICKET', 0, 1, 'C');
+                if (!empty($orderDetail->qrcode)) {
+                    $qrPath = FCPATH . 'file/sale/' . $order->id . '/qrcode/' . $orderDetail->qrcode;
+                    if (file_exists($qrPath)) {
+                        $pdf->Image($qrPath, $qrBoxX, $qrBoxY, 30, 30, 'PNG');
+                    } else {
+                        $pdf->SetFillColor(243, 243, 243);
+                        $pdf->Rect($qrBoxX, $qrBoxY, 30, 30, 'F');
+                        $pdf->SetFont('helvetica', '', 8);
+                        $pdf->SetXY($qrBoxX, $qrBoxY + 13);
+                        $pdf->Cell(30, 4, 'QR PENDING', 0, 1, 'C');
+                    }
+                } else {
+                    $pdf->SetFillColor(243, 243, 243);
+                    $pdf->Rect($qrBoxX, $qrBoxY, 30, 30, 'F');
+                    $pdf->SetFont('helvetica', '', 8);
+                    $pdf->SetXY($qrBoxX, $qrBoxY + 13);
+                    $pdf->Cell(30, 4, 'NO QR', 0, 1, 'C');
+                }
+
+                // Ticket number and participant
+                $pdf->SetFont('helvetica', 'B', 13);
+                $pdf->SetXY(2.5, $qrBoxY - 0.36);
+                $pdf->Cell($sideStripW - 2, 0.4, ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
+                $pdf->SetFont('helvetica', 'B', 13);
+                $pdf->SetXY(7.72, $qrBoxY - 0.34);
+                $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($itemData['participant_name'] ?? '-'), 0, 1, 'L');
+
+                // Terms and conditions (compact for e-ticket)
+                $pdf->SetFont('helvetica', '', 5);
+                $pdf->SetTextColor(100, 100, 100);
+                $pdf->SetXY($sideStripX - 0.1, $ticketY + $ticketH - 1.60);
+                $pdf->MultiCell($sideStripW, 0.3, "Terms:\n- Non-transferable\n- One entry & No refund \n\nTanggal Pembelian : ". (function_exists('tgl_indo8') ? tgl_indo8($order->invoice_date) : date("d-m-Y", strtotime($order->invoice_date))), 0, 'L');
+
+                // Reset colors
+                $pdf->SetTextColor(0, 0, 0);
             }
-            
-            // Set headers for PDF download
+
             $filename = 'All_Tickets_' . $order->invoice_no . '_' . date('Y-m-d') . '.pdf';
-            
+
             return $this->response
                 ->setHeader('Content-Type', 'application/pdf')
                 ->setHeader('Content-Disposition', 'attachment; filename="' . $filename . '"')
                 ->setHeader('Cache-Control', 'private, max-age=0, must-revalidate')
                 ->setHeader('Pragma', 'public')
-                ->setBody($masterPdf->Output('S'));
-                
+                ->setBody($pdf->Output('S'));
+
         } catch (\Exception $e) {
             log_message('error', 'All tickets generation failed for invoice ' . $invoiceId . ': ' . $e->getMessage());
             session()->setFlashdata('error', 'Failed to generate tickets: ' . $e->getMessage());
             return redirect()->to('sale/order/' . $invoiceId);
         }
-    }
-
-    /**
-     * Draw individual ticket content in the master PDF
-     */
-    private function drawTicketInMasterPdf($pdf, $orderDetail, $order, $user, $event, $ticketNumber, $totalTickets)
-    {
-        // Ticket background and border
-        $pdf->SetFillColor(255, 255, 255);
-        $pdf->SetDrawColor(0, 123, 255);
-        $pdf->SetLineWidth(1);
-        $pdf->Rect(5, 5, 200, 138.5, 'DF');
-        
-        // Header background
-        $pdf->SetFillColor(0, 123, 255);
-        $pdf->Rect(5, 5, 200, 25, 'F');
-        
-        // Decorative side strip
-        $pdf->SetFillColor(240, 240, 240);
-        $pdf->Rect(155, 30, 50, 113.5, 'F');
-        
-        // Header content
-        $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetFont('helvetica', 'B', 16);
-        $pdf->SetXY(10, 8);
-        $pdf->Cell(100, 8, 'WGTIX Event Management', 0, 1, 'L');
-        
-        $pdf->SetFont('helvetica', '', 8);
-        $pdf->SetXY(10, 16);
-        $pdf->Cell(100, 6, 'EVENT TICKET', 0, 1, 'L');
-        
-        // Ticket number
-        $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->SetXY(120, 8);
-        $pdf->Cell(80, 8, 'TICKET #' . str_pad($orderDetail->id, 6, '0', STR_PAD_LEFT), 0, 1, 'R');
-        
-        $pdf->SetFont('helvetica', '', 8);
-        $pdf->SetXY(120, 16);
-        $pdf->Cell(80, 6, 'Invoice: ' . $order->invoice_no, 0, 1, 'R');
-        
-        // Event info
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont('helvetica', 'B', 18);
-        $pdf->SetXY(10, 35);
-        $pdf->Cell(140, 12, $event->title, 0, 1, 'L');
-        
-        $pdf->SetFont('helvetica', '', 11);
-        $pdf->SetXY(10, 50);
-        $pdf->Cell(140, 6, 'Date: ' . date('d F Y', strtotime($order->invoice_date)), 0, 1, 'L');
-        $pdf->SetXY(10, 58);
-        $pdf->Cell(140, 6, 'Time: 09:00 - 17:00 WIB', 0, 1, 'L');
-        $pdf->SetXY(10, 66);
-        $pdf->Cell(140, 6, 'Location: ' . $event->location, 0, 1, 'L');
-        $pdf->SetXY(10, 74);
-        $pdf->Cell(140, 6, 'Category: ' . ($orderDetail->price_description ?: 'General'), 0, 1, 'L');
-        
-        // Participant info
-        $itemData = json_decode($orderDetail->item_data, true) ?: [];
-        if (isset($itemData['participant_name'])) {
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->SetXY(10, 85);
-            $pdf->Cell(140, 6, 'Participant:', 0, 1, 'L');
-            $pdf->SetFont('helvetica', '', 11);
-            $pdf->SetXY(10, 93);
-            $pdf->Cell(140, 6, $itemData['participant_name'], 0, 1, 'L');
-            
-            if (isset($orderDetail->sort_num)) {
-                $pdf->SetXY(10, 101);
-                $pdf->Cell(140, 6, 'Participant #: ' . $orderDetail->sort_num, 0, 1, 'L');
-            }
-        }
-        
-        // Customer info
-        if ($user) {
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->SetXY(10, 115);
-            $pdf->Cell(140, 6, 'Ticket Holder:', 0, 1, 'L');
-            $pdf->SetFont('helvetica', '', 9);
-            $pdf->SetXY(10, 123);
-            $pdf->Cell(140, 5, $user->first_name . ' ' . $user->last_name, 0, 1, 'L');
-            $pdf->SetXY(10, 130);
-            $pdf->Cell(140, 5, $user->email, 0, 1, 'L');
-        }
-        
-        // Price info
-        $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->SetXY(10, 138);
-        $pdf->Cell(140, 5, 'Price: Rp ' . number_format($orderDetail->total_price, 0, ',', '.'), 0, 1, 'L');
-        
-        // QR Code section
-        $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->SetXY(160, 35);
-        $pdf->Cell(40, 6, 'SCAN TO VERIFY', 0, 1, 'C');
-        
-        // Display QR code if available
-        if (!empty($orderDetail->qrcode)) {
-            $qrPath = FCPATH . 'file/sale/' . $order->id . '/qrcode/' . $orderDetail->qrcode;
-            
-            if (file_exists($qrPath)) {
-                $pdf->Image($qrPath, 165, 45, 30, 30, 'PNG');
-            } else {
-                // QR placeholder
-                $pdf->SetFillColor(240, 240, 240);
-                $pdf->Rect(165, 45, 30, 30, 'F');
-                $pdf->SetFont('helvetica', '', 8);
-                $pdf->SetXY(165, 58);
-                $pdf->Cell(30, 4, 'QR CODE', 0, 1, 'C');
-                $pdf->SetXY(165, 63);
-                $pdf->Cell(30, 4, 'PENDING', 0, 1, 'C');
-            }
-        } else {
-            // No QR code
-            $pdf->SetFillColor(240, 240, 240);
-            $pdf->Rect(165, 45, 30, 30, 'F');
-            $pdf->SetFont('helvetica', '', 8);
-            $pdf->SetXY(165, 58);
-            $pdf->Cell(30, 4, 'QR CODE', 0, 1, 'C');
-            $pdf->SetXY(165, 63);
-            $pdf->Cell(30, 4, 'NOT READY', 0, 1, 'C');
-        }
-        
-        // Ticket ID and count
-        $pdf->SetFont('helvetica', '', 8);
-        $pdf->SetXY(160, 80);
-        $pdf->Cell(40, 4, 'ID: ' . $orderDetail->id, 0, 1, 'C');
-        $pdf->SetXY(160, 85);
-        $pdf->Cell(40, 4, 'Ticket ' . $ticketNumber . ' of ' . $totalTickets, 0, 1, 'C');
-        
-        // Terms and conditions
-        $pdf->SetFont('helvetica', '', 7);
-        $pdf->SetTextColor(100, 100, 100);
-        $pdf->SetXY(160, 95);
-        $pdf->MultiCell(40, 3, "Terms:\n• Non-transferable\n• Valid for one entry\n• No refund\n• Present with ID", 0, 'L');
-        
-        // Payment status
-        $pdf->SetFont('helvetica', 'B', 8);
-        if ($order->payment_status === 'paid') {
-            $pdf->SetTextColor(0, 150, 0);
-            $pdf->SetXY(160, 130);
-            $pdf->Cell(40, 4, 'PAID', 0, 1, 'C');
-        } else {
-            $pdf->SetTextColor(200, 0, 0);
-            $pdf->SetXY(160, 130);
-            $pdf->Cell(40, 4, 'UNPAID', 0, 1, 'C');
-        }
-        
-        // Reset colors
-        $pdf->SetTextColor(0, 0, 0);
     }
 
     /**

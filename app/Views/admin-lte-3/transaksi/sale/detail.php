@@ -29,15 +29,9 @@ echo $this->extend(theme_path('main')); ?>
                             <a href="<?= base_url('admin/transaksi/sale/invoice/' . $order->id) ?>" class="btn btn-sm btn-success rounded-0">
                                 <i class="fas fa-file-pdf"></i> Invoice PDF
                             </a>
-                            <a href="<?= base_url('admin/transaksi/sale/dot-matrix-invoice/' . $order->id) ?>" class="btn btn-sm btn-warning rounded-0">
-                                <i class="fas fa-print"></i> Dot Matrix
-                            </a>
                             <a href="<?= base_url('admin/transaksi/sale/tickets/' . $order->id) ?>" class="btn btn-sm btn-info rounded-0">
                                 <i class="fas fa-ticket-alt"></i> Semua Tiket
                             </a>
-                            <button type="button" class="btn btn-sm btn-primary rounded-0" onclick="window.print()">
-                                <i class="fas fa-print"></i> Cetak
-                            </button>
                         </div>
                     </div>
                     <div class="card-body rounded-0">
