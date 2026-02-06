@@ -76,7 +76,26 @@ echo $this->extend(theme_path('main')); ?>
                                         <?php if (!empty($user->phone)): ?>
                                         <tr>
                                             <td><strong>Telepon:</strong></td>
-                                            <td><?= esc($user->phone) ?></td>
+                                            <td>
+                                                <?php if (!empty($user->phone) && $user->phone !== '-' && $user->phone !== '0'): ?>
+                                                    <?php 
+                                                        $cleanPhone = preg_replace('/[^0-9]/', '', $user->phone);
+                                                        if (strpos($cleanPhone, '0') === 0) {
+                                                            $waPhone = '62' . substr($cleanPhone, 1);
+                                                        } elseif (strpos($cleanPhone, '62') === 0) {
+                                                            $waPhone = $cleanPhone;
+                                                        } else {
+                                                            $waPhone = $cleanPhone;
+                                                        }
+                                                        $waUrl = "https://wa.me/{$waPhone}";
+                                                    ?>
+                                                    <a href="<?= esc($waUrl) ?>" target="_blank" class="text-success" title="Chat via WhatsApp">
+                                                        <i class="fab fa-whatsapp"></i> <?= esc($user->phone) ?>
+                                                    </a>
+                                                <?php else: ?>
+                                                    <?= esc($user->phone) ?>
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
                                         <?php endif; ?>
                                     <?php else: ?>
@@ -222,7 +241,7 @@ echo $this->extend(theme_path('main')); ?>
                                             </td>
                                             <td>
                                                 <?php if (isset($itemData['participant_name'])): ?>
-                                                    <strong><?= esc($itemData['participant_name']) ?></strong><br>
+                                                    <strong><?= ucwords($itemData['participant_name']) ?></strong><br>
                                                     <small class="text-muted d-block">
                                                         Peserta #<?= esc($detail->sort_num ?? 'N/A') ?>
                                                     </small>
