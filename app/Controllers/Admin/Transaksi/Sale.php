@@ -1518,7 +1518,7 @@ class Sale extends BaseController
         }
 
         // Get all order details (each represents a participant/ticket)
-        $orderDetails = $this->transJualDetModel->where('id_penjualan', $invoiceId)->findAll();
+        $orderDetails = $this->vPesertaTransModel->where('id_penjualan', $invoiceId)->findAll();
         
         if (empty($orderDetails)) {
             session()->setFlashdata('error', 'No tickets found for this order');
@@ -1536,12 +1536,13 @@ class Sale extends BaseController
             // Use centimeters for page size (TCPDF supports 'cm' as unit)
             $pdfWidthCm = 21.0; // 210mm = 21cm (A4 width)
             $pdfHeightCm = 8.5; // Example: 11cm height (adjust as needed)
-            $masterPdf = new \TCPDF('L', 'cm', array($pdfWidthCm, $pdfHeightCm), true, 'UTF-8', false);
+            $masterPdf = new \TCPDF('L', 'cm', array($pdfWidthCm, $pdfHeightCm), false, 'UTF-8', true);
             $masterPdf->SetCreator('WGTIX System');
             $masterPdf->SetAuthor('WGTIX Event Management');
             $masterPdf->SetTitle('Event Tickets - Invoice #' . $order->invoice_no);
             $masterPdf->SetMargins(0, 0, 0);
-            $masterPdf->SetAutoPageBreak(FALSE);
+            $masterPdf->SetAutoPageBreak(TRUE);
+            $masterPdf->SetPrintHeader(false);
 
             // Generate individual ticket for each order detail/participant
             foreach ($orderDetails as $index => $orderDetail) {
@@ -1549,7 +1550,7 @@ class Sale extends BaseController
 
                 // Event info
                 $event = (object)[
-                    'title' => $orderDetail->event_title ?: 'Event',
+                    'title' => 'Event',
                     'date' => $order->invoice_date,
                     'location' => 'Event Venue'
                 ];
@@ -1654,11 +1655,44 @@ class Sale extends BaseController
 
         // Draw white box for QR/barcode
         $pdf->SetFillColor(255, 255, 255);
-        $pdf->Rect($qrBoxX, $qrBoxY, $qrBoxW, $qrBoxH, 'F');
+
+        // Draw two vertical long rounded rectangles side by side, each with the same content
+
+        // First rectangle
+        $vertRectX1 = 0.80;
+        $vertRectY = 7;
+        $vertRectWidth = 4.5;
+        $vertRectHeight = 0.75;
+        $vertRectRadius = 0.18;
+
+        // Second rectangle (beside the first one, gap 0.3cm)
+        $gapBetween = 0.85;
+        $vertRectX2 = $vertRectX1 + $vertRectWidth + $gapBetween;
+
+        // If using TCPDF, RoundedRect is available:
+        if (method_exists($pdf, 'RoundedRect')) {
+            $pdf->RoundedRect($vertRectX1, $vertRectY, $vertRectWidth, $vertRectHeight, $vertRectRadius, '1111', 'F');
+            $pdf->RoundedRect($vertRectX2, $vertRectY, $vertRectWidth, $vertRectHeight, $vertRectRadius, '1111', 'F');
+        } else {
+            // Fallback: just draw normal rectangles
+            $pdf->Rect($vertRectX1, $vertRectY, $vertRectWidth, $vertRectHeight, 'F');
+            $pdf->Rect($vertRectX2, $vertRectY, $vertRectWidth, $vertRectHeight, 'F');
+        }
+
+        // Kategori tiket, in both rectangles (same content)
+        $pdf->SetFont('helvetica', 'B', 7);
+        $pdf->SetTextColor(0, 123, 255); // Optional: match the blue border color
+        // First rect text
+        $pdf->SetXY($vertRectX1, $vertRectY + ($vertRectHeight - 0.4)/2); // Vertically center-ish
+        $pdf->Cell($vertRectWidth, 0.4, $orderDetail->kategori, 0, 1, 'C');
+        // Second rect text
+        $pdf->SetXY($vertRectX2, $vertRectY + ($vertRectHeight - 0.4)/2); // Vertically center-ish
+        $pdf->Cell($vertRectWidth, 0.4, $orderDetail->kategori, 0, 1, 'C');
+        $pdf->SetTextColor(0,0,0); // Reset color to black
 
         // Center "SCAN TO VERIFY" at the top of the QR block
         $pdf->SetFont('helvetica', 'B', 8);
-        $pdf->SetXY($qrBoxX + 0.1, $qrBoxY - 0.2); // 0.2cm above the QR box
+        $pdf->SetXY($qrBoxX + 0.2, $ticketY + $headerH + 0.5 - 0.25); // 0.2cm above the QR box
         $pdf->Cell(4.2, 0.5, 'SCAN TO VERIFY', 0, 1, 'C');
 
         // Display QR code if available, inside the white box at the exact box position (no shift)
@@ -1667,13 +1701,13 @@ class Sale extends BaseController
             if (file_exists($qrPath)) {
                 // Place QR image exactly inside the white box (no shift)
                 // Make the QR code box bigger and keep it proportional (square)
-                $biggerQrBoxW = 4;
-                $biggerQrBoxH = 4;
-                $biggerQrBoxX = $sideStripX + ($sideStripW - $biggerQrBoxW) / 2 - 1.35;
-                $biggerQrBoxY = $ticketY + $headerH + 0.2 - 1.2;
+                $biggerQrBoxW = 3.80;
+                $biggerQrBoxH = 3.80;
+                $biggerQrBoxX = $sideStripX + ($sideStripW - $biggerQrBoxW) / 1 - 1.15;
+                $biggerQrBoxY = $ticketY + $headerH + 0.2 - 0.5;
 
-                // Place QR image exactly at the bigger box position (with 0.2cm margin), no rectangle
-                $pdf->Image($qrPath, $biggerQrBoxX + 1, $biggerQrBoxY + 0.5, $biggerQrBoxW - 0.4, $biggerQrBoxH - 0.4, 'PNG');
+                // Place QR image at the bigger box position directly, no white box drawn
+                $pdf->Image($qrPath, $biggerQrBoxX + 1, $biggerQrBoxY + 1, $biggerQrBoxW - 0.4, $biggerQrBoxH - 0.4, 'PNG');
             } else {
                 // QR placeholder in white box, centered
                 $pdf->SetFont('helvetica', '', 7);
@@ -1696,18 +1730,18 @@ class Sale extends BaseController
         }
 
         // Ticket ID and count
-        $pdf->SetFont('helvetica', '', 18);
-        $pdf->SetXY(2.5, $qrBoxY - 0.24);
-        $pdf->Cell($sideStripW - 1.50, 0.4,  ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
-        $pdf->SetFont('helvetica', 'B', 18);
-        $pdf->SetXY(8.45, $qrBoxY - 0.2);
+        $pdf->SetFont('helvetica', 'B', 13);
+        $pdf->SetXY(2.5, $qrBoxY - 0.36);
+        $pdf->Cell($sideStripW - 2, 0.4,  ($orderDetail->sort_num != 0 ? $orderDetail->sort_num : ''), 0, 1, 'L');
+        $pdf->SetFont('helvetica', 'B', 13);
+        $pdf->SetXY(7.72, $qrBoxY - 0.34);
         $pdf->Cell($sideStripW + 2.10, 0.4, strtoupper($itemData['participant_name']), 0, 1, 'L');
 
         // Terms and conditions (shortened for compact ticket)
-        $pdf->SetFont('helvetica', '', 6);
+        $pdf->SetFont('helvetica', '', 5);
         $pdf->SetTextColor(100, 100, 100);
-        $pdf->SetXY($sideStripX - 0.60, $ticketY + $ticketH - 1.90);
-        $pdf->MultiCell($sideStripW, 0.3, "Terms:\n• Non-transferable\n• One entry - No refund \n\nTanggal Pembelian : ".tgl_indo8($order->invoice_date), 0, 'L');
+        $pdf->SetXY($sideStripX - 0.1, $ticketY + $ticketH - 1.60);
+        $pdf->MultiCell($sideStripW, 0.3, "Terms:\n- Non-transferable\n- One entry & No refund \n\nTanggal Pembelian : ".tgl_indo8($order->invoice_date), 0, 'L');
 
         // Reset colors
         $pdf->SetTextColor(0, 0, 0);
