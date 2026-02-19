@@ -282,6 +282,8 @@ echo $this->extend(theme_path('main')); ?>
                                                                 }
                                                                 $waHref = 'https://wa.me/' . $digits;
                                                             }
+                                                            // Prepare racepack size info
+                                                            $racepackSize = !empty($p['uk']) ? esc($p['uk']) : '-';
                                                             ?>
                                                             - <?= esc(ucwords($p['name'] ?? '')) ?>
                                                             <?php if (!empty($waHref)): ?>
@@ -290,6 +292,7 @@ echo $this->extend(theme_path('main')); ?>
                                                                 </a>
                                                             <?php endif; ?> / 
                                                             <?= esc($p['category'] ?? '') ?>
+                                                            / <span class="badge badge-info">Racepack: <?= $racepackSize ?></span>
                                                             <br/>
                                                         <?php endforeach; ?>
                                                     </small>

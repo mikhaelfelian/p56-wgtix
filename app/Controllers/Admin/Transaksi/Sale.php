@@ -82,11 +82,14 @@ class Sale extends BaseController
             }
         }
 
+        $ordersModel->where('tbl_trans_jual.deleted_at', null);
+
         // Add search filter if provided
         $hasSearchJoin = false;
         if (!empty($search)) {
             // Join with order details table to search in JSON item_data
             $ordersModel->join('tbl_trans_jual_det', 'tbl_trans_jual_det.id_penjualan = tbl_trans_jual.id', 'left')
+                ->where('tbl_trans_jual_det.deleted_at', null)
                 ->groupStart()
                     ->like("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_name'))", $search)
                     ->orLike("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_phone'))", $search)
@@ -117,7 +120,9 @@ class Sale extends BaseController
                     $countModel->where('tbl_trans_jual.payment_status', $status);
                 }
             }
+            $countModel->where('tbl_trans_jual.deleted_at', null);
             $countModel->join('tbl_trans_jual_det', 'tbl_trans_jual_det.id_penjualan = tbl_trans_jual.id', 'left')
+                ->where('tbl_trans_jual_det.deleted_at', null)
                 ->groupStart()
                     ->like("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_name'))", $search)
                     ->orLike("JSON_UNQUOTE(JSON_EXTRACT(tbl_trans_jual_det.item_data, '$.participant_phone'))", $search)
@@ -192,6 +197,7 @@ class Sale extends BaseController
                         
                         $participantName = $itemData['participant_name'] ?? '';
                         $participantPhone = $itemData['participant_phone'] ?? '';
+                        $participantUk = $itemData['participant_uk'] ?? null;
                         
                         // Only process if we have a participant name
                         if (!empty($participantName)) {
@@ -201,6 +207,7 @@ class Sale extends BaseController
                                 'name'  => $participantName,
                                 'phone' => !empty($participantPhone) ? $participantPhone : null,
                                 'category' => $kategori,
+                                'uk' => $participantUk,
                             ];
                         }
                     }

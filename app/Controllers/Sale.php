@@ -19,7 +19,7 @@ use App\Models\PesertaModel;
 use App\Models\KategoriModel;
 use App\Models\KelompokPesertaModel;
 use App\Models\EventsHargaModel;
-use App\Models\vPesertaTransModel;
+use App\Models\VPesertaTransModel;
 use App\Libraries\InvoicePdf;
 use App\Libraries\TicketPdf;
 use App\Libraries\DotMatrixInvoicePdf;
@@ -44,7 +44,7 @@ class Sale extends BaseController{
         $this->transJualModel = new TransJualModel();
         $this->transJualDetModel = new TransJualDetModel();
         $this->transJualPlatModel = new TransJualPlatModel();
-        $this->vPesertaTransModel = new vPesertaTransModel();
+        $this->vPesertaTransModel = new VPesertaTransModel();
         $this->platformModel = new PlatformModel();
         $this->cartModel = new CartModel();
         $this->pesertaModel = new PesertaModel();
