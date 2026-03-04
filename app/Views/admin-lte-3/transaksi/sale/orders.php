@@ -123,6 +123,11 @@ echo $this->extend(theme_path('main')); ?>
                         <h3 class="card-title">Filter Pesanan</h3>
                     </div>
                     <div class="card-body">
+                        <?php if (isset($current_status) && $current_status === 'trash'): ?>
+                            <a href="<?= base_url('admin/transaksi/sale/orders') ?>" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Kembali ke Semua
+                            </a>
+                        <?php else: ?>
                         <div class="btn-group">
                             <?php
                             $searchParam = !empty($search) ? '?search=' . urlencode($search) : '';
@@ -169,11 +174,14 @@ echo $this->extend(theme_path('main')); ?>
                                 </div>
                             </form>
                         </div>
+                        <?php endif; ?>
                         
                         <div class="float-right">
+                            <?php if (!isset($current_status) || $current_status !== 'trash'): ?>
                             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#manualOrderModal">
                                 <i class="fas fa-plus"></i> Pesanan Manual
                             </button>
+                            <?php endif; ?>
                             <a href="<?= base_url('admin/transaksi/sale/reports') ?>" class="btn btn-info">
                                 <i class="fas fa-chart-bar"></i> Laporan
                             </a>
@@ -205,7 +213,7 @@ echo $this->extend(theme_path('main')); ?>
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <?= ucfirst($current_status === 'all' ? 'Semua' : $current_status) ?> Pesanan
+                            <?= (isset($current_status) && $current_status === 'trash') ? 'Pesanan Terhapus' : (ucfirst($current_status === 'all' ? 'Semua' : $current_status) . ' Pesanan') ?>
                             <?php if (!empty($search)): ?>
                                 <span class="badge badge-info">Pencarian: "<?= esc($search) ?>"</span>
                             <?php endif; ?>
@@ -329,6 +337,20 @@ echo $this->extend(theme_path('main')); ?>
                                                                 title="Update Status" 
                                                                 onclick="updateStatus(<?= $order->id ?>, 'paid')">
                                                             <i class="fas fa-check"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <?php if (($current_status ?? '') !== 'trash' && $order->payment_status !== 'paid'): ?>
+                                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                                title="Hapus" 
+                                                                onclick="deleteOrder(<?= $order->id ?>)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    <?php endif; ?>
+                                                    <?php if (($current_status ?? '') === 'trash'): ?>
+                                                        <button type="button" class="btn btn-sm btn-success" 
+                                                                title="Pulihkan" 
+                                                                onclick="restoreOrder(<?= $order->id ?>)">
+                                                            <i class="fas fa-undo"></i>
                                                         </button>
                                                     <?php endif; ?>
                                                 </div>
@@ -997,11 +1019,30 @@ $(document).ready(function() {
     });
 });
 
+var currentOrdersStatus = '<?= esc($current_status) ?>';
+
 function updateStatus(orderId, newStatus) {
     if (confirm('Apakah Anda yakin ingin memperbarui status pesanan ini?')) {
         // Create a form and submit it
         var form = $('<form method="POST" action="<?= base_url('admin/transaksi/sale/update-status/') ?>' + orderId + '">');
         form.append('<input type="hidden" name="payment_status" value="' + newStatus + '">');
+        form.append('<input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">');
+        form.appendTo('body').submit();
+    }
+}
+
+function deleteOrder(orderId) {
+    if (confirm('Apakah Anda yakin ingin menghapus pesanan ini?')) {
+        var form = $('<form method="POST" action="<?= base_url('admin/transaksi/sale/delete/') ?>' + orderId + '">');
+        form.append('<input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">');
+        form.append('<input type="hidden" name="redirect_status" value="' + (currentOrdersStatus || 'all') + '">');
+        form.appendTo('body').submit();
+    }
+}
+
+function restoreOrder(orderId) {
+    if (confirm('Pulihkan pesanan ini?')) {
+        var form = $('<form method="POST" action="<?= base_url('admin/transaksi/sale/restore/') ?>' + orderId + '">');
         form.append('<input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">');
         form.appendTo('body').submit();
     }

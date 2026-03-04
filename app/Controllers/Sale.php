@@ -19,6 +19,7 @@ use App\Models\PesertaModel;
 use App\Models\KategoriModel;
 use App\Models\KelompokPesertaModel;
 use App\Models\EventsHargaModel;
+use App\Models\UkuranModel;
 use App\Models\VPesertaTransModel;
 use App\Libraries\InvoicePdf;
 use App\Libraries\TicketPdf;
@@ -35,6 +36,7 @@ class Sale extends BaseController{
     protected $kategoriModel;
     protected $kelompokModel;
     protected $eventsHargaModel;
+    protected $ukuranModel;
     protected $ionAuth;
     protected $db;
 
@@ -51,6 +53,7 @@ class Sale extends BaseController{
         $this->kategoriModel = new KategoriModel();
         $this->kelompokModel = new KelompokPesertaModel();
         $this->eventsHargaModel = new EventsHargaModel();
+        $this->ukuranModel = new UkuranModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
         $this->db = \Config\Database::connect();
     }
@@ -760,15 +763,226 @@ class Sale extends BaseController{
         // Get payment records (for backward compatibility or additional info)
         $paymentRecords = $this->platformModel->where('id', $order->payment_method)->first();
 
+        $ukuranOptions = $this->ukuranModel->getDropdownOptions();
+
         $data = [
             'title'             => 'Order Details - ' . $order->invoice_no,
             'order'             => $order,
             'order_details'     => $orderDetails,
             'payment_platforms' => $paymentPlatforms,
             'payment_records'   => $paymentRecords,
+            'ukuranOptions'     => $ukuranOptions,
         ];
 
         return $this->view('da-theme/transaksi/sale/detail', $data);
+    }
+
+    /**
+     * Upload temporary files for KTP (participant edit)
+     */
+    public function uploadTemp()
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ]);
+        }
+
+        $file = $this->request->getFile('file');
+        if (!$file) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No file uploaded'
+            ]);
+        }
+
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File size exceeds server limit',
+                UPLOAD_ERR_FORM_SIZE => 'File size exceeds form limit',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+            ];
+            $errorCode = $file->getError();
+            $message = isset($errorMessages[$errorCode]) ? $errorMessages[$errorCode] : 'Unknown upload error';
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $message . ' (Error code: ' . $errorCode . ')'
+            ]);
+        }
+
+        $extension = strtolower($file->getClientExtension());
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+        $maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!in_array($extension, $allowedExtensions)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid file type. Only JPG, PNG, and PDF files are allowed.'
+            ]);
+        }
+
+        if ($file->getSize() > $maxSize) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'File size too large. Maximum size is 5MB.'
+            ]);
+        }
+
+        try {
+            $sessionId = session_id();
+            $baseUploadPath = FCPATH . 'file/sale/temp/' . $sessionId . '/';
+
+            if (!is_dir($baseUploadPath)) {
+                if (!mkdir($baseUploadPath, 0755, true)) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Failed to create upload directory'
+                    ]);
+                }
+            }
+
+            $newName = uniqid('temp_') . '_' . time() . '.' . $extension;
+
+            if (!file_exists($file->getTempName())) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Temporary file not found. Please try again.'
+                ]);
+            }
+
+            if ($file->move($baseUploadPath, $newName)) {
+                $mimeTypes = [
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'pdf' => 'application/pdf'
+                ];
+                $mimeType = isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'application/octet-stream';
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'File uploaded successfully',
+                    'filename' => $newName,
+                    'original_name' => $file->getClientName(),
+                    'size' => $file->getSize(),
+                    'type' => $mimeType,
+                    'extension' => $extension,
+                    'temp_path' => 'file/sale/temp/' . $sessionId . '/' . $newName
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to save file: ' . $file->getErrorString()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Upload exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update participant info for an order detail (frontend - user's own orders only)
+     */
+    public function updateParticipantInfo($detailId)
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $user = $this->ionAuth->user()->row();
+        $detail = $this->transJualDetModel->find($detailId);
+
+        if (!$detail) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error',
+                'message' => 'Order detail not found'
+            ]);
+        }
+
+        $order = $this->transJualModel->find($detail->id_penjualan);
+        if (!$order || $order->user_id != $user->id) {
+            return redirect()->to('sale/orders')->with('toastr', [
+                'type' => 'error',
+                'message' => 'Order not found or access denied'
+            ]);
+        }
+
+        $participantUk = $this->request->getPost('participant_uk');
+        $participantEmg = $this->request->getPost('participant_emg');
+        $participantBirthDate = $this->request->getPost('participant_birth_date');
+        $ktpFileJson = $this->request->getPost('ktp_file');
+
+        $itemData = json_decode($detail->item_data, true) ?: [];
+        if (!is_array($itemData)) {
+            $itemData = [];
+        }
+
+        $itemData['participant_uk'] = $participantUk !== null ? trim((string) $participantUk) : ($itemData['participant_uk'] ?? '');
+        $itemData['participant_emg'] = $participantEmg !== null ? trim((string) $participantEmg) : ($itemData['participant_emg'] ?? '');
+        $itemData['participant_birth_date'] = $participantBirthDate !== null ? trim((string) $participantBirthDate) : ($itemData['participant_birth_date'] ?? '');
+
+        if (!empty($ktpFileJson)) {
+            $ktpFileInfo = json_decode($ktpFileJson, true);
+            if (is_array($ktpFileInfo) && !empty($ktpFileInfo['filename'])) {
+                $sessionId = session_id();
+                $tempPath = FCPATH . 'file/sale/temp/' . $sessionId . '/';
+                $tempFile = $tempPath . $ktpFileInfo['filename'];
+
+                if (file_exists($tempFile)) {
+                    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+                    $extension = strtolower(pathinfo($ktpFileInfo['filename'], PATHINFO_EXTENSION));
+
+                    if (in_array($extension, $allowedExtensions)) {
+                        $maxSize = 5 * 1024 * 1024;
+                        $fileSize = filesize($tempFile);
+
+                        if ($fileSize <= $maxSize) {
+                            $ktpUploadPath = FCPATH . 'file/sale/ktp/' . $order->id . '/';
+                            if (!is_dir($ktpUploadPath)) {
+                                if (!mkdir($ktpUploadPath, 0755, true)) {
+                                    log_message('error', 'Failed to create KTP upload directory: ' . $ktpUploadPath);
+                                }
+                            }
+                            if (is_dir($ktpUploadPath)) {
+                                $newName = 'ktp_' . uniqid() . '_' . time() . '.' . $extension;
+                                $ktpFile = $ktpUploadPath . $newName;
+                                if (rename($tempFile, $ktpFile)) {
+                                    $itemData['participant_ktp_file'] = 'file/sale/ktp/' . $order->id . '/' . $newName;
+                                    log_message('info', 'KTP file moved successfully: ' . $itemData['participant_ktp_file']);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $updated = $this->transJualDetModel->update($detailId, [
+            'item_data' => json_encode($itemData),
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        if (!$updated) {
+            log_message('error', 'updateParticipantInfo: Update failed for detail ' . $detailId);
+            return redirect()->to(site_url('sale/order/' . $order->id))->with('toastr', [
+                'type' => 'error',
+                'message' => 'Gagal menyimpan. Silakan coba lagi.'
+            ]);
+        }
+
+        return redirect()->to(site_url('sale/order/' . $order->id))->with('toastr', [
+            'type' => 'success',
+            'message' => 'Info peserta berhasil diperbarui'
+        ]);
     }
 
     /**

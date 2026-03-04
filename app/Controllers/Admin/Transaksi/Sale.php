@@ -223,13 +223,13 @@ class Sale extends BaseController
             }
         }
 
-        // Get statistics for status filter buttons using fresh model instances for each count
+        // Get statistics for status filter buttons using fresh model instances for each count (exclude soft-deleted)
         $stats = [
-            'all' => (new TransJualModel())->countAll(),
-            'pending' => (new TransJualModel())->where('payment_status', 'pending')->countAllResults(false),
-            'paid' => (new TransJualModel())->where('payment_status', 'paid')->countAllResults(false),
-            'failed' => (new TransJualModel())->where('payment_status', 'failed')->countAllResults(false),
-            'cancelled' => (new TransJualModel())->where('payment_status', 'cancelled')->countAllResults(false),
+            'all'       => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->countAllResults(false),
+            'pending'   => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'pending')->countAllResults(false),
+            'paid'      => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'paid')->countAllResults(false),
+            'failed'    => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'failed')->countAllResults(false),
+            'cancelled' => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'cancelled')->countAllResults(false),
         ];
 
         // Get events and platforms for manual order form
@@ -252,6 +252,90 @@ class Sale extends BaseController
             'ukuranOptions' => $ukuranOptions,
         ];
 
+        return $this->view('admin-lte-3/transaksi/sale/orders', $data);
+    }
+
+    /**
+     * List only soft-deleted orders (trash)
+     */
+    public function ordersTrash()
+    {
+        $ordersModel = new TransJualModel();
+        $ordersModel->onlyDeleted();
+        $ordersModel->orderBy('tbl_trans_jual.invoice_date', 'DESC');
+        $orders = $ordersModel->paginate(10, 'orders');
+        $pager = $ordersModel->pager;
+        $pager->setPath('admin/transaksi/sale/orders/trash', 'orders');
+
+        $participantsByOrder = [];
+        $userPhonesByOrder   = [];
+        if (!empty($orders)) {
+            foreach ($orders as $order) {
+                $participants = [];
+                $details = (new \App\Models\TransJualDetModel())->withDeleted(true)->where('id_penjualan', $order->id)->findAll();
+                foreach ($details as $detail) {
+                    $kategori = '';
+                    if (!empty($detail->price_id)) {
+                        $priceInfo = $this->eventsHargaModel
+                            ->where('id', $detail->price_id)
+                            ->where('id_event', $detail->event_id)
+                            ->where('deleted_at', null)
+                            ->first();
+                        if ($priceInfo && isset($priceInfo->keterangan)) {
+                            $kategori = $priceInfo->keterangan;
+                        }
+                    }
+                    if (!empty($detail->item_data)) {
+                        $itemData = json_decode($detail->item_data, true);
+                        if (is_array($itemData)) {
+                            $participantName  = $itemData['participant_name'] ?? '';
+                            $participantPhone = $itemData['participant_phone'] ?? '';
+                            $participantUk    = $itemData['participant_uk'] ?? null;
+                            if (!empty($participantName)) {
+                                $participants[] = [
+                                    'name'     => $participantName,
+                                    'phone'    => !empty($participantPhone) ? $participantPhone : null,
+                                    'category' => $kategori,
+                                    'uk'       => $participantUk,
+                                ];
+                            }
+                        }
+                    }
+                }
+                $participantsByOrder[$order->id] = $participants;
+                if ($order->user_id && !isset($userPhonesByOrder[$order->id])) {
+                    $user = $this->ionAuth->user($order->user_id)->row();
+                    $userPhonesByOrder[$order->id] = $user->phone ?? null;
+                }
+            }
+        }
+
+        $stats = [
+            'all'       => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->countAllResults(false),
+            'pending'   => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'pending')->countAllResults(false),
+            'paid'      => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'paid')->countAllResults(false),
+            'failed'    => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'failed')->countAllResults(false),
+            'cancelled' => (new TransJualModel())->where('tbl_trans_jual.deleted_at', null)->where('payment_status', 'cancelled')->countAllResults(false),
+            'trash'     => (new TransJualModel())->onlyDeleted()->countAllResults(false),
+        ];
+        $events       = $this->eventsModel->orderBy('event', 'ASC')->findAll();
+        $platforms    = $this->platformModel->where('status', 1)->orderBy('nama', 'ASC')->findAll();
+        $ukuranOptions = $this->ukuranModel->getDropdownOptions();
+
+        $data = [
+            'title'               => 'Transaction Management',
+            'orders'              => $orders,
+            'pager'               => $pager,
+            'current_status'      => 'trash',
+            'search'              => '',
+            'stats'               => $stats,
+            'participantsByOrder' => $participantsByOrder,
+            'userPhonesByOrder'   => $userPhonesByOrder,
+            'events'              => $events,
+            'platforms'           => $platforms,
+            'ukuranOptions'       => $ukuranOptions,
+            'is_trash'            => true,
+        ];
         return $this->view('admin-lte-3/transaksi/sale/orders', $data);
     }
 
@@ -657,6 +741,158 @@ class Sale extends BaseController
     }
 
     /**
+     * Upload payment proof for a specific payment platform row (admin detail page).
+     * Saves file to file/sale/{orderId}/ and appends to that row's foto JSON.
+     */
+    public function uploadPaymentProof($orderId, $paymentPlatId)
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'User not authenticated'
+            ]);
+        }
+
+        $order = $this->transJualModel->find($orderId);
+        if (!$order) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Order not found'
+            ]);
+        }
+
+        $paymentPlatform = $this->transJualPlatModel->where('id', $paymentPlatId)
+            ->where('id_penjualan', $orderId)
+            ->first();
+        if (!$paymentPlatform) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Payment record not found or does not belong to this order'
+            ]);
+        }
+
+        $file = $this->request->getFile('file');
+        if (!$file) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No file uploaded'
+            ]);
+        }
+
+        if ($file->getError() !== UPLOAD_ERR_OK) {
+            $errorMessages = [
+                UPLOAD_ERR_INI_SIZE => 'File size exceeds server limit',
+                UPLOAD_ERR_FORM_SIZE => 'File size exceeds form limit',
+                UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+                UPLOAD_ERR_EXTENSION => 'File upload stopped by extension'
+            ];
+            $errorCode = $file->getError();
+            $message = isset($errorMessages[$errorCode]) ? $errorMessages[$errorCode] : 'Unknown upload error';
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $message . ' (Error code: ' . $errorCode . ')'
+            ]);
+        }
+
+        $extension = strtolower($file->getClientExtension());
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+        $maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!in_array($extension, $allowedExtensions)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid file type. Only JPG, PNG, and PDF files are allowed.'
+            ]);
+        }
+
+        if ($file->getSize() > $maxSize) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'File size too large. Maximum size is 5MB.'
+            ]);
+        }
+
+        try {
+            $baseUploadPath = FCPATH . 'file/sale/' . $orderId . '/';
+            if (!is_dir($baseUploadPath)) {
+                if (!mkdir($baseUploadPath, 0755, true)) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Failed to create upload directory'
+                    ]);
+                }
+            }
+
+            $newName = uniqid('payment_proof_') . '_' . time() . '.' . $extension;
+
+            if (!file_exists($file->getTempName())) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Temporary file not found. Please try again.'
+                ]);
+            }
+
+            if (!$file->move($baseUploadPath, $newName)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to save file: ' . $file->getErrorString()
+                ]);
+            }
+
+            $existingFoto = !empty($paymentPlatform->foto) ? json_decode($paymentPlatform->foto, true) : [];
+            if (!is_array($existingFoto)) {
+                $existingFoto = [];
+            }
+
+            $mimeTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'pdf' => 'application/pdf'
+            ];
+            $mimeType = isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'application/octet-stream';
+
+            $existingFoto[] = [
+                'filename' => $newName,
+                'original_name' => $file->getClientName(),
+                'size' => $file->getSize(),
+                'type' => $mimeType,
+                'extension' => $extension,
+                'uploaded_at' => date('Y-m-d H:i:s')
+            ];
+
+            $updateResult = $this->transJualPlatModel->update($paymentPlatId, [
+                'foto' => json_encode($existingFoto),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            if (!$updateResult) {
+                @unlink($baseUploadPath . $newName);
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Failed to update database record'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'File uploaded successfully',
+                'filename' => $newName,
+                'original_name' => $file->getClientName()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'uploadPaymentProof exception: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Get event prices via AJAX
      */
     public function getEventPrices($eventId)
@@ -709,15 +945,111 @@ class Sale extends BaseController
             $user = $this->ionAuth->user($order->user_id)->row();
         }
 
+        $ukuranOptions = $this->ukuranModel->getDropdownOptions();
+
         $data = [
             'title' => 'Transaction Detail - Invoice #' . $order->invoice_no,
             'order' => $order,
             'order_details' => $order_details,
             'payment_platforms' => $payment_platforms,
-            'user' => $user
+            'user' => $user,
+            'ukuranOptions' => $ukuranOptions
         ];
 
         return $this->view('admin-lte-3/transaksi/sale/detail', $data);
+    }
+
+    /**
+     * Update participant info (ukuran jersey, kontak darurat) for an order detail.
+     */
+    public function updateParticipantInfo($detailId)
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Not authenticated']);
+            }
+            return redirect()->to('auth/login');
+        }
+
+        $detail = $this->transJualDetModel->find($detailId);
+        if (!$detail) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Order detail not found']);
+            }
+            session()->setFlashdata('error', 'Order detail not found');
+            return redirect()->to('admin/transaksi/sale/orders');
+        }
+
+        $order = $this->transJualModel->find($detail->id_penjualan);
+        if (!$order) {
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Order not found']);
+            }
+            session()->setFlashdata('error', 'Order not found');
+            return redirect()->to('admin/transaksi/sale/orders');
+        }
+
+        $participantUk = $this->request->getPost('participant_uk');
+        $participantEmg = $this->request->getPost('participant_emg');
+        $participantBirthDate = $this->request->getPost('participant_birth_date');
+        $ktpFileJson = $this->request->getPost('ktp_file');
+
+        $itemData = json_decode($detail->item_data, true) ?: [];
+        if (!is_array($itemData)) {
+            $itemData = [];
+        }
+
+        $itemData['participant_uk'] = $participantUk !== null ? trim((string) $participantUk) : ($itemData['participant_uk'] ?? '');
+        $itemData['participant_emg'] = $participantEmg !== null ? trim((string) $participantEmg) : ($itemData['participant_emg'] ?? '');
+        $itemData['participant_birth_date'] = $participantBirthDate !== null ? trim((string) $participantBirthDate) : ($itemData['participant_birth_date'] ?? '');
+
+        // Handle KTP reupload: move from temp to file/sale/ktp/{orderId}/
+        if (!empty($ktpFileJson)) {
+            $ktpFileInfo = json_decode($ktpFileJson, true);
+            if (is_array($ktpFileInfo) && !empty($ktpFileInfo['filename'])) {
+                $sessionId = session_id();
+                $tempPath = FCPATH . 'file/sale/temp/' . $sessionId . '/';
+                $tempFile = $tempPath . $ktpFileInfo['filename'];
+
+                if (file_exists($tempFile)) {
+                    $allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+                    $extension = strtolower(pathinfo($ktpFileInfo['filename'], PATHINFO_EXTENSION));
+
+                    if (in_array($extension, $allowedExtensions)) {
+                        $maxSize = 5 * 1024 * 1024; // 5MB
+                        $fileSize = filesize($tempFile);
+
+                        if ($fileSize <= $maxSize) {
+                            $ktpUploadPath = FCPATH . 'file/sale/ktp/' . $order->id . '/';
+                            if (!is_dir($ktpUploadPath)) {
+                                if (!mkdir($ktpUploadPath, 0755, true)) {
+                                    log_message('error', 'Failed to create KTP upload directory: ' . $ktpUploadPath);
+                                }
+                            }
+                            if (is_dir($ktpUploadPath)) {
+                                $newName = 'ktp_' . uniqid() . '_' . time() . '.' . $extension;
+                                $ktpFile = $ktpUploadPath . $newName;
+                                if (rename($tempFile, $ktpFile)) {
+                                    $itemData['participant_ktp_file'] = 'file/sale/ktp/' . $order->id . '/' . $newName;
+                                    log_message('info', 'KTP file moved successfully: ' . $itemData['participant_ktp_file']);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->transJualDetModel->update($detailId, [
+            'item_data' => json_encode($itemData),
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Participant info updated']);
+        }
+        session()->setFlashdata('success', 'Info peserta berhasil diperbarui');
+        return redirect()->to('admin/transaksi/sale/detail/' . $order->id);
     }
 
     /**
@@ -813,10 +1145,14 @@ class Sale extends BaseController
                     "id_platform"         => $participantPlat,
                 ];
 
+                // Merge into existing item_data so we do not remove participant_uk, participant_emg,
+                // participant_ktp_file, participant_birth_date, participant_gender, participant_address
+                $itemData = array_merge($itemData, $peserta);
+
                 // Update sort_num for each order detail
                 $currentSortNum = $nextSortNum;
                 $this->transJualDetModel->update($s->id, [
-                    'item_data' => json_encode($peserta),
+                    'item_data' => json_encode($itemData),
                     'sort_num' => $currentSortNum
                 ]);
                 $nextSortNum++; // Increment for next detail in this order
@@ -954,6 +1290,59 @@ class Sale extends BaseController
     }
 
     /**
+     * Soft-delete an order and its detail rows
+     */
+    public function deleteOrder($orderId)
+    {
+        $redirectStatus = $this->request->getPost('redirect_status');
+        $allowed       = ['all', 'pending', 'paid', 'failed', 'cancelled'];
+        $ordersUrl    = 'admin/transaksi/sale/orders';
+        if ($redirectStatus && in_array($redirectStatus, $allowed, true) && $redirectStatus !== 'all') {
+            $ordersUrl .= '/' . $redirectStatus;
+        }
+
+        $order = $this->transJualModel->find($orderId);
+
+        if (!$order) {
+            session()->setFlashdata('error', 'Order not found');
+            return redirect()->to($ordersUrl);
+        }
+
+        $details = $this->transJualDetModel->where('id_penjualan', $orderId)->findAll();
+        foreach ($details as $d) {
+            $this->transJualDetModel->delete($d->id);
+        }
+
+        $this->transJualModel->delete($orderId);
+
+        session()->setFlashdata('success', 'Pesanan berhasil dihapus.');
+        return redirect()->to($ordersUrl);
+    }
+
+    /**
+     * Restore a soft-deleted order and its detail rows
+     */
+    public function restoreOrder($orderId)
+    {
+        $order = $this->transJualModel->withDeleted(true)->find($orderId);
+
+        if (!$order) {
+            session()->setFlashdata('error', 'Order not found');
+            return redirect()->to('admin/transaksi/sale/orders/trash');
+        }
+
+        $details = (new \App\Models\TransJualDetModel())->withDeleted(true)->where('id_penjualan', $orderId)->findAll();
+        foreach ($details as $d) {
+            (new \App\Models\TransJualDetModel())->withDeleted(true)->where('id', $d->id)->set(['deleted_at' => null])->update();
+        }
+
+        $this->transJualModel->withDeleted(true)->where('id', $orderId)->set(['deleted_at' => null])->update();
+
+        session()->setFlashdata('success', 'Pesanan berhasil dipulihkan.');
+        return redirect()->to('admin/transaksi/sale/orders/trash');
+    }
+
+    /**
      * Generate sales reports
      */
     public function reports()
@@ -962,10 +1351,11 @@ class Sale extends BaseController
         $startDate = $this->request->getGet('start_date') ?: date('Y-m-01');
         $endDate = $this->request->getGet('end_date') ?: date('Y-m-t');
 
-        // Get sales data
+        // Get sales data (exclude soft-deleted)
         $builder = $this->transJualModel->builder();
         $builder->where('invoice_date >=', $startDate);
         $builder->where('invoice_date <=', $endDate . ' 23:59:59');
+        $builder->where('tbl_trans_jual.deleted_at', null);
         $orders = $builder->orderBy('invoice_date', 'DESC')->get()->getResult();
 
         // Calculate statistics
@@ -1048,6 +1438,9 @@ class Sale extends BaseController
                         . ' AND tbl_m_event_harga.deleted_at IS NULL',
                     'left'
                 );
+        
+        // Exclude soft-deleted orders
+        $builder->where('tbl_trans_jual.deleted_at', null);
         
         // Apply status filter if provided and not 'all'
         if ($status !== 'all') {

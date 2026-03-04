@@ -15,8 +15,7 @@ class DotMatrixInvoicePdf extends TCPDF
     private $subtotal;
     private $totalTax;
     private $grandTotal;
-    private $shippingFee;
-    private $serviceFee;
+    // Removed shippingFee and serviceFee
 
     public function __construct($order, $orderDetails = [], $paymentPlatforms = [], $user = null, $pengaturan = [])
     {
@@ -137,15 +136,23 @@ class DotMatrixInvoicePdf extends TCPDF
             $this->Cell(75, 5, 'Pembeli: Guest Customer', 0, 1, 'L');
         }
         
-        // Customer address (if available)
-        if ($this->user && isset($this->user->address)) {
-            $this->SetXY(120, $y + 20);
-            $this->Cell(75, 5, 'Alamat Pengiriman: ' . $this->user->address, 0, 1, 'L');
-        } else {
-            // Default address like in the image
-            $this->SetXY(120, $y + 20);
-            $this->MultiCell(75, 4, 'Alamat Pengiriman: ' . $this->user->first_name . ' ' . $this->user->last_name . ' (+62)857412220427) Mangunharjo Dalam 1, Blok D11- Perumahan Mutiara Pancanaran Tembalang, Kota Semarang, 50272 Jawa Tengah', 0, 'L');
+        // Customer address: prefer first participant_address, fallback to user address
+        $shippingAddress = '';
+        foreach ($this->orderDetails ?? [] as $detail) {
+            $itemData = !empty($detail->item_data) ? json_decode($detail->item_data, true) : [];
+            if (is_array($itemData) && !empty($itemData['participant_address'])) {
+                $shippingAddress = trim($itemData['participant_address']);
+                break;
+            }
         }
+        if (empty($shippingAddress) && $this->user && isset($this->user->address)) {
+            $shippingAddress = trim($this->user->address);
+        }
+        if (empty($shippingAddress)) {
+            $shippingAddress = '-';
+        }
+        $this->SetXY(120, $y + 20);
+        $this->MultiCell(75, 4, 'Alamat Pengiriman: ' . $shippingAddress, 0, 'L');
     }
     
     private function drawBillingInfo()
@@ -170,7 +177,7 @@ class DotMatrixInvoicePdf extends TCPDF
 
         // Draw header bottom border
         $this->SetDrawColor(0,0,0);
-        $this->Line(15, $startY+7, 185, $startY+7);
+        $this->Line(15, $startY+7, 200, $startY+7);
 
         $this->SetFont('helvetica', '', 10);
         $this->SetFillColor(255, 255, 255);
@@ -180,7 +187,7 @@ class DotMatrixInvoicePdf extends TCPDF
 
         if (!empty($this->orderDetails)) {
             foreach ($this->orderDetails as $detail) {
-                $grandTotal += $detail->total_price;
+                $grandTotal += (int)($detail->total_price ?: 0);
 
                 // Product info cell (bold, green, multiline)
                 $this->SetXY(15, $yPos);
@@ -198,11 +205,11 @@ class DotMatrixInvoicePdf extends TCPDF
 
                 // Unit price
                 $this->SetXY(140, $yPos);
-                $this->Cell(30, $cellHeight, 'Rp' . format_angka($detail->unit_price ?: 0, 0), 0, 0, 'R');
+                $this->Cell(30, $cellHeight, 'Rp' . format_angka((int)($detail->unit_price ?: 0), 0), 0, 0, 'R');
 
                 // Total price
                 $this->SetXY(170, $yPos);
-                $this->Cell(30, $cellHeight, 'Rp' . format_angka($detail->total_price ?: 0, 0), 0, 1, 'R');
+                $this->Cell(30, $cellHeight, 'Rp' . format_angka((int)($detail->total_price ?: 0), 0), 0, 1, 'R');
 
                 // Second line: description/weight (smaller, gray)
                 $yPos += $cellHeight;
@@ -228,7 +235,7 @@ class DotMatrixInvoicePdf extends TCPDF
 
                 // Draw bottom border for the row
                 $this->SetDrawColor(0,0,0);
-                $this->Line(15, $yPos+5, 185, $yPos+5);
+                $this->Line(15, $yPos+5, 200, $yPos+5);
 
                 $this->SetTextColor(0, 0, 0);
                 $yPos += 5;
@@ -237,10 +244,10 @@ class DotMatrixInvoicePdf extends TCPDF
 
         // Store totals for later use
         $this->subtotal = $grandTotal;
-        $this->shippingFee = 17000; // Example shipping fee
-        $this->serviceFee = 1000;   // Example service fee
+        // $this->shippingFee = 17000; // Removed
+        // $this->serviceFee = 1000;   // Removed
         $this->totalTax = 0; // No tax
-        $this->grandTotal = $grandTotal + $this->shippingFee + $this->serviceFee;
+        $this->grandTotal = $grandTotal; // No shippingFee or serviceFee added
     }
     
     private function drawTotals()
@@ -251,41 +258,30 @@ class DotMatrixInvoicePdf extends TCPDF
         $this->SetFont('helvetica', '', 10);
         $this->SetXY(120, $startY);
         $this->Cell(40, 6, 'SUBTOTAL HARGA BARANG', 0, 0, 'L');
-        $this->Cell(35, 6, 'Rp' . number_format($this->subtotal, 0, ',', '.'), 0, 1, 'R');
+        $this->Cell(35, 6, 'Rp' . number_format((int)$this->subtotal, 0, ',', '.'), 0, 1, 'R');
         
-        // Shipping fee
-        $this->SetXY(120, $startY + 8);
-        $this->Cell(40, 6, 'Total Ongkos Kirim', 0, 0, 'L');
-        $this->Cell(35, 6, 'Rp' . number_format($this->shippingFee, 0, ',', '.'), 0, 1, 'R');
-        
-        // Service fee
-        $this->SetXY(120, $startY + 16);
-        $this->Cell(40, 6, 'Biaya Jasa Aplikasi', 0, 0, 'L');
-        $this->Cell(35, 6, 'Rp' . number_format($this->serviceFee, 0, ',', '.'), 0, 1, 'R');
+        // -- Removed Ongkos Kirim/Shipping fee section --
+        // -- Removed Biaya Jasa Aplikasi/Service fee section --
         
         // Line separator
-        $this->Line(120, $startY + 24, 195, $startY + 24);
+        $this->Line(120, $startY + 8, 195, $startY + 8);
         
         // Total
         $this->SetFont('helvetica', 'B', 11);
-        $this->SetXY(120, $startY + 28);
+        $this->SetXY(120, $startY + 12);
         $this->Cell(40, 6, 'TOTAL BELANJA', 0, 0, 'L');
-        $this->Cell(35, 6, 'Rp' . number_format($this->grandTotal, 0, ',', '.'), 0, 1, 'R');
+        $this->Cell(35, 6, 'Rp' . number_format((int)$this->grandTotal, 0, ',', '.'), 0, 1, 'R');
         
-        // Service fee note
-        $this->SetFont('helvetica', '', 9);
-        $this->SetXY(120, $startY + 36);
-        $this->Cell(75, 6, 'Biaya Layanan', 0, 0, 'L');
-        $this->Cell(35, 6, 'Rp' . number_format($this->serviceFee, 0, ',', '.'), 0, 1, 'R');
+        // -- Removed Service fee note section --
         
         // Line separator
-        $this->Line(120, $startY + 44, 195, $startY + 44);
+        $this->Line(120, $startY + 20, 195, $startY + 20);
         
         // Final total
         $this->SetFont('helvetica', 'B', 12);
-        $this->SetXY(120, $startY + 48);
+        $this->SetXY(120, $startY + 24);
         $this->Cell(40, 8, 'TOTAL TAGIHAN', 0, 0, 'L');
-        $this->Cell(35, 8, 'Rp' . number_format($this->grandTotal, 0, ',', '.'), 0, 1, 'R');
+        $this->Cell(35, 8, 'Rp' . number_format((int)$this->grandTotal, 0, ',', '.'), 0, 1, 'R');
     }
     
     private function drawPaymentMethod()

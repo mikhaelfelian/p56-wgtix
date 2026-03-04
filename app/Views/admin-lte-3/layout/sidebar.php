@@ -189,6 +189,15 @@
                                 <p>Pesanan Dibatalkan</p>
                             </a>
                         </li>
+                        <!-- Terhapus (Trash) -->
+                        <li class="nav-item">
+                            <a href="<?= base_url('admin/transaksi/sale/orders/trash') ?>"
+                                class="nav-link <?= isMenuActive('admin/transaksi/sale/orders/trash') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="nav-icon fas fa-trash"></i>
+                                <p>Terhapus</p>
+                            </a>
+                        </li>
                         <!-- Reports -->
                         <li class="nav-item">
                             <a href="<?= base_url('admin/transaksi/sale/reports') ?>"

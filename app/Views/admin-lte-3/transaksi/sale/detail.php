@@ -283,6 +283,14 @@ echo $this->extend(theme_path('main')); ?>
                                                             <?php endif; ?>
                                                         </div>
                                                     <?php endif; ?>
+                                                    <?php
+                                                    $isIncomplete = empty($itemData['participant_uk']) || empty($itemData['participant_emg']) || empty($itemData['participant_ktp_file']);
+                                                    ?>
+                                                        <div class="mt-2">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-0 edit-participant-btn" data-detail-id="<?= (int) $detail->id ?>" data-order-id="<?= (int) $order->id ?>" data-participant-uk="<?= esc($itemData['participant_uk'] ?? '') ?>" data-participant-emg="<?= esc($itemData['participant_emg'] ?? '') ?>" data-participant-birth-date="<?= esc($itemData['participant_birth_date'] ?? '') ?>" title="<?= $isIncomplete ? 'Lengkapi info peserta' : 'Edit info peserta' ?>">
+                                                                <i class="fas fa-edit"></i> <?= $isIncomplete ? 'Lengkapi' : 'Edit' ?>
+                                                            </button>
+                                                        </div>
                                                 <?php else: ?>
                                                     <span class="text-muted">Tidak ada info peserta</span>
                                                 <?php endif; ?>
@@ -380,7 +388,9 @@ echo $this->extend(theme_path('main')); ?>
                                                     <?php endif; ?>
                                                 <?php endforeach; ?>
                                             <?php else: ?>
-                                                <span class="text-muted">-</span>
+                                                <button type="button" class="btn btn-sm btn-outline-primary rounded-0 upload-payment-proof-btn" data-order-id="<?= (int) $order->id ?>" data-payment-id="<?= (int) $payment->id ?>" title="Upload bukti pembayaran">
+                                                    <i class="fas fa-upload"></i> Upload bukti
+                                                </button>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -408,11 +418,79 @@ echo $this->extend(theme_path('main')); ?>
     </div>
 </section>
 
+<!-- Modal Upload Bukti Pembayaran -->
+<div class="modal fade rounded-0" id="uploadPaymentProofModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-0">
+            <div class="modal-header rounded-0">
+                <h5 class="modal-title">Upload bukti pembayaran</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body rounded-0">
+                <form id="uploadPaymentProofForm" action="">
+                    <div id="payment-proof-dropzone" class="dropzone" style="border: 2px dashed #667eea; border-radius: 8px; background: #f8f9fa; padding: 20px; text-align: center; min-height: 180px;">
+                        <div class="dz-message" data-dz-message><i class="fas fa-cloud-upload-alt fa-2x text-muted"></i><br>Seret file ke sini atau klik untuk memilih. JPG, PNG, PDF. Maks. 5MB.</div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Participant Info -->
+<div class="modal fade rounded-0" id="editParticipantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content rounded-0">
+            <div class="modal-header rounded-0">
+                <h5 class="modal-title">Lengkapi Info Peserta</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="editParticipantForm" method="post" action="">
+                <?= csrf_field() ?>
+                <input type="hidden" name="ktp_file" id="edit_ktp_file" value="">
+                <div class="modal-body rounded-0">
+                    <div class="form-group">
+                        <label for="edit_participant_birth_date">Tanggal Lahir</label>
+                        <input type="date" class="form-control rounded-0" id="edit_participant_birth_date" name="participant_birth_date" max="<?= date('Y-m-d') ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_participant_uk">Ukuran Jersey</label>
+                        <select class="form-control rounded-0" id="edit_participant_uk" name="participant_uk">
+                            <option value="">Pilih Ukuran</option>
+                            <?php if (!empty($ukuranOptions)): ?>
+                                <?php foreach ($ukuranOptions as $kode => $label): ?>
+                                    <option value="<?= esc($kode) ?>"><?= esc($label) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_participant_emg">Kontak Darurat</label>
+                        <input type="text" class="form-control rounded-0" id="edit_participant_emg" name="participant_emg" placeholder="Nomor telepon darurat">
+                    </div>
+                    <div class="form-group">
+                        <label>Unggah ulang KTP (opsional)</label>
+                        <div id="edit-ktp-dropzone" class="dropzone" style="border: 2px dashed #28a745; border-radius: 8px; background: #f8f9fa; padding: 15px; text-align: center; min-height: 120px;">
+                            <div class="dz-message" data-dz-message><i class="fas fa-id-card text-muted"></i><br>JPG, PNG, PDF. Maks. 5MB.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer rounded-0">
+                    <button type="button" class="btn btn-secondary rounded-0" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-0">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('css') ?>
 <!-- Ekko Lightbox CSS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.css">
+<!-- Dropzone CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
 <style>
 .payment-attachments .card {
     transition: transform 0.2s;
@@ -434,7 +512,13 @@ echo $this->extend(theme_path('main')); ?>
 <?= $this->section('js') ?>
 <!-- Ekko Lightbox JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/5.3.0/ekko-lightbox.min.js"></script>
+<!-- Dropzone JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+<script>Dropzone.autoDiscover = false;</script>
 <script>
+var paymentProofDropzone = null;
+var uploadPaymentProofBaseUrl = "<?= base_url('admin/transaksi/sale/upload-payment-proof/') ?>";
+
 $(document).ready(function() {
     // Inisialisasi Ekko Lightbox
     $(document).on('click', '[data-toggle="lightbox"]', function(event) {
@@ -449,6 +533,101 @@ $(document).ready(function() {
                 console.log('Konten lightbox dimuat');
             }
         });
+    });
+
+    // Upload bukti: open modal, set URL, init Dropzone on first open
+    $(document).on('click', '.upload-payment-proof-btn', function() {
+        var orderId = $(this).data('order-id');
+        var paymentId = $(this).data('payment-id');
+        var url = uploadPaymentProofBaseUrl + orderId + '/' + paymentId;
+        $('#uploadPaymentProofForm').attr('action', url);
+
+        if (paymentProofDropzone === null && typeof Dropzone !== 'undefined') {
+            paymentProofDropzone = new Dropzone("#payment-proof-dropzone", {
+                url: url,
+                paramName: "file",
+                maxFilesize: 5,
+                acceptedFiles: ".jpg,.jpeg,.png,.pdf",
+                addRemoveLinks: true,
+                maxFiles: 5,
+                dictDefaultMessage: "",
+                init: function() {
+                    var dropzone = this;
+                    this.on("sending", function(file, xhr, formData) {
+                        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                    });
+                    this.on("success", function(file, response) {
+                        var res = typeof response === 'string' ? (function() { try { return JSON.parse(response); } catch(e) { return {}; } })() : (response || {});
+                        if (res.success) {
+                            $('#uploadPaymentProofModal').modal('hide');
+                            dropzone.removeAllFiles(true);
+                            location.reload();
+                        }
+                    });
+                }
+            });
+        } else if (paymentProofDropzone) {
+            paymentProofDropzone.options.url = url;
+        }
+
+        $('#uploadPaymentProofModal').modal('show');
+    });
+
+    // Clear Dropzone files when modal is hidden
+    $('#uploadPaymentProofModal').on('hidden.bs.modal', function() {
+        if (paymentProofDropzone) {
+            paymentProofDropzone.removeAllFiles(true);
+        }
+    });
+
+    // Edit participant info: open modal, pre-fill, set form action
+    var editKtpDropzone = null;
+    var uploadTempUrl = "<?= base_url('admin/transaksi/sale/upload-temp') ?>";
+    $(document).on('click', '.edit-participant-btn', function() {
+        var detailId = $(this).data('detail-id');
+        var participantUk = $(this).data('participant-uk') || '';
+        var participantEmg = $(this).data('participant-emg') || '';
+        var participantBirthDate = $(this).data('participant-birth-date') || '';
+        var updateUrl = "<?= base_url('admin/transaksi/sale/update-participant-info/') ?>" + detailId;
+        $('#editParticipantForm').attr('action', updateUrl);
+        $('#edit_participant_uk').val(participantUk);
+        $('#edit_participant_emg').val(participantEmg);
+        $('#edit_participant_birth_date').val(participantBirthDate);
+        $('#edit_ktp_file').val('');
+        if (editKtpDropzone) editKtpDropzone.removeAllFiles(true);
+
+        if (editKtpDropzone === null && typeof Dropzone !== 'undefined') {
+            editKtpDropzone = new Dropzone("#edit-ktp-dropzone", {
+                url: uploadTempUrl,
+                paramName: "file",
+                maxFilesize: 5,
+                acceptedFiles: ".jpg,.jpeg,.png,.pdf",
+                addRemoveLinks: true,
+                maxFiles: 1,
+                dictDefaultMessage: "",
+                init: function() {
+                    this.on("sending", function(file, xhr, formData) {
+                        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                    });
+                    this.on("success", function(file, response) {
+                        var res = typeof response === 'string' ? (function() { try { return JSON.parse(response); } catch(e) { return {}; } })() : (response || {});
+                        if (res.success) {
+                            $('#edit_ktp_file').val(JSON.stringify({filename: res.filename, original_name: res.original_name || file.name, size: res.size, type: res.type}));
+                        }
+                    });
+                    this.on("removedfile", function() {
+                        $('#edit_ktp_file').val('');
+                    });
+                }
+            });
+        }
+
+        $('#editParticipantModal').modal('show');
+    });
+
+    $('#editParticipantModal').on('hidden.bs.modal', function() {
+        $('#edit_ktp_file').val('');
+        if (editKtpDropzone) editKtpDropzone.removeAllFiles(true);
     });
 });
 

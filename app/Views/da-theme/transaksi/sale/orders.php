@@ -134,8 +134,7 @@ echo $this->section('content');
                 </div>
             </div>
         </div>
-        <?php endif; ?>
-        
+        <?php endif; ?>        
     </div>
 </section>
 <?php echo $this->endSection(); ?>

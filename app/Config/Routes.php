@@ -69,6 +69,8 @@ $routes->group('sale', ['namespace' => 'App\Controllers', 'filter' => 'authUser'
     $routes->get('confirm/(:num)', 'Sale::confirm/$1');
     $routes->post('process-confirmation', 'Sale::processConfirmation');
     $routes->post('upload-payment-proof/(:num)', 'Sale::uploadPaymentProof/$1');
+    $routes->post('upload-temp', 'Sale::uploadTemp');
+    $routes->post('update-participant-info/(:num)', 'Sale::updateParticipantInfo/$1');
 
     // Print/Download routes
     $routes->get('print-dotmatrix/(:num)', 'Sale::print_dm/$1');
@@ -313,12 +315,17 @@ $routes->group('admin', ['namespace' => 'App\Controllers', 'filter' => 'authAdmi
 
     // Admin Transaction routes
     $routes->group('transaksi/sale', ['namespace' => 'App\Controllers\Admin\Transaksi'], function ($routes) {
+        $routes->get('orders/trash', 'Sale::ordersTrash');
         $routes->get('orders/(:segment)', 'Sale::orders/$1');
         $routes->get('orders', 'Sale::orders');
         $routes->get('detail/(:num)', 'Sale::detail/$1');
         $routes->post('update-status/(:num)', 'Sale::updateStatus/$1');
+        $routes->post('delete/(:num)', 'Sale::deleteOrder/$1');
+        $routes->post('restore/(:num)', 'Sale::restoreOrder/$1');
         $routes->post('create-manual-order', 'Sale::createManualOrder');
         $routes->post('upload-temp', 'Sale::uploadTemp');
+        $routes->post('upload-payment-proof/(:num)/(:num)', 'Sale::uploadPaymentProof/$1/$2');
+        $routes->post('update-participant-info/(:num)', 'Sale::updateParticipantInfo/$1');
         $routes->get('get-event-prices/(:num)', 'Sale::getEventPrices/$1');
         $routes->get('reports', 'Sale::reports');
         $routes->get('export', 'Sale::export');

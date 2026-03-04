@@ -65,8 +65,9 @@ class Sale extends BaseController
             }
         }
 
-        // Build query conditions for the model
+        // Build query conditions for the model (exclude soft-deleted)
         $this->transJualModel->where('user_id', $user->id);
+        $this->transJualModel->where('deleted_at', null);
 
         // Filter by payment status if specified
         if ($status !== 'all') {
@@ -243,6 +244,7 @@ class Sale extends BaseController
     private function getOrderCount($userId = null, $status = null)
     {
         $builder = $this->transJualModel->builder();
+        $builder->where('deleted_at', null);
         
         if ($userId) {
             $builder->where('user_id', $userId);

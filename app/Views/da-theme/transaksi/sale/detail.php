@@ -76,7 +76,7 @@ echo $this->section('content');
                 </div>
                 <div class="col-md-6 text-right">
                     <p><strong>Metode Pembayaran</strong></p>
-                    <p><?= esc($payment_records->nama) ?></p>
+                    <p><?= $payment_records ? esc($payment_records->nama) : '-' ?></p>
                 </div>
             </div>
 
@@ -103,12 +103,44 @@ echo $this->section('content');
                                         <td style="padding: 15px; border: 1px solid #ddd;">
                                             <strong><?= esc($detail->event_title ?: $detail->price_description) ?></strong>
                                             <?php if ($detail->item_data): ?>
-                                                <?php $itemData = json_decode($detail->item_data, true); ?>
+                                                <?php $itemData = json_decode($detail->item_data, true) ?: []; ?>
                                                 <?php if (isset($itemData['participant_name'])): ?>
                                                     <br>
-                                                    <small class="text-muted">Peserta:
-                                                        <?= esc($itemData['participant_name']) ?>
-                                                    </small>
+                                                    <strong><?= ucwords($itemData['participant_name']) ?></strong><br>
+                                                    <small class="text-muted" style="display:block;">Peserta #<?= esc($detail->sort_num ?? 'N/A') ?></small>
+                                                    <?php if (!empty($itemData['participant_birth_date'])): ?>
+                                                        <small class="text-muted" style="display:block;margin-top:4px;">Tanggal Lahir: <?= esc($itemData['participant_birth_date']) ?></small>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($itemData['participant_uk']) || !empty($itemData['participant_emg'])): ?>
+                                                        <small class="text-muted" style="display:block;margin-top:4px;">
+                                                            <?php if (!empty($itemData['participant_uk'])): ?>Ukuran Jersey: <?= esc(strtoupper($itemData['participant_uk'])) ?><br><?php endif; ?>
+                                                            <?php if (!empty($itemData['participant_emg'])): ?>Kontak Darurat: <?= esc($itemData['participant_emg']) ?><?php endif; ?>
+                                                        </small>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($itemData['participant_ktp_file'])): ?>
+                                                        <?php
+                                                        $ktpPath = $itemData['participant_ktp_file'];
+                                                        $ktpUrl = base_url('public/' . $ktpPath);
+                                                        $ktpExt = strtolower(pathinfo($ktpPath, PATHINFO_EXTENSION));
+                                                        $isKtpImage = in_array($ktpExt, ['jpg', 'jpeg', 'png', 'gif']);
+                                                        ?>
+                                                        <div style="margin-top:8px;">
+                                                            <small class="text-muted" style="display:block;margin-bottom:4px;"><i class="fa fa-id-card text-success"></i> KTP:</small>
+                                                            <?php if ($isKtpImage): ?>
+                                                                <a href="<?= $ktpUrl ?>" target="_blank" title="Lihat KTP"><img src="<?= $ktpUrl ?>" alt="KTP" style="width:60px;height:40px;object-fit:cover;border:1px solid #ddd;border-radius:4px;"></a>
+                                                            <?php else: ?>
+                                                                <a href="<?= $ktpUrl ?>" target="_blank" class="btn btn-sm btn-default" style="padding: 2px 8px; font-size: 12px;" title="Lihat KTP"><i class="fa fa-file-pdf-o"></i> KTP PDF</a>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <?php $isIncomplete = empty($itemData['participant_uk']) || empty($itemData['participant_emg']) || empty($itemData['participant_ktp_file']); ?>
+                                                    <div style="margin-top:8px;">
+                                                        <button type="button" class="btn btn-sm btn-default edit-participant-btn" data-detail-id="<?= (int) $detail->id ?>" data-order-id="<?= (int) $order->id ?>" data-participant-uk="<?= esc($itemData['participant_uk'] ?? '') ?>" data-participant-emg="<?= esc($itemData['participant_emg'] ?? '') ?>" data-participant-birth-date="<?= esc($itemData['participant_birth_date'] ?? '') ?>" title="<?= $isIncomplete ? 'Lengkapi info peserta' : 'Edit info peserta' ?>">
+                                                            <i class="fa fa-edit"></i> <?= $isIncomplete ? 'Lengkapi' : 'Edit' ?>
+                                                        </button>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <br><span class="text-muted">Tidak ada info peserta</span>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </td>
@@ -279,9 +311,57 @@ echo $this->section('content');
     </div>
 </section>
 
+<!-- Modal Edit Participant Info -->
+<div class="modal fade" id="editParticipantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lengkapi Info Peserta</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="editParticipantForm" method="post" action="">
+                <?= csrf_field() ?>
+                <input type="hidden" name="ktp_file" id="edit_ktp_file" value="">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="edit_participant_birth_date">Tanggal Lahir</label>
+                        <input type="date" class="form-control" id="edit_participant_birth_date" name="participant_birth_date" max="<?= date('Y-m-d') ?>">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_participant_uk">Ukuran Jersey</label>
+                        <select class="form-control" id="edit_participant_uk" name="participant_uk">
+                            <option value="">Pilih Ukuran</option>
+                            <?php if (!empty($ukuranOptions)): ?>
+                                <?php foreach ($ukuranOptions as $kode => $label): ?>
+                                    <option value="<?= esc($kode) ?>"><?= esc($label) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_participant_emg">Kontak Darurat</label>
+                        <input type="text" class="form-control" id="edit_participant_emg" name="participant_emg" placeholder="Nomor telepon darurat">
+                    </div>
+                    <div class="form-group">
+                        <label>Unggah ulang KTP (opsional)</label>
+                        <div id="edit-ktp-dropzone" class="dropzone" style="border: 2px dashed #28a745; border-radius: 8px; background: #f8f9fa; padding: 15px; text-align: center; min-height: 120px;">
+                            <div class="dz-message" data-dz-message><i class="fa fa-id-card text-muted"></i><br>JPG, PNG, PDF. Maks. 5MB.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <?php echo $this->endSection(); ?>
 
 <?= $this->section('css') ?>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css">
 <style>
     /* Invoice Container */
     .invoice-container {
@@ -523,4 +603,72 @@ echo $this->section('content');
         }
     }
 </style>
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script>
+<script>Dropzone.autoDiscover = false;</script>
+<script>
+$(document).ready(function() {
+    var editKtpDropzone = null;
+    var uploadTempUrl = "<?= site_url('sale/upload-temp') ?>";
+    var updateParticipantBaseUrl = "<?= base_url('sale/update-participant-info/') ?>";
+
+    $(document).on('click', '.edit-participant-btn', function() {
+        var detailId = $(this).data('detail-id');
+        var participantUk = $(this).data('participant-uk') || '';
+        var participantEmg = $(this).data('participant-emg') || '';
+        var participantBirthDate = $(this).data('participant-birth-date') || '';
+        var updateUrl = updateParticipantBaseUrl + detailId;
+        $('#editParticipantForm').attr('action', updateUrl);
+        $('#edit_participant_uk').val(participantUk);
+        $('#edit_participant_emg').val(participantEmg);
+        $('#edit_participant_birth_date').val(participantBirthDate);
+        $('#edit_ktp_file').val('');
+
+        if (editKtpDropzone) {
+            editKtpDropzone.removeAllFiles(true);
+        }
+
+        if (editKtpDropzone === null && typeof Dropzone !== 'undefined') {
+            editKtpDropzone = new Dropzone("#edit-ktp-dropzone", {
+                url: uploadTempUrl,
+                paramName: "file",
+                maxFilesize: 5,
+                acceptedFiles: ".jpg,.jpeg,.png,.pdf",
+                addRemoveLinks: true,
+                maxFiles: 1,
+                dictDefaultMessage: "",
+                init: function() {
+                    this.on("sending", function(file, xhr, formData) {
+                        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+                    });
+                    this.on("success", function(file, response) {
+                        var res = typeof response === 'string' ? (function() { try { return JSON.parse(response); } catch(e) { return {}; } })() : (response || {});
+                        if (res.success) {
+                            $('#edit_ktp_file').val(JSON.stringify({filename: res.filename, original_name: res.original_name || file.name, size: res.size, type: res.type}));
+                        }
+                    });
+                    this.on("removedfile", function() {
+                        $('#edit_ktp_file').val('');
+                    });
+                    this.on("error", function(file, errorMessage) {
+                        var msg = typeof errorMessage === 'string' ? errorMessage : (errorMessage && errorMessage.message) ? errorMessage.message : 'Upload gagal. Silakan coba lagi.';
+                        alert('Upload Error: ' + msg);
+                    });
+                }
+            });
+        }
+
+        $('#editParticipantModal').modal('show');
+    });
+
+    $('#editParticipantModal').on('hidden.bs.modal', function() {
+        $('#edit_ktp_file').val('');
+        if (editKtpDropzone) {
+            editKtpDropzone.removeAllFiles(true);
+        }
+    });
+});
+</script>
 <?= $this->endSection() ?>
